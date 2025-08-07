@@ -1,8 +1,11 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+import os
+from dotenv import load_dotenv
 
+load_dotenv() # Load environment variables from .env file
 
-DATABASE_URL = 'postgresql://postgres:Qusaki09@localhost:5432/EDIQapp'  # Update with your database URL
+DATABASE_URL = os.getenv('DATABASE_URL') # Ensure this is set in your .env file
 
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
