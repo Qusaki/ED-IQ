@@ -96,6 +96,11 @@ def delete_user(
 
 
 # self-service route for the current user
+
+@router.get("/user/self", response_model=UserResponse)
+def read_self(current_user: User = Depends(get_current_user)):
+    return current_user
+
 @router.put("/user/self", response_model=UserResponse)
 def self_update(
     user_update: SelfUpdate, 
