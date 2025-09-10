@@ -48,6 +48,6 @@ def login_user(user: UserLogin, db: Session=Depends(get_db)):
     if not is_match:
         raise HTTPException(400, "Invalid email or password")
     
-    token = jwt.encode({'id': user_db.id, 'role': user_db.role}, 'password_key', algorithm='HS256')
+    token = jwt.encode({'user_id': user_db.id, 'role': user_db.role}, 'password_key', algorithm='HS256')
     
     return {'token': token, 'user': user_db}  # Return user data without password for security reasons
