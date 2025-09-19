@@ -33,5 +33,5 @@ app.include_router(protected.router, prefix='/protected')
 app.include_router(user_management.router, prefix='/user_management')
 app.include_router(subject.router, prefix='/subjects')
 
-Base.metadata.create_all(engine)
+Base.metadata.create_all(bind=engine)
 
