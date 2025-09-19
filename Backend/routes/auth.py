@@ -9,11 +9,16 @@ from sqlalchemy.orm import Session
 import bcrypt
 from schemas.user_login import UserLogin
 import jwt
+from dotenv import load_dotenv
 
 router = APIRouter()
 
-SECRET_KEY = os.getenv("JWT_SECRET", "supersecret")  # match dependencies.py
-ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")     # default to HS256
+load_dotenv() # Load environment variables from .env file
+
+
+SECRET_KEY = os.getenv("JWT_SECRET")  # Use env var in production!
+ALGORITHM = os.getenv("JWT_ALGORITHM")
+
 
 @router.post('/signup/', status_code=201)
 def signup_user(user: UserCreate, db: Session=Depends(get_db)):
