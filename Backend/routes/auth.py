@@ -1,4 +1,5 @@
 import uuid
+import os
 from fastapi import Depends, HTTPException
 from database import get_db
 from models.user import User
@@ -10,6 +11,9 @@ from schemas.user_login import UserLogin
 import jwt
 
 router = APIRouter()
+
+SECRET_KEY = os.getenv("JWT_SECRET", "supersecret")  # match dependencies.py
+ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")     # default to HS256
 
 @router.post('/signup/', status_code=201)
 def signup_user(user: UserCreate, db: Session=Depends(get_db)):
@@ -48,6 +52,10 @@ def login_user(user: UserLogin, db: Session=Depends(get_db)):
     if not is_match:
         raise HTTPException(400, "Invalid email or password")
     
-    token = jwt.encode({'user_id': user_db.id, 'role': user_db.role}, 'password_key', algorithm='HS256')
-    
+    token = jwt.encode(
+        {'user_id': user_db.id, 'role': user_db.role},
+        SECRET_KEY,
+        algorithm=ALGORITHM
+    )
+   
     return {'token': token, 'user': user_db}  # Return user data without password for security reasons
