@@ -7,9 +7,13 @@ import os
 
 from database import get_db
 from models.user import User
+from dotenv import load_dotenv
 
-SECRET_KEY = os.getenv("JWT_SECRET", "supersecret")  # Use env var in production!
-ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
+load_dotenv() # Load environment variables from .env file
+
+
+SECRET_KEY = os.getenv("JWT_SECRET")  # Use env var in production!
+ALGORITHM = os.getenv("JWT_ALGORITHM")
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login") # Token endpoint
 
