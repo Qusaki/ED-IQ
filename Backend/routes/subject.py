@@ -4,10 +4,11 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database import get_db
 from dependencies import required_role, get_current_user
-from models.subject import Subject, SubjectEnrollment
+from models.subject import Subject, SubjectEnrollment, EnrollmentStatus
 from schemas.subject_create import SubjectCreate
 from schemas.subject_join import SubjectJoin
 from schemas.subject_response import SubjectResponse
+from schemas.enrollment import AcceptedRejectedResponse, StudentInSubject, SubjectEnrollmentResponse
 from typing import List
 from models.user import User
 
@@ -20,6 +21,7 @@ def generate_unique_code(db: Session, length: int = 6) -> str:
         exists = db.query(Subject).filter(Subject.code == code).first()
         if not exists:
             return code
+        
 
 # Route to create a new subject (teacher only)    
 @router.post("", response_model=SubjectResponse)
@@ -51,7 +53,10 @@ def list_subjects(
         return db.query(Subject).filter(Subject.owner_id == current_user.id).all()
         
     # Student view: list enrolled subjects
-    enrollments = db.query(SubjectEnrollment).filter(SubjectEnrollment.student_id == current_user.id).all()
+    enrollments = db.query(SubjectEnrollment).filter(
+        SubjectEnrollment.student_id == current_user.id,
+        SubjectEnrollment.status == EnrollmentStatus.APPROVED.value
+    ).all()
     subject_ids = [e.subject_id for e in enrollments]
 
     # Return empty list if no enrollments
@@ -81,8 +86,109 @@ def join_subject(
     enrollment = SubjectEnrollment(
         id=str(uuid4()),
         subject_id=subject.id,
-        student_id=current_user.id
+        student_id=current_user.id,
+        status=EnrollmentStatus.PENDING.value
     )
     db.add(enrollment)
     db.commit()
     return subject
+
+@router.get("/{subject_id}/students", response_model=List[StudentInSubject])
+def get_subject_students(
+    subject_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    role=Depends(required_role("teacher"))
+):
+    # Get students enrolled in a subject (teacher only)
+    subject = db.query(Subject).filter(Subject.id == subject_id).first()
+    if not subject:
+        raise HTTPException(status_code=404, detail="Subject not found")
+    if subject.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    enrollments = db.query(SubjectEnrollment).filter(SubjectEnrollment.subject_id == subject_id).all()
+    
+    out: List[StudentInSubject] = []
+    for e in enrollments:
+        student = db.query(User).filter(User.id == e.student_id).first()
+        if student:
+            out.append(StudentInSubject(
+                id=student.id,
+                name=student.name,
+                email=student.email,
+                status=e.status
+            ))
+    return out
+
+@router.post("/{subject_id}/students/{student_id}/accept", response_model=AcceptedRejectedResponse)
+def accept_student(
+    subject_id: str,
+    student_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    role=Depends(required_role("teacher"))
+):
+    # Accept a student's enrollment request (teacher only)
+    subject = db.query(Subject).filter(Subject.id == subject_id).first()
+    if not subject:
+        raise HTTPException(status_code=404, detail="Subject not found")
+    if subject.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    enrollment = db.query(SubjectEnrollment).filter(
+        SubjectEnrollment.subject_id == subject_id,
+        SubjectEnrollment.student_id == student_id
+    ).first()
+    if not enrollment:
+        raise HTTPException(status_code=404, detail="Enrollment not found")
+
+    enrollment.status = EnrollmentStatus.APPROVED.value
+    db.commit()
+    return AcceptedRejectedResponse(success=True, message="Student accepted")
+
+@router.post("/{subject_id}/students/{student_id}/reject", response_model=AcceptedRejectedResponse)
+def reject_student(
+    subject_id: str,
+    student_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    role=Depends(required_role("teacher"))
+):
+    # Reject a student's enrollment request (teacher only)
+    subject = db.query(Subject).filter(Subject.id == subject_id).first()
+    if not subject:
+        raise HTTPException(status_code=404, detail="Subject not found")
+    if subject.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    enrollment = db.query(SubjectEnrollment).filter(
+        SubjectEnrollment.subject_id == subject_id,
+        SubjectEnrollment.student_id == student_id
+    ).first()
+    if not enrollment:
+        raise HTTPException(status_code=404, detail="Enrollment not found")
+
+    enrollment.status = EnrollmentStatus.REJECTED.value
+    db.commit()
+    return AcceptedRejectedResponse(success=True, message="Student rejected")
+
+@router.get("/{subject_id}/status", response_model=SubjectEnrollmentResponse)
+def get_student_subject_status(
+    subject_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    role=Depends(required_role("student"))
+):
+    # Get the enrollment status of the current student for a specific subject
+    enrollment = db.query(SubjectEnrollment).filter(
+        SubjectEnrollment.subject_id == subject_id,
+        SubjectEnrollment.student_id == current_user.id
+    ).first()
+    if not enrollment:
+        raise HTTPException(status_code=404, detail="Enrollment not found")
+    
+    return SubjectEnrollmentResponse(
+        status=enrollment.status,
+        subject_id=enrollment.subject_id
+    )

@@ -5,7 +5,7 @@ class User(Base):
     __tablename__ = "users"
     
     id = Column(TEXT, primary_key=True)
-    name = Column(VARCHAR(50))
-    email = Column(VARCHAR(50))
-    role = Column(VARCHAR(20))
-    password = Column(LargeBinary)  # Store hashed password as binary data
+    name = Column(VARCHAR(50), nullable=False)
+    email = Column(VARCHAR(50), unique=True, nullable=False, index=True)
+    role = Column(VARCHAR(20), nullable=False)  # e.g., "student" or "teacher"
+    password = Column(LargeBinary, nullable=False)  # Store hashed password as binary data
