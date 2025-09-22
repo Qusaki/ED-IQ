@@ -7,11 +7,11 @@ from sqlalchemy import inspect, text
 
 app = FastAPI()
 
-def ensure_column_exists(table_name: str, column_name: str, ddl_sql:str):
+def ensure_column_exists(table_name: str, column_name: str, ddl_sql: str):
     insp = inspect(engine)
     cols = [c['name'] for c in insp.get_columns(table_name)]
-    if column_name not in cols:
-        return
+    if column_name in cols:
+        return  # Already exists, do nothing
     with engine.begin() as conn:
         conn.execute(text(ddl_sql))
 
@@ -28,10 +28,10 @@ def run_startup_migrations():
     ensure_column_exists("subject_enrollment", "status", add_status_col_sql)
     backfill_null_status("subject_enrollment", "status", "pending")
 
+run_startup_migrations()
+
 app.include_router(auth.router, prefix='/auth')
 app.include_router(protected.router, prefix='/protected')
 app.include_router(user_management.router, prefix='/user_management')
 app.include_router(subject.router, prefix='/subjects')
-
-Base.metadata.create_all(bind=engine)
 

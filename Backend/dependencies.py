@@ -1,9 +1,9 @@
+import os
+import jwt
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
-import jwt
 from jwt import PyJWTError
 from sqlalchemy.orm import Session
-import os
 
 from database import get_db
 from models.user import User
