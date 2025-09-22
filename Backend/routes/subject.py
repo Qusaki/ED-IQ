@@ -1,16 +1,19 @@
 import random, string
+
 from uuid import uuid4
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
-from database import get_db
-from dependencies import required_role, get_current_user
+from typing import List
+
+from models.user import User
 from models.subject import Subject, SubjectEnrollment, EnrollmentStatus
+from dependencies import required_role, get_current_user
 from schemas.subject_create import SubjectCreate
 from schemas.subject_join import SubjectJoin
 from schemas.subject_response import SubjectResponse
 from schemas.enrollment import AcceptedRejectedResponse, StudentInSubject, SubjectEnrollmentResponse
-from typing import List
-from models.user import User
+
+from sqlalchemy.orm import Session
+from database import get_db
 
 router = APIRouter()
 

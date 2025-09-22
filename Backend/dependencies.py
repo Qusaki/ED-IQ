@@ -1,13 +1,15 @@
 import os
 import jwt
+
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
-from jwt import PyJWTError
-from sqlalchemy.orm import Session
-
-from database import get_db
 from models.user import User
+from jwt import PyJWTError
+
 from dotenv import load_dotenv
+from sqlalchemy.orm import Session
+from database import get_db
+
 
 load_dotenv() # Load environment variables from .env file
 

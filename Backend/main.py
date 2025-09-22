@@ -1,8 +1,8 @@
 from fastapi import FastAPI
 from models.base import Base
 from routes import auth, protected, user_management, subject
-from database import engine
 
+from database import engine
 from sqlalchemy import inspect, text
 
 app = FastAPI()

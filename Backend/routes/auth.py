@@ -1,15 +1,21 @@
 import uuid
 import os
-from fastapi import Depends, HTTPException
-from database import get_db
+import jwt
+import bcrypt
+
+from fastapi import Depends, HTTPException, APIRouter
 from models.user import User
 from schemas.user_create import UserCreate
-from fastapi import APIRouter
-from sqlalchemy.orm import Session
-import bcrypt
-from schemas.user_login import UserLogin
-import jwt
+
 from dotenv import load_dotenv
+from database import get_db
+from schemas.user_login import UserLogin
+from sqlalchemy.orm import Session
+
+
+
+
+
 
 router = APIRouter()
 
