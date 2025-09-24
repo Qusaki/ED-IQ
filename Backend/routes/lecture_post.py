@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 from models.lecture import Lecture
 from schemas.lecture import LectureOut
-from utils.gcs import upload_file_to_gcs
+# from utils.gcs import upload_file_to_gcs
 from dependencies import get_current_user
 
 router = APIRouter()
@@ -21,9 +21,9 @@ async def create_lecture(
         raise HTTPException(status_code=403, detail="Only teachers can create lectures")
 
     file_url = None
-    if file:
-        destination_name = f"lectures/{current_user.id}/{file.filename}"
-        file_url = upload_file_to_gcs(file, destination_name)
+   # if file:
+   #     destination_name = f"lectures/{current_user.id}/{file.filename}"
+   #     file_url = upload_file_to_gcs(file, destination_name)
 
     lecture = Lecture(
         title=title,
