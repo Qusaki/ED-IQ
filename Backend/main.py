@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from models.base import Base
-from routes import auth, protected, user_management, subject
+from routes import auth, protected, user_management, subject, lecture_post
 
 from database import engine
 from sqlalchemy import inspect, text
@@ -34,4 +34,4 @@ app.include_router(auth.router, prefix='/auth')
 app.include_router(protected.router, prefix='/protected')
 app.include_router(user_management.router, prefix='/user_management')
 app.include_router(subject.router, prefix='/subjects')
-
+app.include_router(lecture_post.router, prefix='/lectures', tags=['lectures'])

@@ -12,11 +12,6 @@ from database import get_db
 from schemas.user_login import UserLogin
 from sqlalchemy.orm import Session
 
-
-
-
-
-
 router = APIRouter()
 
 load_dotenv() # Load environment variables from .env file
