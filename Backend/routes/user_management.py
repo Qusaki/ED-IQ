@@ -1,9 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from passlib.context import CryptContext
-from pydantic import BaseModel, EmailStr
-from typing import Optional, List
-from uuid import UUID, uuid4
-
+from typing import List
+from schemas.user_management import UserResponse, UserUpdate, SelfUpdate
 from models.user import User
 from dependencies import required_role, get_current_user
 
@@ -13,26 +11,6 @@ from database import get_db
 router = APIRouter()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# User Management Schemas
-class UserUpdate(BaseModel):
-    # User update schema
-    email: Optional[EmailStr] = None
-    role: Optional[str] = None
-    password: Optional[str] = None
-
-class SelfUpdate(BaseModel):
-    # Self-update schema
-    email: Optional[EmailStr] = None
-    password: Optional[str] = None
-
-class UserResponse(BaseModel):
-    # User response schema
-    id: UUID
-    email: EmailStr
-    role: str
-
-    class Config:
-        orm_mode = True
 
 # Admin-only route to get all users
 @router.get("/user", response_model=List[UserResponse])
@@ -40,17 +18,15 @@ def list_users(
     db: Session = Depends(get_db), 
     role=Depends(required_role("admin"))
 ):
-    # Fetch all users from the database
     return db.query(User).all()
 
-# Admin-only route to update a user
+# get user by id
 @router.get("/user/{user_id}", response_model=UserResponse)
 def get_user(
-    user_id: UUID, 
+    user_id: str, 
     db: Session = Depends(get_db), 
     role=Depends(required_role("admin"))
 ):
-    # Fetch a user by ID
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -59,12 +35,11 @@ def get_user(
 # Admin-only route to update a user
 @router.put("/user/{user_id}", response_model=UserResponse)
 def update_user(
-    user_id: UUID, 
+    user_id: str, 
     user_update: UserUpdate, 
     db: Session = Depends(get_db), 
     role=Depends(required_role("admin"))
 ):
-    # Fetch the user to update
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -82,9 +57,9 @@ def update_user(
     return user
 
 # Self-update route for the current user
-@router.delete("/user/{user_id}", status_code=204)
+@router.delete("/user/{user_id}")
 def delete_user(
-    user_id: UUID, 
+    user_id: str, 
     db: Session = Depends(get_db), 
     role=Depends(required_role("admin"))
 ):
@@ -98,7 +73,6 @@ def delete_user(
 
 
 # self-service route for the current user
-
 @router.get("/user/self", response_model=UserResponse)
 def read_self(current_user: User = Depends(get_current_user)):
     return current_user
@@ -123,4 +97,3 @@ def self_update(
     db.commit()
     db.refresh(user)
     return user
-

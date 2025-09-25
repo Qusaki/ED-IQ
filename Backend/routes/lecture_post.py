@@ -82,3 +82,19 @@ async def update_lecture(
     db.refresh(lecture)
 
     return lecture
+
+# delete post in lecture
+@router.delete("/{Lecture_id}")
+def delete_lecture(
+    lecture_id: str,
+    db: Session = Depends(get_db)
+):
+    lecture = db.query(Lecture).filter(Lecture.id == lecture_id).first()
+
+    if not lecture:
+        raise HTTPException(status_code=404, detail="lecture not found")
+
+    db.delete(lecture)
+    db.commit()
+
+    return {"message": "Lecture deleted successfully"}

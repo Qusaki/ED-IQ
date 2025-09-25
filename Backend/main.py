@@ -30,8 +30,8 @@ def run_startup_migrations():
 
 run_startup_migrations()
 
-app.include_router(auth.router, prefix='/auth')
-app.include_router(protected.router, prefix='/protected')
-app.include_router(user_management.router, prefix='/user_management')
-app.include_router(subject.router, prefix='/subjects')
+app.include_router(auth.router, prefix='/auth', tags=['Authentication'])
+app.include_router(protected.router, prefix='/protected', tags=['Protected'])
+app.include_router(user_management.router, prefix='/user_management', tags=['User Management'])
+app.include_router(subject.router, prefix='/subjects' , tags=['Classrom subject'])
 app.include_router(lecture_post.router, prefix='/lectures', tags=['lectures'])
