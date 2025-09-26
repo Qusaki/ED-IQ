@@ -11,12 +11,12 @@ from dependencies import get_current_user
 router = APIRouter()
 
 #route to create activity post
-@router.post("/", response_model=ActivityOut)
+@router.post("/{subject_id}", response_model=ActivityOut)
 async def create_activity(
+    subject_id: str,
     title: str = Form(...),
     content: str = Form(None),
     file: UploadFile = File(None),
-    subject_id: str = Form(...),
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user) # teacher must be logged in
 ):

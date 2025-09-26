@@ -11,12 +11,12 @@ from dependencies import get_current_user
 router = APIRouter()
 
 # Route to create a new lecture (teacher only)
-@router.post("/", response_model=LectureOut)
+@router.post("/{subject_id}", response_model=LectureOut)
 async def create_lecture(
+    subject_id: str,
     title: str = Form(...),
     content: str = Form(None),
     file: UploadFile = File(None),
-    subject_id: str = Form(...),
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user) # teacher must be logged in
 ):
