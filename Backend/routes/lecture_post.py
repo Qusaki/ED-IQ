@@ -44,11 +44,10 @@ async def create_lecture(
     return lecture
 
 # view all lectures in subject
-@router.get("/subject/{lecture_id}", response_model=List[LectureOut])
+@router.get("/{subject_id}", response_model=List[LectureOut])
 async def get_lectures_by_subject(
     subject_id: str,
-    db: Session = Depends(get_db),
-    current_user=Depends(get_current_user) # user must be logged in
+    db: Session = Depends(get_db)
 ):
     lectures = db.query(Lecture).filter(Lecture.subject_id == subject_id).order_by(Lecture.created_at.desc()).all()
 
