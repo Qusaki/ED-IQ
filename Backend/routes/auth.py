@@ -5,11 +5,10 @@ import bcrypt
 
 from fastapi import Depends, HTTPException, APIRouter
 from models.user import User
-from schemas.user_create import UserCreate
+from schemas.user import UserCreate, UserLogin, UserResponse, LoginResponse
 
 from dotenv import load_dotenv
 from database import get_db
-from schemas.user_login import UserLogin
 from sqlalchemy.orm import Session
 
 router = APIRouter()
@@ -21,7 +20,7 @@ SECRET_KEY = os.getenv("JWT_SECRET")  # Use env var in production!
 ALGORITHM = os.getenv("JWT_ALGORITHM")
 
 
-@router.post('/signup/', status_code=201)
+@router.post('/signup/', status_code=201, response_model=UserResponse)
 def signup_user(user: UserCreate, db: Session=Depends(get_db)):
     # check if user already exists
     user_db = db.query(User).filter(User.email == user.email).first()
@@ -35,7 +34,6 @@ def signup_user(user: UserCreate, db: Session=Depends(get_db)):
     # create a new user instance
     user_db = User(id=str(uuid.uuid4()), email=user.email, name=user.name, role=user.role, password=hashed_pw)
     
-    
     # add user to the database
     db.add(user_db)
     db.commit()
@@ -44,7 +42,7 @@ def signup_user(user: UserCreate, db: Session=Depends(get_db)):
     return user_db
 
 
-@router.post('/login/')
+@router.post('/login/', response_model=LoginResponse)
 def login_user(user: UserLogin, db: Session=Depends(get_db)):
     # check if user exists
     user_db = db.query(User).filter(User.email == user.email).first()
@@ -64,4 +62,4 @@ def login_user(user: UserLogin, db: Session=Depends(get_db)):
         algorithm=ALGORITHM
     )
    
-    return {'token': token, 'user': user_db}  # Return user data without password for security reasons
+    return LoginResponse(token=token, user=UserResponse.model_validate(user_db))

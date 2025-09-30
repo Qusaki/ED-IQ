@@ -7,16 +7,13 @@ from typing import List
 from models.user import User
 from models.subject import Subject, SubjectEnrollment, EnrollmentStatus
 from dependencies import required_role, get_current_user
-from schemas.subject_create import SubjectCreate
-from schemas.subject_join import SubjectJoin
-from schemas.subject_response import SubjectResponse
-from schemas.enrollment import AcceptedRejectedResponse, StudentInSubject, SubjectEnrollmentResponse
+from schemas.subject import SubjectCreate, SubjectJoin, SubjectResponse, SubjectWithStudents
+from schemas.enrollment import EnrollmentActionResponse, StudentInSubject, SubjectEnrollmentResponse
 
 from sqlalchemy.orm import Session
 from database import get_db
 
 router = APIRouter()
-
 # Utility function to generate a unique subject code
 def generate_unique_code(db: Session, length: int = 6) -> str:
     while True:
@@ -124,7 +121,7 @@ def get_subject_students(
             ))
     return out
 
-@router.post("/{subject_id}/students/{student_id}/accept", response_model=AcceptedRejectedResponse)
+@router.post("/{subject_id}/students/{student_id}/accept", response_model=EnrollmentActionResponse)
 def accept_student(
     subject_id: str,
     student_id: str,
@@ -148,9 +145,9 @@ def accept_student(
 
     enrollment.status = EnrollmentStatus.APPROVED.value
     db.commit()
-    return AcceptedRejectedResponse(success=True, message="Student accepted")
+    return EnrollmentActionResponse(success=True, message="Student accepted")
 
-@router.post("/{subject_id}/students/{student_id}/reject", response_model=AcceptedRejectedResponse)
+@router.post("/{subject_id}/students/{student_id}/reject", response_model=EnrollmentActionResponse)
 def reject_student(
     subject_id: str,
     student_id: str,
@@ -174,7 +171,7 @@ def reject_student(
 
     enrollment.status = EnrollmentStatus.REJECTED.value
     db.commit()
-    return AcceptedRejectedResponse(success=True, message="Student rejected")
+    return EnrollmentActionResponse(success=True, message="Student rejected")
 
 @router.get("/{subject_id}/status", response_model=SubjectEnrollmentResponse)
 def get_student_subject_status(

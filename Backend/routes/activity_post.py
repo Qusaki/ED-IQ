@@ -4,14 +4,14 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy.orm import Session
 from database import get_db
 from models.activity import Activity
-from schemas.activity import ActivityOut
+from schemas.activity import ActivityResponse, ActivityCreate
 # from utils.gcs import upload_file_to_gcs
 from dependencies import get_current_user
 
 router = APIRouter()
 
 #route to create activity post
-@router.post("/{subject_id}", response_model=ActivityOut)
+@router.post("/{subject_id}", response_model=ActivityResponse)
 async def create_activity(
     subject_id: str,
     title: str = Form(...),
@@ -44,7 +44,7 @@ async def create_activity(
     return activity
 
 # view all activity in subject
-@router.get("/{subject_id}", response_model=List[ActivityOut])
+@router.get("/{subject_id}", response_model=List[ActivityResponse])
 async def get_activity_by_subject(
     subject_id: str,
     db: Session = Depends(get_db)
@@ -56,7 +56,7 @@ async def get_activity_by_subject(
     return activities
 
 # edit post in activity
-@router.put("/{activity_id}", response_model=ActivityOut)
+@router.put("/{activity_id}", response_model=ActivityResponse)
 async def update_activity(
     activity_id: str,
     title: str = Form(None),
@@ -85,13 +85,17 @@ async def update_activity(
 # delete post in activity
 @router.delete("/{activity_id}")
 def delete_activity(
-    lecture_id: str,
-    db: Session = Depends(get_db)
+    activity_id: str,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
 ):
-    activity = db.query(Activity).filter(Activity.id == lecture_id).first()
+    activity = db.query(Activity).filter(Activity.id == activity_id).first()
 
     if not activity:
         raise HTTPException(status_code=404, detail="activity not found")
+    
+    if activity.teacher_id != current_user.id:
+        raise HTTPException(status_code=403, detail="You can only delete your own activity")
 
     db.delete(activity)
     db.commit()

@@ -4,14 +4,14 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy.orm import Session
 from database import get_db
 from models.lecture import Lecture
-from schemas.lecture import LectureOut
+from schemas.lecture import LectureResponse, LectureCreate
 # from utils.gcs import upload_file_to_gcs
 from dependencies import get_current_user
 
 router = APIRouter()
 
 # Route to create a new lecture (teacher only)
-@router.post("/{subject_id}", response_model=LectureOut)
+@router.post("/{subject_id}", response_model=LectureResponse)
 async def create_lecture(
     subject_id: str,
     title: str = Form(...),
@@ -44,7 +44,7 @@ async def create_lecture(
     return lecture
 
 # view all lectures in subject
-@router.get("/{subject_id}", response_model=List[LectureOut])
+@router.get("/{subject_id}", response_model=List[LectureResponse])
 async def get_lectures_by_subject(
     subject_id: str,
     db: Session = Depends(get_db)
@@ -56,7 +56,7 @@ async def get_lectures_by_subject(
     return lectures
 
 # edit post in lecture
-@router.put("/{lecture_id}", response_model=LectureOut)
+@router.put("/{lecture_id}", response_model=LectureResponse)
 async def update_lecture(
     lecture_id: str,
     title: str = Form(None),
@@ -83,15 +83,19 @@ async def update_lecture(
     return lecture
 
 # delete post in lecture
-@router.delete("/{Lecture_id}")
+@router.delete("/{lecture_id}")
 def delete_lecture(
     lecture_id: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
 ):
     lecture = db.query(Lecture).filter(Lecture.id == lecture_id).first()
 
     if not lecture:
         raise HTTPException(status_code=404, detail="lecture not found")
+    
+    if lecture.teacher_id != current_user.id:
+        raise HTTPException(status_code=403, detail="You can only delete your own lecture")
 
     db.delete(lecture)
     db.commit()

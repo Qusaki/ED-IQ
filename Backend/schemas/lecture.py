@@ -1,16 +1,30 @@
-from pydantic import BaseModel
 from typing import Optional
+from pydantic import BaseModel
 from datetime import datetime
 
-class LectureOut(BaseModel):
-    id: str
+
+class LectureBase(BaseModel):
     title: str
     content: Optional[str] = None
     file_url: Optional[str] = None
+
+
+class LectureCreate(LectureBase):
+    subject_id: str
+
+
+class LectureUpdate(BaseModel):
+    title: Optional[str] = None
+    content: Optional[str] = None
+    file_url: Optional[str] = None
+
+
+class LectureResponse(LectureBase):
+    id: str
     teacher_id: str
     subject_id: str
     created_at: datetime
     updated_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
