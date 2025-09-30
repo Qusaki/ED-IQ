@@ -9,9 +9,6 @@ class ActivityBase(BaseModel):
     file_url: Optional[str] = None
 
 
-class ActivityCreate(ActivityBase):
-    subject_id: str
-
 
 class ActivityUpdate(BaseModel):
     title: Optional[str] = None

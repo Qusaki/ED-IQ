@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy.orm import Session
 from database import get_db
 from models.activity import Activity
-from schemas.activity import ActivityResponse, ActivityCreate
+from schemas.activity import ActivityResponse
 # from utils.gcs import upload_file_to_gcs
 from dependencies import get_current_user
 

@@ -9,9 +9,6 @@ class LectureBase(BaseModel):
     file_url: Optional[str] = None
 
 
-class LectureCreate(LectureBase):
-    subject_id: str
-
 
 class LectureUpdate(BaseModel):
     title: Optional[str] = None

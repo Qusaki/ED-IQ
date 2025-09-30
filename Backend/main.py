@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from models.base import Base
-from routes import auth, protected, user_management, subject, lecture_post, activity_post
+from routes import auth, user_management, subject, lecture_post, activity_post
 
 from database import engine
 from sqlalchemy import inspect, text
@@ -11,7 +11,7 @@ def ensure_column_exists(table_name: str, column_name: str, ddl_sql: str):
     insp = inspect(engine)
     cols = [c['name'] for c in insp.get_columns(table_name)]
     if column_name in cols:
-        return  # Already exists, do nothing
+        return
     with engine.begin() as conn:
         conn.execute(text(ddl_sql))
 
@@ -31,7 +31,6 @@ def run_startup_migrations():
 run_startup_migrations()
 
 app.include_router(auth.router, prefix='/auth', tags=['Authentication'])
-app.include_router(protected.router, prefix='/protected', tags=['Protected'])
 app.include_router(user_management.router, prefix='/user_management', tags=['User Management'])
 app.include_router(subject.router, prefix='/subjects' , tags=['Classrom subject'])
 app.include_router(lecture_post.router, prefix='/lectures', tags=['lectures'])
