@@ -1,17 +1,23 @@
 import os
 import tempfile
-from google.cloud import storage
-from fastapi import UploadFile
+from typing import Optional
+
 from dotenv import load_dotenv
+from fastapi import UploadFile
+from google.cloud import storage
 
-load_dotenv()  # Load environment variables from .env file
+# Load environment variables from .env file
+load_dotenv()
 
-# get environment variables
+# Get environment variables
 PROJECT_ID = os.getenv("GCP_PROJECT_ID")
 BUCKET_NAME = os.getenv("GCP_BUCKET_NAME")
 CREDENTIALS_JSON = os.getenv("GCP_CREDENTIALS_JSON")
 
-# initialize GCS client
+if not PROJECT_ID or not BUCKET_NAME:
+    raise ValueError("GCP_PROJECT_ID and GCP_BUCKET_NAME environment variables must be set")
+
+# Initialize GCS client
 if CREDENTIALS_JSON and os.path.exists(CREDENTIALS_JSON):
     storage_client = storage.Client.from_service_account_json(CREDENTIALS_JSON)
 else:
@@ -20,17 +26,30 @@ else:
 bucket = storage_client.bucket(BUCKET_NAME)
 
 def upload_file_to_gcs(file: UploadFile, destination_name: str) -> str:
-    """ Upload a file to Google Cloud Storage and return the public URL. """
-    blob = bucket.blob(destination_name)
+    try:
+        blob = bucket.blob(destination_name)
 
-    # save file temporarily before uploading
-    with tempfile.NamedTemporaryFile(delete=False) as temp_file:
-        temp_file.write(file.file.read())
-        temp_file.flush()
+        # Save file temporarily before uploading
+        with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+            content = file.file.read()
+            temp_file.write(content)
+            temp_file.flush()
 
-    blob.upload_from_filename(temp_file.name)
+        # Upload to GCS
+        blob.upload_from_filename(temp_file.name)
 
-    # make file public
-    blob.make_public()
+        # Clean up temporary file
+        os.unlink(temp_file.name)
 
-    return blob.public_url
+        # Make file public
+        blob.make_public()
+
+        return blob.public_url
+    except Exception as e:
+        # Clean up temporary file if it exists
+        if 'temp_file' in locals():
+            try:
+                os.unlink(temp_file.name)
+            except OSError:
+                pass
+        raise e
