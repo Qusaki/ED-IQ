@@ -3,7 +3,7 @@ from sqlalchemy import inspect, text
 
 from database import engine
 from models.base import Base
-from routes import activity_post, auth, lecture_post, subject, user_management
+from routes import activity_post, auth, lecture_post, subject, user_management, submission_post
 
 app = FastAPI(
     title="ED-IQ Backend API",
@@ -40,3 +40,4 @@ app.include_router(user_management.router, prefix='/user_management', tags=['Use
 app.include_router(subject.router, prefix='/subjects', tags=['Classroom Subject'])
 app.include_router(lecture_post.router, prefix='/lectures', tags=['Lectures'])
 app.include_router(activity_post.router, prefix='/activities', tags=['Activities'])
+app.include_router(submission_post.router, prefix="/submissions", tags=['Submissions'])
