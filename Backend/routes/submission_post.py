@@ -3,6 +3,7 @@ from uuid import uuid4
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy.orm import Session
 from database import get_db
+from models.subject import Subject, SubjectEnrollment
 from models.activity import Activity
 from models.submission import Submission
 from schemas.submission import SubmissionResponse
@@ -20,9 +21,17 @@ async def create_submission(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user) # student must be logged in
 ):
-    # Ensure the user is a student
-    if current_user.role != 'student':
-        raise HTTPException(status_code=403, detail="Only student can submit")
+    # Get the activity and subject
+    activity = db.query(Activity).filter(Activity.id == activity_id).first()
+    subject = db.query(Subject).filter(Subject.id == activity.subject_id).first()
+   
+    if not activity or not subject:
+        raise HTTPException(status_code=404, detail="Activity or Subject not found")
+    
+     #check if the student is enrolled in the subject
+    enrolled = db.query(SubjectEnrollment).filter(SubjectEnrollment.subject_id == subject.id, SubjectEnrollment.student_id == current_user.id, SubjectEnrollment.status == 'approved').first()
+    if not enrolled:
+        raise HTTPException(status_code=403, detail="You are not enrolled in this subject")
 
     file_url = None
    # if file:
@@ -42,6 +51,7 @@ async def create_submission(
 
     return submit
 
+
 # view all submit in activity
 @router.get("/{activity_id}", response_model=List[SubmissionResponse])
 async def get_submit_by_activity(
@@ -49,6 +59,14 @@ async def get_submit_by_activity(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user)
 ):
+    #ensure the owner of the activity is the one trying to view all submissions
+    activity = db.query(Activity).filter(Activity.id == activity_id).first()
+    if not activity:
+        raise HTTPException(status_code=404, detail="activity not found")
+    
+    if activity.teacher_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Only the owner of the activity can view all submissions")
+
     submissions = db.query(Submission).filter(Submission.activity_id == activity_id).order_by(Submission.created_at.desc()).all()
 
     if not submissions:
@@ -60,6 +78,7 @@ async def get_submit_by_activity(
 async def update_submission(
     submission_id: str,
     content: str = Form(None),
+    file: UploadFile = File(None),
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user)
 ):
