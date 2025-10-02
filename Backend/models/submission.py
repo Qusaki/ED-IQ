@@ -1,4 +1,4 @@
-from sqlalchemy import Column, ForeignKey, Text, DateTime, func
+from sqlalchemy import Column, ForeignKey, Text, DateTime, func, Integer
 from models.base import Base
 
 class Submission(Base):
@@ -11,3 +11,4 @@ class Submission(Base):
     activity_id = Column(Text, ForeignKey('activities.id'), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+    score = Column(Integer, nullable=True)

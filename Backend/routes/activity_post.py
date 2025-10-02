@@ -64,7 +64,7 @@ async def update_activity(
     activity_id: str,
     title: str = Form(None),
     content: str = Form(None),
-    max_score: int = Form(100),
+    max_score: int = Form(None),
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user)
 ):
@@ -80,7 +80,7 @@ async def update_activity(
         activity.title = title
     if content:
         activity.content = content
-    if max_score:
+    if max_score is not None:
         activity.max_score = max_score
 
     db.commit()

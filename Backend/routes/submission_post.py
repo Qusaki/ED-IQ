@@ -3,6 +3,7 @@ from uuid import uuid4
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy.orm import Session
 from database import get_db
+from models.activity import Activity
 from models.submission import Submission
 from schemas.submission import SubmissionResponse
 # from utils.gcs import upload_file_to_gcs
@@ -97,3 +98,34 @@ def delete_submission(
     db.commit()
 
     return {"message": "student activity deleted successfully"}
+
+# score submission
+@router.put("/score/{submission_id}", response_model=SubmissionResponse)
+async def score_submission(
+    submission_id: str,
+    score: int = Form(...),
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    # get the submission post
+    submission = db.query(Submission).filter(Submission.id == submission_id).first()
+
+    if not submission:
+        raise HTTPException(status_code=404, detail="submission not found")
+    
+    # get the activity post
+    activity = db.query(Activity).filter(Activity.id == submission.activity_id).first()
+    
+    # Ensure the user is owner of the activity
+    if current_user.id != activity.teacher_id:
+        raise HTTPException(status_code=403, detail="Only the owner of the activity can score submissions")
+    
+    if score < 0 or  score > activity.max_score:
+        raise HTTPException(status_code=400, detail=f"Score must be between 0 and {activity.max_score}")
+    
+    submission.score = score
+
+    db.commit()
+    db.refresh(submission)
+
+    return submission

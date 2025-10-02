@@ -8,7 +8,7 @@ class SubmissionBase(BaseModel):
     file_url: Optional[str] = None
 
 
-class ActivityUpdate(BaseModel):
+class SubmissionUpdate(BaseModel):
     content: Optional[str] = None
     file_url: Optional[str] = None
 
@@ -19,6 +19,9 @@ class SubmissionResponse(SubmissionBase):
     activity_id: str
     created_at: datetime
     updated_at: datetime
+    score: Optional[int] = None
 
     class Config:
         from_attributes = True
+
+
