@@ -47,7 +47,8 @@ async def create_activity(
 @router.get("/{subject_id}", response_model=List[ActivityResponse])
 async def get_activity_by_subject(
     subject_id: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
 ):
     activities = db.query(Activity).filter(Activity.subject_id == subject_id).order_by(Activity.created_at.desc()).all()
 

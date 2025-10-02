@@ -45,7 +45,8 @@ async def create_submission(
 @router.get("/{activity_id}", response_model=List[SubmissionResponse])
 async def get_submit_by_activity(
     activity_id: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
 ):
     submissions = db.query(Submission).filter(Submission.activity_id == activity_id).order_by(Submission.created_at.desc()).all()
 

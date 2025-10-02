@@ -19,6 +19,34 @@ def list_users(
 ):
     return db.query(User).all()
 
+# self-service routes for the current user (must come before {user_id} routes)
+@router.get("/user/self", response_model=UserResponse)
+def read_self(current_user: User = Depends(get_current_user)):
+    return current_user
+
+@router.put("/user/self", response_model=UserResponse)
+def self_update(
+    user_update: UserSelfUpdate, 
+    db: Session = Depends(get_db), 
+    current_user: User = Depends(get_current_user)
+):
+    # Fetch the current user
+    user = db.query(User).filter(User.id == current_user.id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Update user fields
+    if user_update.email:
+        user.email = user_update.email
+    if user_update.password:
+        user.password = bcrypt.hashpw(user_update.password.encode(), bcrypt.gensalt())
+    if user_update.name:
+        user.name = user_update.name
+
+    db.commit()
+    db.refresh(user)
+    return user
+
 # get user by id
 @router.get("/user/{user_id}", response_model=UserResponse)
 def get_user(
@@ -71,32 +99,3 @@ def delete_user(
     db.delete(user)
     db.commit()
     return {"detail": "User deleted successfully"}
-
-
-# self-service route for the current user
-@router.get("/user/self", response_model=UserResponse)
-def read_self(current_user: User = Depends(get_current_user)):
-    return current_user
-
-@router.put("/user/self", response_model=UserResponse)
-def self_update(
-    user_update: UserSelfUpdate, 
-    db: Session = Depends(get_db), 
-    current_user: User = Depends(get_current_user)
-):
-    # Fetch the current user
-    user = db.query(User).filter(User.id == current_user.id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    # Update user fields
-    if user_update.email:
-        user.email = user_update.email
-    if user_update.password:
-        user.password = bcrypt.hashpw(user_update.password.encode(), bcrypt.gensalt())
-    if user_update.name:
-        user.name = user_update.name
-
-    db.commit()
-    db.refresh(user)
-    return user

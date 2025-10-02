@@ -5,7 +5,7 @@ import jwt
 from dotenv import load_dotenv
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
-from jwt import PyJWTError
+from jwt import InvalidTokenError
 from sqlalchemy.orm import Session
 
 from database import get_db
@@ -38,7 +38,7 @@ def get_current_user(
             raise HTTPException(status_code=404, detail="User not found")
 
         return user
-    except PyJWTError:
+    except InvalidTokenError:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
 
 
