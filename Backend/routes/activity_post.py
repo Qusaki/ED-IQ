@@ -17,6 +17,7 @@ async def create_activity(
     title: str = Form(...),
     content: str = Form(None),
     file: UploadFile = File(None),
+    max_score: int = Form(100),
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user) # teacher must be logged in
 ):
@@ -34,6 +35,7 @@ async def create_activity(
         title=title,
         content=content,
         file_url=file_url,
+        max_score=max_score,
         teacher_id=current_user.id,
         subject_id=subject_id
     )
@@ -62,6 +64,7 @@ async def update_activity(
     activity_id: str,
     title: str = Form(None),
     content: str = Form(None),
+    max_score: int = Form(100),
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user)
 ):
@@ -77,6 +80,8 @@ async def update_activity(
         activity.title = title
     if content:
         activity.content = content
+    if max_score:
+        activity.max_score = max_score
 
     db.commit()
     db.refresh(activity)

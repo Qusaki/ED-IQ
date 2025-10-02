@@ -1,4 +1,4 @@
-from sqlalchemy import Column, VARCHAR, ForeignKey, Text, DateTime, func
+from sqlalchemy import Column, VARCHAR, ForeignKey, Text, DateTime, func, Integer
 from models.base import Base
 
 class Activity(Base):
@@ -12,3 +12,4 @@ class Activity(Base):
     subject_id = Column(Text, ForeignKey('subject.id'), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+    max_score = Column(Integer, nullable=False, default=100) 
