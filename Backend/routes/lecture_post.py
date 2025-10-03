@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy.orm import Session
 from database import get_db
 from models.lecture import Lecture
+from models.subject import Subject, SubjectEnrollment
 from schemas.lecture import LectureResponse
 # from utils.gcs import upload_file_to_gcs
 from dependencies import get_current_user
@@ -20,9 +21,12 @@ async def create_lecture(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user) # teacher must be logged in
 ):
-    # Ensure the user is a teacher
-    if current_user.role != 'teacher':
-        raise HTTPException(status_code=403, detail="Only teachers can create lectures")
+    # Ensure the user is the owner of the subject
+    subject = db.query(Subject).filter(Subject.id == subject_id).first()
+    if not subject:
+        raise HTTPException(status_code=404, detail="Subject not found")
+    if subject.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Only the subject owner can create Lectures")
 
     file_url = None
    # if file:
@@ -50,6 +54,15 @@ async def get_lectures_by_subject(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user)
 ):
+    subject = db.query(Subject).filter(Subject.id == subject_id).first()
+    if not subject:
+        raise HTTPException(status_code=404, detail="Subject not found")
+    
+    # Ensure the user is either the subject owner or an approved student
+    enrolled = db.query(SubjectEnrollment).filter(SubjectEnrollment.subject_id == subject_id, SubjectEnrollment.student_id == current_user.id, SubjectEnrollment.status == "approved").first()
+    if (subject.owner_id != current_user.id) or (not enrolled):
+        raise HTTPException(status_code=403, detail="You do not have access to this subject's Lectures")
+
     lectures = db.query(Lecture).filter(Lecture.subject_id == subject_id).order_by(Lecture.created_at.desc()).all()
 
     if not lectures:

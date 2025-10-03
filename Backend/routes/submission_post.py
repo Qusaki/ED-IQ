@@ -148,3 +148,21 @@ async def score_submission(
     db.refresh(submission)
 
     return submission
+
+@router.get("/self/{activity_id}", response_model=SubmissionResponse)
+async def get_own_submission(
+    activity_id: str,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    #ensure the student is the owner of the submission
+    submission = db.query(Submission).filter(Submission.activity_id == activity_id, Submission.student_id == current_user.id).first()
+    
+    if not submission:
+        raise HTTPException(status_code=404, detail="You have not submitted to this activity")
+    
+    #ensure the student is the owner of the submission
+    if current_user.id != submission.student_id:
+        raise HTTPException(status_code=403, detail="You can only view your own submission")
+
+    return submission

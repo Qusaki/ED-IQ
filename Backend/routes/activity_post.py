@@ -3,6 +3,7 @@ from uuid import uuid4
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy.orm import Session
 from database import get_db
+from models.subject import Subject, SubjectEnrollment
 from models.activity import Activity
 from schemas.activity import ActivityResponse
 # from utils.gcs import upload_file_to_gcs
@@ -21,10 +22,13 @@ async def create_activity(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user) # teacher must be logged in
 ):
-    # Ensure the user is a teacher
-    if current_user.role != 'teacher':
-        raise HTTPException(status_code=403, detail="Only teachers can create activities")
+    subject = db.query(Subject).filter(Subject.id == subject_id).first()
+    if not subject:
+        raise HTTPException(status_code=404, detail="Subject not found")
+    if subject.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Only the subject owner can create Activity")    
 
+    
     file_url = None
    # if file:
    #     destination_name = f"lectures/{current_user.id}/{file.filename}"
@@ -52,6 +56,15 @@ async def get_activity_by_subject(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user)
 ):
+    subject = db.query(Subject).filter(Subject.id == subject_id).first()
+    if not subject:
+        raise HTTPException(status_code=404, detail="Subject not found")
+    
+    # Ensure the user is either the subject owner or an approved student
+    enrolled = db.query(SubjectEnrollment).filter(SubjectEnrollment.subject_id == subject_id, SubjectEnrollment.student_id == current_user.id, SubjectEnrollment.status == "approved").first()
+    if (subject.owner_id != current_user.id) and (not enrolled):
+        raise HTTPException(status_code=403, detail="You do not have access to this subject's Activities")
+    
     activities = db.query(Activity).filter(Activity.subject_id == subject_id).order_by(Activity.created_at.desc()).all()
 
     if not activities:
