@@ -1,6 +1,5 @@
 from fastapi import FastAPI
 
-from models.base import Base
 from routes import activity_post, auth, lecture_post, subject, user_management, submission_post
 
 app = FastAPI(

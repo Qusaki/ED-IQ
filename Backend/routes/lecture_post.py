@@ -75,6 +75,7 @@ async def update_lecture(
     lecture_id: str,
     title: str = Form(None),
     content: str = Form(None),
+    file: UploadFile = File(None),
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user)
 ):
@@ -90,6 +91,10 @@ async def update_lecture(
         lecture.title = title
     if content:
         lecture.content = content
+
+    # if file:
+    #     destination_name = f"lectures/{current_user.id}/{file.filename}"
+    #     file_url = upload_file_to_gcs(file, destination_name)
 
     db.commit()
     db.refresh(lecture)

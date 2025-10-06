@@ -78,6 +78,7 @@ async def update_activity(
     title: str = Form(None),
     content: str = Form(None),
     max_score: int = Form(None),
+    file: UploadFile = File(None),
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user)
 ):
@@ -95,6 +96,10 @@ async def update_activity(
         activity.content = content
     if max_score is not None:
         activity.max_score = max_score
+
+    # if file:
+    #     destination_name = f"activities/{current_user.id}/{file.filename}"
+    #     file_url = upload_file_to_gcs(file, destination_name)
 
     db.commit()
     db.refresh(activity)

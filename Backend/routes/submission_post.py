@@ -91,7 +91,11 @@ async def update_submission(
         raise HTTPException(status_code=403, detail="You can only update your own activity")
     
     if content:
-        Submission.content = content
+        submission.content = content
+    
+    # if file:
+    #     destination_name = f"submissions/{current_user.id}/{file.filename}"
+    #     file_url = upload_file_to_gcs(file, destination_name)
 
     db.commit()
     db.refresh(submission)
@@ -110,7 +114,7 @@ def delete_submission(
     if not submission:
         raise HTTPException(status_code=404, detail="activity not found")
     
-    if Submission.student_id != current_user.id:
+    if submission.student_id != current_user.id:
         raise HTTPException(status_code=403, detail="You can only delete your own activity")
 
     db.delete(submission)
