@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 
-from routes import activity_post, auth, lecture_post, subject, user_management, submission_post
+from routes import auth, subject, user_management, lecture_post, activity_post, submission_post
 
 app = FastAPI(
     title="ED-IQ Backend API",

@@ -6,7 +6,10 @@ from database import get_db
 from models.subject import Subject, SubjectEnrollment
 from models.activity import Activity
 from schemas.activity import ActivityResponse
-# from utils.gcs import upload_file_to_gcs
+#from utils.gcs import upload_file_to_gcs, extract_filename_from_url, delete_file_from_gcs
+
+from utils.supabase import upload_file_to_supabase, extract_filename_from_url, delete_file_from_supabase
+
 from dependencies import get_current_user
 
 router = APIRouter()
@@ -26,13 +29,12 @@ async def create_activity(
     if not subject:
         raise HTTPException(status_code=404, detail="Subject not found")
     if subject.owner_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Only the subject owner can create Activity")    
+        raise HTTPException(status_code=403, detail="Only the subject owner can create Activity")   
 
-    
     file_url = None
-   # if file:
-   #     destination_name = f"lectures/{current_user.id}/{file.filename}"
-   #     file_url = upload_file_to_gcs(file, destination_name)
+    if file:
+        destination_name = f"activities/{subject_id}/{file.filename}"
+        file_url = upload_file_to_supabase(file, destination_name)
 
     activity = Activity(
         id=str(uuid4()),
@@ -97,9 +99,18 @@ async def update_activity(
     if max_score is not None:
         activity.max_score = max_score
 
-    # if file:
-    #     destination_name = f"activities/{current_user.id}/{file.filename}"
-    #     file_url = upload_file_to_gcs(file, destination_name)
+    if file:
+        # delete old file
+        if activity.file_url:
+            filename = extract_filename_from_url(activity.file_url)
+            delete_file_from_supabase(filename)
+
+        # upload new file
+        destination_name = f"activities/{activity.subject_id}/{file.filename}"
+        file_url = upload_file_to_supabase(file, destination_name)
+
+        # upload new file url in db
+        activity.file_url = file_url
 
     db.commit()
     db.refresh(activity)
@@ -120,6 +131,10 @@ def delete_activity(
     
     if activity.teacher_id != current_user.id:
         raise HTTPException(status_code=403, detail="You can only delete your own activity")
+
+    if activity.file_url:
+        filename = extract_filename_from_url(activity.file_url) 
+        delete_file_from_supabase(filename)
 
     db.delete(activity)
     db.commit()

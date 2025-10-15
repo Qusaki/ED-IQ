@@ -7,8 +7,10 @@ from models.subject import Subject, SubjectEnrollment
 from models.activity import Activity
 from models.submission import Submission
 from schemas.submission import SubmissionResponse
-# from utils.gcs import upload_file_to_gcs
+#from utils.gcs import upload_file_to_gcs, extract_filename_from_url, delete_file_from_gcs
 from dependencies import get_current_user
+
+from utils.supabase import upload_file_to_supabase, extract_filename_from_url, delete_file_from_supabase
 
 router = APIRouter()
 
@@ -28,15 +30,15 @@ async def create_submission(
     if not activity or not subject:
         raise HTTPException(status_code=404, detail="Activity or Subject not found")
     
-     #check if the student is enrolled in the subject
+    # check if the student is enrolled in the subject
     enrolled = db.query(SubjectEnrollment).filter(SubjectEnrollment.subject_id == subject.id, SubjectEnrollment.student_id == current_user.id, SubjectEnrollment.status == 'approved').first()
     if not enrolled:
         raise HTTPException(status_code=403, detail="You are not enrolled in this subject")
 
     file_url = None
-   # if file:
-   #     destination_name = f"lectures/{current_user.id}/{file.filename}"
-   #     file_url = upload_file_to_gcs(file, destination_name)
+    if file:
+            destination_name = f"submissions/{activity_id}/{file.filename}"
+            file_url = upload_file_to_supabase(file, destination_name)
 
     submit = Submission(
         id=str(uuid4()),
@@ -93,9 +95,18 @@ async def update_submission(
     if content:
         submission.content = content
     
-    # if file:
-    #     destination_name = f"submissions/{current_user.id}/{file.filename}"
-    #     file_url = upload_file_to_gcs(file, destination_name)
+    if file:
+        # delete old file
+        if submission.file_url:
+            filename = extract_filename_from_url(submission.file_url)
+            delete_file_from_supabase(filename)
+
+        # upload new file
+        destination_name = f"submissions/{submission.activity_id}/{file.filename}"
+        file_url = upload_file_to_supabase(file, destination_name)
+
+        # upload new url in db
+        submission.file_url = file_url
 
     db.commit()
     db.refresh(submission)
@@ -117,10 +128,17 @@ def delete_submission(
     if submission.student_id != current_user.id:
         raise HTTPException(status_code=403, detail="You can only delete your own activity")
 
+    # delete file from gcs
+    if submission.file_url:
+        filename = extract_filename_from_url(submission.file_url)
+        delete_file_from_supabase(filename)
+
     db.delete(submission)
     db.commit()
 
     return {"message": "student activity deleted successfully"}
+
+
 
 # score submission
 @router.put("/score/{submission_id}", response_model=SubmissionResponse)
