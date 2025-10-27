@@ -76,7 +76,8 @@ async def get_lectures_by_subject(
         )
         .first()
     )
-    if (subject.owner_id != current_user.id) or (not enrolled):
+
+    if (subject.owner_id != current_user.id) and (not enrolled):
         raise HTTPException(
             status_code=403, detail="You do not have access to this subject's Lectures"
         )
