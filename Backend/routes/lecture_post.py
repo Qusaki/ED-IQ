@@ -93,6 +93,40 @@ async def get_lectures_by_subject(
         raise HTTPException(status_code=404, detail="no lectures found in this subject")
     return lectures
 
+# for open specific post
+@router.get('/{subject_id}/{lecture_id}', response_model=LectureResponse)
+async def open_lecture(
+    subject_id: str,
+    lecture_id: str,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    lecture = db.query(Lecture).filter(Lecture.id == lecture_id).first()
+    if not lecture:
+        raise HTTPException(status_code=404, detail="Lecture not found")
+
+    subject = db.query(Subject).filter(Subject.id == subject_id).first()
+    if not subject:
+        raise HTTPException(status_code=404, detail="Subject not found")
+
+    # Ensure the user is either the subject owner or an approved student
+    enrolled = (
+        db.query(SubjectEnrollment)
+        .filter(
+            SubjectEnrollment.subject_id == subject_id,
+            SubjectEnrollment.student_id == current_user.id,
+            SubjectEnrollment.status == "approved",
+        )
+        .first()
+    )
+
+    if (subject.owner_id != current_user.id) and (not enrolled):
+        raise HTTPException(
+            status_code=403, detail="You do not have access to this subject's Lectures"
+        )
+
+    return lecture
+
 
 # edit post in lecture
 @router.put("/{lecture_id}", response_model=LectureResponse)
