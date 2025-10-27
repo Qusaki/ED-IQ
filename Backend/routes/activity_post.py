@@ -73,6 +73,42 @@ async def get_activity_by_subject(
         raise HTTPException(status_code=404, detail="no activities found in this subject")
     return activities
 
+
+# for open specific activity
+@router.get('/{subject_id}/{activity_id}', response_model=ActivityResponse)
+async def open_activity(
+    subject_id: str,
+    activity_id: str,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    activity = db.query(Activity).filter(Activity.id == activity_id).first()
+    if not activity:
+        raise HTTPException(status_code=404, detail="Activity not found")
+
+    subject = db.query(Subject).filter(Subject.id == subject_id).first()
+    if not subject:
+        raise HTTPException(status_code=404, detail="Subject not found")
+
+    # Ensure the user is either the subject owner or an approved student
+    enrolled = (
+        db.query(SubjectEnrollment)
+        .filter(
+            SubjectEnrollment.subject_id == subject_id,
+            SubjectEnrollment.student_id == current_user.id,
+            SubjectEnrollment.status == "approved",
+        )
+        .first()
+    )
+
+    if (subject.owner_id != current_user.id) and (not enrolled):
+        raise HTTPException(
+            status_code=403, detail="You do not have access to this subject's Activity"
+        )
+
+    return activity
+
+
 # edit post in activity
 @router.put("/{activity_id}", response_model=ActivityResponse)
 async def update_activity(
