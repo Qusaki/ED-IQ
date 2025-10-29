@@ -75,6 +75,30 @@ async def get_submit_by_activity(
         raise HTTPException(status_code=404, detail="no submissions found in this activity")
     return submissions
 
+
+# for teacher to view a specific submission
+@router.get('/view/{submission_id}', response_model=SubmissionResponse)
+async def open_submission(
+    submission_id: str,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    # ensure the owner of the activity is the one trying to view the submsission
+    activity = db.query(Activity).filter(Activity.id == Submission.activity_id).first()
+    if not activity:
+        raise HTTPException(status_code=404, detail='activity not found')
+    
+    if activity.teacher_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Only the owner of the activity can view submissions")
+    
+    submission = db.query(Submission).filter(Submission.id == submission_id).first()
+    if not submission:
+        raise HTTPException(status_code=404, detail="submission not found")
+    
+    return submission
+
+
+
 # edit post in submited activity
 @router.put("/{submission_id}", response_model=SubmissionResponse)
 async def update_submission(
