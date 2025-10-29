@@ -1,0 +1,357 @@
+// styles.js ito
+import { StyleSheet } from 'react-native';
+
+export const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f8f9fa',
+  },
+  keyboardView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    padding: 20,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
+  },
+  loadingText: {
+    fontSize: 18,
+    color: '#495057',
+    fontWeight: '500',
+  },
+  logoContainer: {
+    alignItems: 'center',
+    marginBottom: 40,
+  },
+  logoImage: {
+    width: 100,
+    height: 100,
+    marginBottom: 10,
+  },
+  brandText: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#2c3e50',
+    textAlign: 'center',
+  },
+  card: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 30,
+    marginHorizontal: 20,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#2c3e50',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#6c757d',
+    textAlign: 'center',
+    marginBottom: 30,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#dee2e6',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 20,
+    fontSize: 16,
+    backgroundColor: '#f8f9fa',
+  },
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#dee2e6',
+    borderRadius: 12,
+    marginBottom: 20,
+    backgroundColor: '#f8f9fa',
+  },
+  passwordInput: {
+    flex: 1,
+    padding: 16,
+    fontSize: 16,
+  },
+  eyeButton: {
+    padding: 12,
+    marginRight: 8,
+    alignItems: 'center',
+  },
+  flashlightContainer: {
+    alignItems: 'center',
+    position: 'relative',
+  },
+  flashlightIcon: {
+    fontSize: 20,
+    opacity: 0.6,
+  },
+  flashlightIconOn: {
+    opacity: 1,
+  },
+  lightBeam: {
+    position: 'absolute',
+    top: -5,
+    alignItems: 'center',
+  },
+  lightRays: {
+    fontSize: 12,
+    color: '#ffd700',
+  },
+  flashlightText: {
+    fontSize: 10,
+    color: '#6c757d',
+    marginTop: 2,
+  },
+  flashlightTextOn: {
+    color: '#ffd700',
+    fontWeight: 'bold',
+  },
+  flashlightOn: {
+    backgroundColor: 'rgba(255, 215, 0, 0.1)',
+    borderRadius: 8,
+  },
+  roleSelector: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#dee2e6',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 20,
+    backgroundColor: '#f8f9fa',
+  },
+  roleSelectorText: {
+    fontSize: 16,
+    color: '#495057',
+  },
+  placeholder: {
+    color: '#999',
+  },
+  dropdownArrow: {
+    fontSize: 12,
+    color: '#6c757d',
+  },
+  forgotPassword: {
+    alignItems: 'flex-end',
+    marginBottom: 30,
+  },
+  forgotPasswordText: {
+    color: '#007bff',
+    fontSize: 14,
+  },
+  authButton: {
+    backgroundColor: '#007bff',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  disabledButton: {
+    backgroundColor: '#adb5bd',
+  },
+  authButtonText: {
+    color: '#ffffff',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  switchContainer: {
+    alignItems: 'center',
+  },
+  switchText: {
+    fontSize: 16,
+    color: '#6c757d',
+  },
+  switchLink: {
+    color: '#007bff',
+    fontWeight: 'bold',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#ffffff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingVertical: 20,
+    maxHeight: '50%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#dee2e6',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#2c3e50',
+  },
+  closeButton: {
+    padding: 8,
+  },
+  closeButtonText: {
+    fontSize: 18,
+    color: '#6c757d',
+  },
+  roleItem: {
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f3f4',
+  },
+  roleItemText: {
+    fontSize: 18,
+    color: '#495057',
+  },
+  // Home Screen Styles
+  homeContainer: {
+    flex: 1,
+    backgroundColor: '#f8f9fa',
+  },
+  homeContent: {
+    flexGrow: 1,
+    padding: 20,
+  },
+  welcomeCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 30,
+    marginTop: 20,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  welcomeTitle: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#2c3e50',
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  welcomeSubtitle: {
+    fontSize: 16,
+    color: '#6c757d',
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  userRole: {
+    fontSize: 14,
+    color: '#007bff',
+    textAlign: 'center',
+    fontWeight: 'bold',
+    marginBottom: 30,
+    textTransform: 'capitalize',
+  },
+  roleSection: {
+    marginBottom: 25,
+    padding: 15,
+    borderRadius: 12,
+    backgroundColor: '#f8f9fa',
+  },
+  roleSectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#2c3e50',
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  roleButton: {
+    borderRadius: 10,
+    padding: 15,
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  adminButton: {
+    backgroundColor: '#dc3545',
+  },
+  teacherButton: {
+    backgroundColor: '#28a745',
+  },
+  studentButton: {
+    backgroundColor: '#007bff',
+  },
+  sharedButton: {
+    backgroundColor: '#6f42c1',
+  },
+  roleButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  logoutButton: {
+    backgroundColor: '#6c757d',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  logoutButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  // Missing styles
+  disabledButton: {
+    opacity: 0.6,
+  },
+  // Flashlight styles
+  flashlightOn: {
+    backgroundColor: '#ffd700',
+  },
+  flashlightIcon: {
+    fontSize: 20,
+  },
+  flashlightIconOn: {
+    color: '#ff8c00',
+  },
+  lightBeam: {
+    position: 'absolute',
+    top: -10,
+    left: -10,
+    right: -10,
+    bottom: -10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  lightRays: {
+    fontSize: 16,
+    color: '#ffd700',
+  },
+  flashlightText: {
+    fontSize: 10,
+    color: '#6c757d',
+    marginTop: 2,
+  },
+  flashlightTextOn: {
+    color: '#ff8c00',
+    fontWeight: 'bold',
+  }
+});
