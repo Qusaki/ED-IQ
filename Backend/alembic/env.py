@@ -10,6 +10,12 @@ load_dotenv()
 
 
 # import all Models
+from models.activity import Activity
+from models.lecture import Lecture
+from models.subject import Subject, SubjectEnrollment
+from models.submission import Submission
+from models.user import User
+from models.grade import Grade
 
 
 # this is the Alembic Config object, which provides
