@@ -34,10 +34,25 @@ def compute_class_standing(
     assignment_total = sum(assignment_max)
     attendance_total = sum(attendance_max)
 
-    lab_percent = (lab_score / lab_total) * 100
-    quiz_percent = (quiz_score / quiz_total) * 100
-    assignment_percent = (assignment_score / assignment_total) * 100
-    attendance_percent = (attendance_score / attendance_total) * 100
+    if lab_total == 0:
+        lab_percent = 0
+    else:
+        lab_percent = (lab_score / lab_total) * 100
+
+    if quiz_total == 0:
+        quiz_percent = 0
+    else:
+        quiz_percent = (quiz_score / quiz_total) * 100
+
+    if assignment_total == 0:
+        assignment_percent = 0
+    else:
+        assignment_percent = (assignment_score / assignment_total) * 100
+
+    if attendance_total == 0:
+        attendance_percent = 0
+    else:
+        attendance_percent = (attendance_score / attendance_total) * 100
 
     final_score = (
         (lab_percent * 0.3)
@@ -58,9 +73,20 @@ def compute_major_exam(
     project = 5%
     """
 
-    major_exam_percent = (major_exam / major_exam_total) * 100
-    lab_exam_percent = (lab_exam / lab_exam_total) * 100
-    project_percent = (project / project_total) * 100
+    if major_exam_total == 0 or major_exam_total is None:
+        major_exam_percent = 0
+    else:
+        major_exam_percent = (major_exam / major_exam_total) * 100
+
+    if lab_exam_total == 0 or lab_exam_total is None:
+        lab_exam_percent = 0
+    else:
+        lab_exam_percent = (lab_exam / lab_exam_total) * 100
+
+    if project_total == 0 or project_total is None:
+        project_percent = 0
+    else:
+        project_percent = (project / project_total) * 100
 
     final_score = (
         (major_exam_percent * 0.2)
@@ -168,7 +194,6 @@ def compute_final_grade(
     if not activities:
         raise HTTPException(status_code=404, detail="no activities found for the given subject")
 
-
     lab_score, quiz_score, assignment_score, attendance_score = [], [], [], []
     lab_max, quiz_max, assignment_max, attendance_max = [], [], [], []
 
@@ -232,9 +257,15 @@ def compute_final_grade(
 def compute_semestral_grade(
     student_id: str, subject_id: str, db: Session = Depends(get_db)
 ):
+    
     midterm = compute_midterm_grade(student_id, subject_id, db)
-    final = compute_final_grade(student_id, subject_id, db)
-
+    try:
+        final = compute_final_grade(student_id, subject_id, db)
+    except HTTPException as e:
+        if e.status_code == 404:
+            return midterm
+        raise
+    
     semestral_grade = (midterm + final) / 2
 
     return semestral_grade

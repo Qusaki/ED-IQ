@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 from uuid import uuid4
 
 from database import get_db
@@ -25,7 +25,7 @@ async def create_lecture(
     subject_id: str,
     title: str = Form(...),
     content: str = Form(None),
-    file: UploadFile = File(None),
+    file: Optional[UploadFile] = File(None),
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),  # teacher must be logged in
 ):
@@ -39,7 +39,7 @@ async def create_lecture(
         )
 
     file_url = None
-    if file:
+    if file and getattr(file, "filename", ""):
         destination_name = f"lectures/{subject_id}/{file.filename}"
         file_url = upload_file_to_supabase(file, destination_name)
 
@@ -138,7 +138,7 @@ async def update_lecture(
     lecture_id: str,
     title: str = Form(None),
     content: str = Form(None),
-    file: UploadFile = File(None),
+    file: Optional[UploadFile] = File(None),
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
@@ -157,7 +157,7 @@ async def update_lecture(
     if content:
         lecture.content = content
 
-    if file:
+    if file and getattr(file, "filename", ""):
         # delete old file
         if lecture.file_url:
             filename = extract_filename_from_url(lecture.file_url)

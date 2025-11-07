@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 from uuid import uuid4
 
 from database import get_db
@@ -25,7 +25,7 @@ router = APIRouter()
 async def create_submission(
     activity_id: str,
     content: str = Form(None),
-    file: UploadFile = File(None),
+    file: Optional[UploadFile] = File(None),
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),  # student must be logged in
 ):
@@ -52,7 +52,7 @@ async def create_submission(
         )
 
     file_url = None
-    if file:
+    if file and getattr(file, "filename", ""):
         destination_name = f"submissions/{activity_id}/{file.filename}"
         file_url = upload_file_to_supabase(file, destination_name)
 
@@ -132,7 +132,7 @@ async def open_submission(
 async def update_submission(
     submission_id: str,
     content: str = Form(None),
-    file: UploadFile = File(None),
+    file: Optional[UploadFile] = File(None),
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
@@ -149,7 +149,7 @@ async def update_submission(
     if content:
         submission.content = content
 
-    if file:
+    if file and getattr(file, "filename", ""):
         # delete old file
         if submission.file_url:
             filename = extract_filename_from_url(submission.file_url)

@@ -16,8 +16,8 @@ class Activity(Base):
         Text, ForeignKey("subject.id", ondelete="CASCADE"), nullable=False
     )
     category = Column(
-        VARCHAR(50), nullable=False, default="activity"
-    )  # activity, quiz, exam
+        VARCHAR(50), nullable=False, default="quiz"
+    )  # laboratory, quiz, assignment, attendance, major exam, lab exam, project
     term = Column(VARCHAR(50), nullable=False, default="midterm")  # midterm, final
     created_at = Column(
         DateTime(timezone=True), server_default=func.now(), nullable=False

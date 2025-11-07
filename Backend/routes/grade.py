@@ -14,7 +14,7 @@ router = APIRouter()
 
 
 # auto compute grade then save to database
-@router.get("/{student_id}/{subject_id}", response_model=GradeResponse)
+@router.get("/{student_id}/{subject_id}", response_model=dict)
 def auto_compute_grade(
     student_id: str,
     subject_id: str,
@@ -62,7 +62,12 @@ def auto_compute_grade(
         db.commit()
         db.refresh(existing)
 
-        return existing
+        return {
+            "id": existing.id,
+            "student_id": existing.student_id,
+            "subject_id": existing.subject_id,
+            "score": existing.score,
+        }
 
     grade = Grade(
         id=str(uuid4()),
@@ -75,4 +80,9 @@ def auto_compute_grade(
     db.commit()
     db.refresh(grade)
 
-    return grade
+    return {
+        "id": grade.id,
+        "student_id": grade.student_id,
+        "subject_id": grade.subject_id,
+        "score": grade.score,
+    }

@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 from uuid import uuid4
 
 from database import get_db
@@ -25,10 +25,10 @@ async def create_activity(
     subject_id: str,
     title: str = Form(...),
     content: str = Form(None),
-    category: str = Form(None),
-    term: str = Form(None),
-    file: UploadFile = File(None),
-    max_score: int = Form(None),
+    category: str = Form('quiz'),
+    term: str = Form('midterm'),
+    file: Optional[UploadFile] = File(None),
+    max_score: int = Form(100),
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),  # teacher must be logged in
 ):
@@ -41,7 +41,7 @@ async def create_activity(
         )
 
     file_url = None
-    if file:
+    if file and getattr(file, "filename", ""):
         destination_name = f"activities/{subject_id}/{file.filename}"
         file_url = upload_file_to_supabase(file, destination_name)
 
@@ -147,8 +147,8 @@ async def update_activity(
     content: str = Form(None),
     category: str = Form(None),
     term: str = Form(None),
-    max_score: int = Form(None),
-    file: UploadFile = File(None),
+    max_score: str = Form(None),
+    file: Optional[UploadFile] = File(None),
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
@@ -166,14 +166,14 @@ async def update_activity(
         activity.title = title
     if content:
         activity.content = content
-    if max_score is not None:
-        activity.max_score = max_score
+    if max_score:
+        activity.max_score = int(max_score)
     if category:
         activity.category = category
     if term:
         activity.term = term
 
-    if file:
+    if file and getattr(file, "filename", ""):
         # delete old file
         if activity.file_url:
             filename = extract_filename_from_url(activity.file_url)
