@@ -1,6 +1,7 @@
-from typing import Optional
-from pydantic import BaseModel
 from enum import Enum
+from typing import Optional
+
+from pydantic import BaseModel
 
 
 class EnrollmentStatus(str, Enum):
@@ -25,7 +26,7 @@ class EnrollmentUpdate(BaseModel):
 class EnrollmentResponse(EnrollmentBase):
     id: str
     status: str
-    
+
     class Config:
         from_attributes = True
 
@@ -43,7 +44,7 @@ class StudentInSubject(BaseModel):
 class SubjectEnrollmentResponse(BaseModel):
     status: str
     subject_id: str
-    
+
     class Config:
         from_attributes = True
 

@@ -1,13 +1,13 @@
-from typing import Optional
-from pydantic import BaseModel
 from datetime import datetime
+from typing import Optional
+
+from pydantic import BaseModel
 
 
 class LectureBase(BaseModel):
     title: str
     content: Optional[str] = None
     file_url: Optional[str] = None
-
 
 
 class LectureUpdate(BaseModel):

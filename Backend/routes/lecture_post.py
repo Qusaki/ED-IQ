@@ -9,9 +9,12 @@ from models.subject import Subject, SubjectEnrollment
 from schemas.lecture import LectureResponse
 from sqlalchemy.orm import Session
 
-#from utils.gcs import upload_file_to_gcs, delete_file_from_gcs, extract_filename_from_url
-
-from utils.supabase import upload_file_to_supabase, delete_file_from_supabase, extract_filename_from_url
+# from utils.gcs import upload_file_to_gcs, delete_file_from_gcs, extract_filename_from_url
+from utils.supabase import (
+    delete_file_from_supabase,
+    extract_filename_from_url,
+    upload_file_to_supabase,
+)
 
 router = APIRouter()
 
@@ -93,8 +96,9 @@ async def get_lectures_by_subject(
         raise HTTPException(status_code=404, detail="no lectures found in this subject")
     return lectures
 
+
 # for open specific post
-@router.get('/{subject_id}/{lecture_id}', response_model=LectureResponse)
+@router.get("/{subject_id}/{lecture_id}", response_model=LectureResponse)
 async def open_lecture(
     subject_id: str,
     lecture_id: str,
@@ -163,7 +167,7 @@ async def update_lecture(
         destination_name = f"lectures/{lecture.subject_id}/{file.filename}"
         file_url = upload_file_to_supabase(file, destination_name)
 
-        #update the url file in db
+        # update the url file in db
         lecture.file_url = file_url
 
     db.commit()

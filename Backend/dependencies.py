@@ -2,14 +2,13 @@ import os
 from typing import Callable
 
 import jwt
+from database import get_db
 from dotenv import load_dotenv
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from jwt import InvalidTokenError
-from sqlalchemy.orm import Session
-
-from database import get_db
 from models.user import User
+from sqlalchemy.orm import Session
 
 # Load environment variables from .env file
 load_dotenv()
@@ -24,8 +23,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
 
 def get_current_user(
-    db: Session = Depends(get_db),
-    token: str = Depends(oauth2_scheme)
+    db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)
 ) -> User:
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
@@ -46,8 +44,8 @@ def required_role(*roles: str) -> Callable[[User], User]:
     def role_checker(user: User = Depends(get_current_user)) -> User:
         if user.role not in roles:
             raise HTTPException(
-                status_code=403,
-                detail="Operation not permitted for this role"
+                status_code=403, detail="Operation not permitted for this role"
             )
         return user
+
     return role_checker

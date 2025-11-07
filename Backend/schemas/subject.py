@@ -1,6 +1,7 @@
-from typing import Optional, List
-from pydantic import BaseModel
 from enum import Enum
+from typing import List, Optional
+
+from pydantic import BaseModel
 
 
 class EnrollmentStatus(str, Enum):
@@ -25,7 +26,7 @@ class SubjectResponse(SubjectBase):
     id: str
     code: str
     owner_id: str
-    
+
     class Config:
         from_attributes = True
 
@@ -39,7 +40,7 @@ class StudentInSubject(BaseModel):
     name: Optional[str] = None
     email: Optional[str] = None
     status: str
-    
+
     class Config:
         from_attributes = True
 
@@ -47,7 +48,7 @@ class StudentInSubject(BaseModel):
 class SubjectEnrollmentResponse(BaseModel):
     status: str
     subject_id: str
-    
+
     class Config:
         from_attributes = True
 

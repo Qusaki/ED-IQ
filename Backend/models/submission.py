@@ -23,4 +23,4 @@ class Submission(Base):
         onupdate=func.now(),
         nullable=False,
     )
-    score = Column(Integer, nullable=True)
+    score = Column(Integer, nullable=False, default=0)

@@ -1,6 +1,7 @@
-from typing import Optional
-from pydantic import BaseModel
 from datetime import datetime
+from typing import Optional
+
+from pydantic import BaseModel
 
 
 class ActivityBase(BaseModel):
@@ -23,7 +24,7 @@ class ActivityResponse(ActivityBase):
     subject_id: str
     created_at: datetime
     updated_at: datetime
-    max_score:int
+    max_score: int
 
     class Config:
         from_attributes = True
