@@ -18,6 +18,7 @@ class Activity(Base):
     category = Column(
         VARCHAR(50), nullable=False, default="activity"
     )  # activity, quiz, exam
+    term = Column(VARCHAR(50), nullable=False, default="midterm")  # midterm, final
     created_at = Column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

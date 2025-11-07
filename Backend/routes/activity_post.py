@@ -25,8 +25,10 @@ async def create_activity(
     subject_id: str,
     title: str = Form(...),
     content: str = Form(None),
+    category: str = Form(None),
+    term: str = Form(None),
     file: UploadFile = File(None),
-    max_score: int = Form(100),
+    max_score: int = Form(None),
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),  # teacher must be logged in
 ):
@@ -48,6 +50,8 @@ async def create_activity(
         title=title,
         content=content,
         file_url=file_url,
+        category=category,
+        term=term,
         max_score=max_score,
         teacher_id=current_user.id,
         subject_id=subject_id,
@@ -141,6 +145,8 @@ async def update_activity(
     activity_id: str,
     title: str = Form(None),
     content: str = Form(None),
+    category: str = Form(None),
+    term: str = Form(None),
     max_score: int = Form(None),
     file: UploadFile = File(None),
     db: Session = Depends(get_db),
@@ -162,6 +168,10 @@ async def update_activity(
         activity.content = content
     if max_score is not None:
         activity.max_score = max_score
+    if category:
+        activity.category = category
+    if term:
+        activity.term = term
 
     if file:
         # delete old file
