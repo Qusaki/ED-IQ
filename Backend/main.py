@@ -6,7 +6,9 @@ from routes import (
     lecture_post,
     subject,
     submission_post,
-    user_management,
+    user_management, 
+    notification,
+    realtime,
 )
 
 app = FastAPI(
@@ -25,3 +27,5 @@ app.include_router(lecture_post.router, prefix="/lectures", tags=["Lectures"])
 app.include_router(activity_post.router, prefix="/activities", tags=["Activities"])
 app.include_router(submission_post.router, prefix="/submissions", tags=["Submissions"])
 app.include_router(grade.router, prefix="/computegrade", tags=["Grades"])
+app.include_router(notification.router, prefix="/notification", tags=["Notification"])
+app.include_router(realtime.router, prefix="/ws", tags=["Websocket"])

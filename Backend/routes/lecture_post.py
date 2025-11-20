@@ -9,6 +9,8 @@ from models.subject import Subject, SubjectEnrollment
 from schemas.lecture import LectureResponse
 from sqlalchemy.orm import Session
 
+from utils.notify import notify_students
+
 # from utils.gcs import upload_file_to_gcs, delete_file_from_gcs, extract_filename_from_url
 from utils.supabase import (
     delete_file_from_supabase,
@@ -54,6 +56,9 @@ async def create_lecture(
     db.add(lecture)
     db.commit()
     db.refresh(lecture)
+
+    # real-time push + save in DB
+    await notify_students(subject_id, "New Lecture", f"{title} has been posted.", db)
 
     return lecture
 
@@ -172,6 +177,9 @@ async def update_lecture(
 
     db.commit()
     db.refresh(lecture)
+
+    # real-time push + save in DB
+    await notify_students(lecture.subject_id, "Lecture Updated", f"{lecture.title} has been updated.", db)
 
     return lecture
 

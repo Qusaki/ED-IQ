@@ -9,6 +9,8 @@ from models.subject import Subject, SubjectEnrollment
 from schemas.activity import ActivityResponse
 from sqlalchemy.orm import Session
 
+from utils.notify import notify_students
+
 # from utils.gcs import upload_file_to_gcs, extract_filename_from_url, delete_file_from_gcs
 from utils.supabase import (
     delete_file_from_supabase,
@@ -59,6 +61,9 @@ async def create_activity(
     db.add(activity)
     db.commit()
     db.refresh(activity)
+
+    # real-time push + save in DB
+    await notify_students(subject_id, "New Activity", f"{title} has been posted.", db)
 
     return activity
 
@@ -189,6 +194,9 @@ async def update_activity(
     db.commit()
     db.refresh(activity)
 
+    # real-time push + save in DB
+    await notify_students(activity.subject_id, "Activity Updated", f"{activity.title} has been updated.", db)
+
     return activity
 
 
@@ -215,5 +223,7 @@ def delete_activity(
 
     db.delete(activity)
     db.commit()
+
+    
 
     return {"message": "activity deleted successfully"}

@@ -16,6 +16,7 @@ from models.subject import Subject, SubjectEnrollment
 from models.submission import Submission
 from models.user import User
 from models.grade import Grade
+from models.notification import Notification
 
 
 # this is the Alembic Config object, which provides
