@@ -24,3 +24,12 @@ class SubmissionResponse(SubmissionBase):
 
     class Config:
         from_attributes = True
+
+
+class SubmissionScore(BaseModel):
+    score: Optional[int] = None
+    student_id: str
+
+
+class SubmissionScoreUpdate(BaseModel):
+    score: Optional[int] = None
