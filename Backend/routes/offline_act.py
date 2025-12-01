@@ -6,14 +6,34 @@ from dependencies import get_current_user
 from fastapi import APIRouter, Depends, HTTPException
 from models.activity import Activity
 from models.submission import Submission
+from models.subject import Subject, SubjectEnrollment
 from schemas.submission import (
     SubmissionResponse,
     SubmissionScore,
     SubmissionScoreUpdate,
 )
+from schemas.user import UserResponse
 from sqlalchemy.orm import Session
 
 router = APIRouter()
+
+# fetch all students in a subject
+@router.get("/students/{subject_id}", response_model=List[UserResponse])
+def fetch_all_students(
+    subject_id: str,
+    db: Session = Depends(get_current_user)
+):
+    subject = db.query(Subject).filter(Subject.id == subject_id).first()
+
+    if not subject:
+        raise HTTPException(status_code=404, detail="Subject not found")
+
+    students = db.query(SubjectEnrollment).filter(SubjectEnrollment.subject_id == subject.id, SubjectEnrollment.status == "approved").all()
+
+    if not students:
+        raise HTTPException(statud_code=404, detail="no student found in this subject")
+
+    return students
 
 
 # this is to score their offline work
