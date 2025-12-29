@@ -53,7 +53,7 @@ async def create_submission(
 
     file_url = None
     if file and getattr(file, "filename", ""):
-        destination_name = f"submissions/{activity_id}/{file.filename}"
+        destination_name = f"submissions_{activity_id}_{file.filename}"
         file_url = upload_file_to_supabase(file, destination_name)
 
     submit = Submission(
@@ -156,7 +156,7 @@ async def update_submission(
             delete_file_from_supabase(filename)
 
         # upload new file
-        destination_name = f"submissions/{submission.activity_id}/{file.filename}"
+        destination_name = f"submissions_{submission.activity_id}_{file.filename}"
         file_url = upload_file_to_supabase(file, destination_name)
 
         # upload new url in db

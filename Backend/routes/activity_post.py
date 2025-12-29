@@ -44,7 +44,7 @@ async def create_activity(
 
     file_url = None
     if file and getattr(file, "filename", ""):
-        destination_name = f"activities/{subject_id}/{file.filename}"
+        destination_name = f"activities_{subject_id}_{file.filename}"
         file_url = upload_file_to_supabase(file, destination_name)
 
     activity = Activity(
@@ -185,7 +185,7 @@ async def update_activity(
             delete_file_from_supabase(filename)
 
         # upload new file
-        destination_name = f"activities/{activity.subject_id}/{file.filename}"
+        destination_name = f"activities_{activity.subject_id}_{file.filename}"
         file_url = upload_file_to_supabase(file, destination_name)
 
         # upload new file url in db
