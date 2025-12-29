@@ -9,7 +9,7 @@ from routes import (
     realtime,
     subject,
     submission_post,
-    user_management,
+    user_management, chatbot
 )
 
 app = FastAPI(
@@ -31,3 +31,4 @@ app.include_router(grade.router, prefix="/computegrade", tags=["Grades"])
 app.include_router(notification.router, prefix="/notification", tags=["Notification"])
 app.include_router(realtime.router, prefix="/ws", tags=["Websocket"])
 app.include_router(offline_act.router, prefix="/offline", tags=["Offline Score"])
+app.include_router(chatbot.router, prefix="/chat", tags=["Chatbot"])
