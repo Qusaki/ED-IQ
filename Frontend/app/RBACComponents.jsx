@@ -218,3 +218,5 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
 });
+
+export default RoleBasedComponent;

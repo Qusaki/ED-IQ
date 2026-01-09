@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, Modal, TextInput, StyleSheet, Pressable, Alert, Image, TouchableOpacity } from 'react-native';
+import { View, Text, FlatList, Modal, TextInput, StyleSheet, Pressable, Alert, Image, TouchableOpacity, ImageBackground } from 'react-native';
 import FABButton from '../../components/FABButton';
 import CustomTabBar from '../../components/CustomTabBar';
 import { useRBAC } from '../RBACComponents';
 import { subjectService } from '../subjectService';
 import { RBACManager, ROLES } from '../rbacManager';
 import { useRouter } from 'expo-router';
+import ChatbotModal from '../ChatbotModal';
+
+const campusBackground = require('../../assets/background/prmsu-logo.png');
 
 export default function TeacherSubjects() {
   const { isTeacher } = useRBAC();
@@ -14,6 +17,7 @@ export default function TeacherSubjects() {
   const [creating, setCreating] = useState(false);
   const [name, setName] = useState('');
   const [createdCode, setCreatedCode] = useState(null);
+  const [chatbotVisible, setChatbotVisible] = useState(false);
 
   useEffect(() => {
     load();
@@ -65,10 +69,17 @@ export default function TeacherSubjects() {
   );
 
   return (
+    <ImageBackground source={campusBackground} style={styles.backgroundImage} resizeMode="contain">
+      <View style={styles.overlay} />
     <View style={styles.container}>
       <View style={styles.headerRow}>
         <Text style={styles.headerBrand}>ED-IQ</Text>
-        <Image source={require('../../assets/img/ED-IQ_LOGO.png')} style={styles.headerMascot} resizeMode="contain" />
+        <TouchableOpacity
+          onPress={() => setChatbotVisible(true)}
+          style={styles.logoButton}
+        >
+          <Image source={require('../../assets/img/ED-IQ_LOGO.png')} style={styles.headerMascot} resizeMode="contain" />
+        </TouchableOpacity>
       </View>
       <FlatList
         data={subjects}
@@ -116,15 +127,23 @@ export default function TeacherSubjects() {
           </View>
         </View>
       </Modal>
+      <ChatbotModal visible={chatbotVisible} onClose={() => setChatbotVisible(false)} />
       <CustomTabBar />
     </View>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#ffffff' },
+  backgroundImage: { flex: 1 },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+  },
+  container: { flex: 1, backgroundColor: 'rgba(255,255,255,0.9)' },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingTop: 42, paddingBottom: 8, marginBottom: 16 },
   headerBrand: { fontSize: 24, fontWeight: '900', color: '#28a745', letterSpacing: 1 },
+  logoButton: { padding: 8 },
   headerMascot: { width: 56, height: 56 },
 
   subjectWrapper: { backgroundColor: '#e8f5e9', borderRadius: 10, padding: 10, marginBottom: 12, borderWidth: 1, borderColor: '#cde9ce' },

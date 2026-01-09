@@ -42,7 +42,7 @@ async def create_lecture(
 
     file_url = None
     if file and getattr(file, "filename", ""):
-        destination_name = f"lectures/{subject_id}/{file.filename}"
+        destination_name = f"lectures_{subject_id}_{file.filename}"
         file_url = upload_file_to_supabase(file, destination_name)
 
     lecture = Lecture(
@@ -169,7 +169,7 @@ async def update_lecture(
             delete_file_from_supabase(filename)
 
         # upload new file
-        destination_name = f"lectures/{lecture.subject_id}/{file.filename}"
+        destination_name = f"lectures_{lecture.subject_id}_{file.filename}"
         file_url = upload_file_to_supabase(file, destination_name)
 
         # update the url file in db

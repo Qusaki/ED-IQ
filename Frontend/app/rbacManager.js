@@ -1,4 +1,4 @@
-import { TokenManager } from './TokenManager';
+import { TokenManager } from '../components/_TokenManager';
 
 export const ROLES = {
   ADMIN: 'admin',
@@ -216,3 +216,5 @@ export const RBACManager = {
     }
   }
 };
+
+export default RBACManager;

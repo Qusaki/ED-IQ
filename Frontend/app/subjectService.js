@@ -37,3 +37,5 @@ export const subjectService = {
     return res.data; // SubjectEnrollmentResponse
   }
 };
+
+export default subjectService;

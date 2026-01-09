@@ -1,7 +1,7 @@
 // Ito ay sa apiConfig.js
 import axios from 'axios';
 import { Alert } from 'react-native';
-import { TokenManager } from './TokenManager';
+import { TokenManager } from '../components/_TokenManager';
 
 // Backend base URL
 export const API_URL = 'https://ed-iq.onrender.com';
@@ -47,9 +47,12 @@ export const setupAxiosInterceptors = () => {
       return response;
     },
     async (error) => {
-      // Better error logging
+      // Better error logging - skip logging for expected 404 errors
       if (error.response) {
-        console.error('API Response error:', error.response.status, error.response.data);
+        // Only log non-404 errors to reduce console noise for handled errors
+        if (error.response.status !== 404) {
+          console.error('API Response error:', error.response.status, error.response.data);
+        }
       } else if (error.request) {
         console.error('API Request error - No response received');
       } else {

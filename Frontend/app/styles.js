@@ -2,9 +2,21 @@
 import { StyleSheet } from 'react-native';
 
 export const styles = StyleSheet.create({
+  backgroundImage: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+  },
+  backgroundOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.15)',
+  },
   container: {
     flex: 1,
     backgroundColor: '#f8f9fa',
+  },
+  authContainer: {
+    backgroundColor: 'rgba(255,255,255,0.92)',
   },
   keyboardView: {
     flex: 1,
@@ -355,3 +367,5 @@ export const styles = StyleSheet.create({
     fontWeight: 'bold',
   }
 });
+
+export default styles;

@@ -3,14 +3,19 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
 import { View, Text } from 'react-native';
-import { authService } from './authService';
+import * as SplashScreen from 'expo-splash-screen';
+import { authService } from '../components/_authService';
 import AuthScreen from './auth';
 import { setupAxiosInterceptors } from './apiConfig';
 import { useRBAC } from './RBACComponents';
+import SplashAnimation from './SplashAnimation';
+
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export default function RootLayout() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [splashFinished, setSplashFinished] = useState(false);
   const { isTeacher, isStudent } = useRBAC();
 
   useEffect(() => {
@@ -33,173 +38,36 @@ export default function RootLayout() {
     }
   };
 
-  if (loading) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#ffffff' }}>
-        <Text style={{ fontSize: 18, color: '#2c3e50' }}>Loading...</Text>
-      </View>
-    );
+  if (!splashFinished) {
+    return <SplashAnimation onFinish={() => setSplashFinished(true)} />;
   }
 
-  if (!isAuthenticated) {
+  if (loading) {
     return (
-      <AuthScreen 
-        onAuthSuccess={async () => {
-          console.log('Auth success callback triggered');
-          // Force a fresh authentication check
-          await checkAuth();
-        }} 
-      />
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Text>Loading...</Text>
+      </View>
     );
   }
 
   return (
     <>
-      <StatusBar style="auto" />
-      <Stack
-        screenOptions={{
-          headerStyle: {
-            backgroundColor: '#28a745',
-          },
-          headerTintColor: '#ffffff',
-          headerTitleStyle: {
-            fontWeight: 'bold',
-          },
-          animation: 'none',
-          animationTypeForReplace: 'push',
-        }}
-      >
-        <Stack.Screen
-          name="index"
-          options={{
-            title: 'Home',
+      <StatusBar barStyle="dark-content" />
+      {!isAuthenticated ? (
+        <AuthScreen onAuthSuccess={() => setIsAuthenticated(true)} />
+      ) : (
+        <Stack
+          screenOptions={{
             headerShown: false,
-            animation: 'none',
           }}
-        />
-        <Stack.Screen
-          name="notifications"
-          options={{
-            title: 'Notifications',
-            headerShown: false,
-            animation: 'none',
-          }}
-        />
-        <Stack.Screen
-          name="profile"
-          options={{
-            title: 'Profile',
-            headerShown: false,
-            animation: 'none',
-          }}
-        />
-        <Stack.Screen 
-          name="auth" 
-          options={{ 
-            href: null
-          }} 
-        />
-        <Stack.Screen 
-          name="apiConfig" 
-          options={{ 
-            href: null
-          }} 
-        />
-        <Stack.Screen 
-          name="RBACComponents" 
-          options={{ 
-            href: null
-          }} 
-        />
-        <Stack.Screen 
-          name="rbacManager" 
-          options={{ 
-            href: null
-          }} 
-        />
-        <Stack.Screen 
-          name="styles" 
-          options={{ 
-            href: null
-          }} 
-        />
-        <Stack.Screen 
-          name="subjectService" 
-          options={{ 
-            href: null
-          }} 
-        />
-        <Stack.Screen 
-          name="contentService" 
-          options={{ 
-            href: null
-          }} 
-        />
-        <Stack.Screen 
-          name="protectedRequestService" 
-          options={{ 
-            href: null
-          }} 
-        />
-        <Stack.Screen 
-          name="TokenManager" 
-          options={{ 
-            href: null
-          }} 
-        />
-        <Stack.Screen
-          name="screens/SubjectDetail"
-          options={{
-            title: 'Subject Detail',
-            headerShown: false,
-            animation: 'none',
-          }}
-        />
-        <Stack.Screen
-          name="screens/TeacherSubjects"
-          options={{
-            title: 'Teacher Subjects',
-            headerShown: false,
-            animation: 'none',
-          }}
-        />
-        <Stack.Screen
-          name="screens/StudentSubjects"
-          options={{
-            title: 'Student Subjects',
-            headerShown: false,
-            animation: 'none',
-          }}
-        />
-        <Stack.Screen 
-          name="_ui" 
-          options={{ 
-            href: null
-          }} 
-        />
-        <Stack.Screen 
-          name="components" 
-          options={{ 
-            href: null
-          }} 
-        />
-        <Stack.Screen 
-          name="assets" 
-          options={{ 
-            href: null
-          }} 
-        />
-        <Stack.Screen 
-          name="authService" 
-          options={{ 
-            href: null
-          }} 
-        />
-      </Stack>
+        >
+          <Stack.Screen name="index" />
+          <Stack.Screen name="profile" />
+          <Stack.Screen name="notifications" />
+          <Stack.Screen name="screens" />
+          <Stack.Screen name="_ui" />
+        </Stack>
+      )}
     </>
   );
 }
-
-
-// Intentionally simple icons to match provided design
-

@@ -303,7 +303,7 @@ def get_file_metadata(file_name: str) -> dict:
         file_name: The name/path of the file in Supabase
 
     Returns:
-        dict: File metadata including size, content_type, created time
+        dict: File metadata including size, content_type, created time, and extracted filename
 
     Raises:
         HTTPException: If file doesn't exist or error occurs
@@ -327,12 +327,16 @@ def get_file_metadata(file_name: str) -> dict:
 
         # Get base filename
         base_name = os.path.basename(file_name)
+        
+        # Extract the last part of the filename after the last underscore
+        original_name = base_name.split('_')[-1] if '_' in base_name else base_name
 
         # Find the file in the list
         for item in response:
             if item.get("name") == base_name:
                 return {
                     "name": item.get("name"),
+                    "original_name": original_name,  # Add the extracted filename
                     "id": item.get("id"),
                     "size": item.get("metadata", {}).get("size"),
                     "content_type": item.get("metadata", {}).get("mimetype"),

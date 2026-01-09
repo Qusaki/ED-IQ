@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Image } from 'react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useRBAC } from './RBACComponents';
-import { authService } from './authService';
+import { authService } from '../components/_authService';
 import Logo from '../assets/img/ED-IQ_LOGO.png';
 import TeacherSubjects from './_ui/TeacherSubjects';
 import StudentSubjects from './_ui/StudentSubjects';
+import ChatbotModal from './ChatbotModal';
 
 export default function HomeScreen() {
   const router = useRouter();
   const { userRole, isStudent, isTeacher, isAdmin } = useRBAC();
   const [user, setUser] = useState(null);
+  const [chatbotVisible, setChatbotVisible] = useState(false);
 
   useEffect(() => {
     loadUserData();
@@ -41,25 +43,39 @@ export default function HomeScreen() {
 
   // Render role-specific subject screens to match provided GUI
   if (isTeacher) {
-    return <TeacherSubjects />;
+    return (
+      <>
+        <TeacherSubjects />
+        <ChatbotModal visible={chatbotVisible} onClose={() => setChatbotVisible(false)} />
+      </>
+    );
   }
 
   if (isTeacher === false && isStudent) {
-    return <StudentSubjects />;
+    return (
+      <>
+        <StudentSubjects />
+        <ChatbotModal visible={chatbotVisible} onClose={() => setChatbotVisible(false)} />
+      </>
+    );
   }
 
   // Fallback: original welcome view (e.g., for admin)
   return (
     <View style={styles.container}>
       <View style={styles.content}>
-        <View style={styles.logoContainer}>
+        <TouchableOpacity
+          style={styles.logoContainer}
+          onPress={() => setChatbotVisible(true)}
+          activeOpacity={0.7}
+        >
           <Image 
             source={Logo}
             style={styles.logoImage}
             resizeMode="contain"
           />
           <Text style={styles.brandText}>ED-IQ</Text>
-        </View>
+        </TouchableOpacity>
         <Text style={[styles.title, { color: getRoleColor() }]}>
           {getRoleDisplay()}
         </Text>
@@ -67,6 +83,7 @@ export default function HomeScreen() {
           Welcome, {user?.name || 'User'}!
         </Text>
       </View>
+      <ChatbotModal visible={chatbotVisible} onClose={() => setChatbotVisible(false)} />
     </View>
   );
 }
@@ -86,6 +103,8 @@ const styles = StyleSheet.create({
   logoContainer: {
     alignItems: 'center',
     marginBottom: 30,
+    padding: 10,
+    borderRadius: 15,
   },
   logoImage: {
     width: 80,

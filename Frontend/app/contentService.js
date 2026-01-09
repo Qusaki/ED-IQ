@@ -80,17 +80,46 @@ export const contentService = {
       // Add file if present (optional - creation can work without file)
       if (data.file && data.file.uri) {
         try {
-          const filename = data.file.filename || data.file.uri.split('/').pop() || 'file';
-          const fileType = data.file.type || (data.file.uri.endsWith('.pdf') ? 'application/pdf' : 'image/jpeg');
+          console.log('Processing file for lecture:', data.file);
           
-          formData.append('file', {
+          // Extract filename from URI or use fallback
+          let filename = data.file.filename || data.file.name || data.file.uri.split('/').pop() || 'file';
+          
+          // Ensure filename has proper extension
+          if (!filename.includes('.') && data.file.uri) {
+            if (data.file.uri.endsWith('.pdf')) {
+              filename += '.pdf';
+            } else if (data.file.uri.match(/\.(jpg|jpeg|png|gif)$/i)) {
+              filename += data.file.uri.match(/\.(jpg|jpeg|png|gif)$/i)[0];
+            }
+          }
+          
+          // Determine file type
+          let fileType = data.file.mimeType || data.file.type;
+          if (!fileType) {
+            if (data.file.uri.endsWith('.pdf')) {
+              fileType = 'application/pdf';
+            } else if (data.file.uri.match(/\.(jpg|jpeg)$/i)) {
+              fileType = 'image/jpeg';
+            } else if (data.file.uri.endsWith('.png')) {
+              fileType = 'image/png';
+            } else if (data.file.uri.endsWith('.gif')) {
+              fileType = 'image/gif';
+            } else {
+              fileType = 'application/octet-stream';
+            }
+          }
+          
+          const fileObject = {
             uri: data.file.uri,
             type: fileType,
             name: filename,
-          });
-          console.log('Added file to FormData:', { filename, fileType });
+          };
+          
+          formData.append('file', fileObject);
+          console.log('Added file to lecture FormData:', { filename, fileType, uri: data.file.uri });
         } catch (fileError) {
-          console.warn('Could not add file to FormData:', fileError);
+          console.error('Could not add file to lecture FormData:', fileError);
           // Continue without file if there's an issue
         }
       }
@@ -120,8 +149,13 @@ export const contentService = {
     try {
       const formData = new FormData();
       
-      // Handle quiz by prefixing title
-      const title = data.type === 'quiz' ? `QUIZ: ${data.title}` : data.title;
+      // Handle quiz by prefixing title, handle exam by prefixing with EXAM:
+      let title = data.title;
+      if (data.type === 'quiz') {
+        title = `QUIZ: ${data.title}`;
+      } else if (data.type === 'exam') {
+        title = `EXAM: ${data.title}`;
+      }
       formData.append('title', title);
       
       // Append content only if not empty
@@ -132,25 +166,78 @@ export const contentService = {
       // Add max_score
       formData.append('max_score', String(data.maxScore || 100));
 
+      // Add exam-specific fields
+      if (data.type === 'exam') {
+        formData.append('category', data.category || 'major exam');
+        formData.append('term', data.term || 'midterm');
+      } else if (data.type === 'lab') {
+        formData.append('category', data.category || 'laboratory');
+        formData.append('term', data.term || 'midterm');
+      } else if (data.type === 'assignment') {
+        formData.append('category', data.category || 'assignment');
+        formData.append('term', data.term || 'midterm');
+      } else if (data.type === 'project') {
+        formData.append('category', data.category || 'project');
+        formData.append('term', data.term || 'midterm');
+      } else if (data.type === 'activity' || data.type === 'quiz') {
+        // Add term field for activities and quizzes
+        formData.append('term', data.term || 'midterm');
+        // Default category for non-exam activities
+        formData.append('category', data.category || 'quiz');
+      } else {
+        // Default values for non-exam activities
+        formData.append('category', data.category || 'quiz');
+        formData.append('term', data.term || 'midterm');
+      }
+
       // Add file if present (optional - creation can work without file)
       if (data.file && data.file.uri) {
         try {
-          const filename = data.file.filename || data.file.uri.split('/').pop() || 'file';
-          const fileType = data.file.type || (data.file.uri.endsWith('.pdf') ? 'application/pdf' : 'image/jpeg');
+          console.log('Processing file for activity:', data.file);
           
-          formData.append('file', {
+          // Extract filename from URI or use fallback
+          let filename = data.file.filename || data.file.name || data.file.uri.split('/').pop() || 'file';
+          
+          // Ensure filename has proper extension
+          if (!filename.includes('.') && data.file.uri) {
+            if (data.file.uri.endsWith('.pdf')) {
+              filename += '.pdf';
+            } else if (data.file.uri.match(/\.(jpg|jpeg|png|gif)$/i)) {
+              filename += data.file.uri.match(/\.(jpg|jpeg|png|gif)$/i)[0];
+            }
+          }
+          
+          // Determine file type
+          let fileType = data.file.mimeType || data.file.type;
+          if (!fileType) {
+            if (data.file.uri.endsWith('.pdf')) {
+              fileType = 'application/pdf';
+            } else if (data.file.uri.match(/\.(jpg|jpeg)$/i)) {
+              fileType = 'image/jpeg';
+            } else if (data.file.uri.endsWith('.png')) {
+              fileType = 'image/png';
+            } else if (data.file.uri.endsWith('.gif')) {
+              fileType = 'image/gif';
+            } else {
+              fileType = 'application/octet-stream';
+            }
+          }
+          
+          const fileObject = {
             uri: data.file.uri,
             type: fileType,
             name: filename,
-          });
-          console.log('Added file to FormData:', { filename, fileType });
+          };
+          
+          formData.append('file', fileObject);
+          console.log('Added file to activity FormData:', { filename, fileType, uri: data.file.uri });
         } catch (fileError) {
-          console.warn('Could not add file to FormData:', fileError);
+          console.error('Could not add file to activity FormData:', fileError);
           // Continue without file if there's an issue
         }
       }
 
-      console.log('Creating activity with FormData:', { title: title, content: data.content, max_score: data.maxScore, hasFile: !!data.file });
+      console.log('Creating activity with FormData:', { title: title, content: data.content, max_score: data.maxScore, category: data.category, term: data.term, hasFile: !!data.file });
 
       try {
         const res = await apiClient.post(`/activities/${subjectId}`, formData, {
@@ -172,13 +259,265 @@ export const contentService = {
 
   // Unified create method
   async createContent(subjectId, data) {
-    const type = data.type; // 'lecture', 'activity', or 'quiz'
+    const type = data.type; // 'lecture', 'activity', 'quiz', or 'exam'
     
     if (type === 'lecture') {
       return await this.createLecture(subjectId, data);
     } else {
-      // activity or quiz
+      // activity, quiz, or exam
       return await this.createActivity(subjectId, data);
     }
   },
+
+  // SUBMISSION MANAGEMENT
+  
+  // Submit work for an activity
+  async submitActivity(activityId, data) {
+    try {
+      const formData = new FormData();
+      
+      if (data.content) {
+        formData.append('content', data.content);
+      }
+      
+      if (data.file) {
+        formData.append('file', {
+          uri: data.file.uri,
+          type: data.file.type || 'application/octet-stream',
+          name: data.file.name
+        });
+      }
+      
+      const res = await apiClient.post(`/submissions/${activityId}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      
+      return res.data;
+    } catch (error) {
+      console.error('Error submitting activity:', error);
+      throw error;
+    }
+  },
+  
+  // Get own submission for an activity
+  async getOwnSubmission(activityId) {
+    try {
+      const res = await apiClient.get(`/submissions/self/${activityId}`);
+      return res.data;
+    } catch (error) {
+      if (error.response?.status === 404) {
+        return null; // No submission found
+      }
+      console.error('Error getting own submission:', error);
+      throw error;
+    }
+  },
+  
+  // Get a single submission by id (teacher view)
+  async getSubmissionById(submissionId) {
+    try {
+      const res = await apiClient.get(`/submissions/view/${submissionId}`);
+      return res.data;
+    } catch (error) {
+      console.error('Error getting submission by id:', error);
+      throw error;
+    }
+  },
+  
+  // Get all submissions for an activity (teacher only)
+  async getSubmissions(activityId) {
+    try {
+      const res = await apiClient.get(`/submissions/${activityId}`);
+      return res.data || [];
+    } catch (error) {
+      if (error.response?.status === 404) {
+        return []; // No submissions found
+      }
+      console.error('Error getting submissions:', error);
+      throw error;
+    }
+  },
+  
+  // Grade a submission
+  async gradeSubmission(submissionId, score) {
+    try {
+      // Use the correct backend endpoint: PUT /submissions/score/{submissionId} with FormData
+      const formData = new FormData();
+      formData.append('score', score);
+      
+      const res = await apiClient.put(`/submissions/score/${submissionId}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      
+      return res.data;
+    } catch (error) {
+      console.error('Error grading submission:', error);
+      throw error;
+    }
+  },
+  
+  // Update submission
+  async updateSubmission(submissionId, data) {
+    try {
+      const formData = new FormData();
+      
+      if (data.content) {
+        formData.append('content', data.content);
+      }
+      
+      if (data.file) {
+        formData.append('file', {
+          uri: data.file.uri,
+          type: data.file.type || 'application/octet-stream',
+          name: data.file.name
+        });
+      }
+      
+      const res = await apiClient.put(`/submissions/${submissionId}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      
+      return res.data;
+    } catch (error) {
+      console.error('Error updating submission:', error);
+      throw error;
+    }
+  },
+  
+  // Delete submission
+  async deleteSubmission(submissionId) {
+    try {
+      await apiClient.delete(`/submissions/${submissionId}`);
+      return true;
+    } catch (error) {
+      console.error('Error deleting submission:', error);
+      throw error;
+    }
+  },
+  
+  // Check if activity is submitted
+  async isActivitySubmitted(activityId) {
+    try {
+      const submission = await this.getOwnSubmission(activityId);
+      return !!submission;
+    } catch (error) {
+      return false;
+    }
+  },
+  
+  // Get submission status with grade
+  async getSubmissionStatus(activityId) {
+    try {
+      const submission = await this.getOwnSubmission(activityId);
+      if (!submission) {
+        return { submitted: false, graded: false, score: null };
+      }
+      
+      return {
+        submitted: true,
+        graded: submission.score > 0,
+        score: submission.score,
+        submittedAt: submission.created_at,
+        gradedAt: submission.updated_at
+      };
+    } catch (error) {
+      return { submitted: false, graded: false, score: null };
+    }
+  },
+
+  // UTILITY FUNCTIONS
+  
+  // Format submission data for display
+  formatSubmission(submission) {
+    if (!submission) return null;
+    
+    return {
+      id: submission.id,
+      content: submission.content,
+      fileUrl: submission.file_url,
+      score: submission.score,
+      studentId: submission.student_id,
+      activityId: submission.activity_id,
+      submittedAt: submission.created_at,
+      updatedAt: submission.updated_at,
+      isGraded: submission.score > 0
+    };
+  },
+  
+  // Format submissions list for teacher view
+  formatSubmissionsList(submissions) {
+    return submissions.map(sub => this.formatSubmission(sub));
+  },
+
+  // Get student's current grade for a subject
+  async getStudentGrade(subjectId) {
+    try {
+      console.log('Fetching student grade for subject:', subjectId);
+      const res = await apiClient.get(`/grade/current/${subjectId}`);
+      console.log('Student grade response:', res.data);
+      return res.data || null;
+    } catch (error) {
+      // Check if it's a network/connection error
+      if (error.code === 'NETWORK_ERROR' || error.code === 'ECONNREFUSED' || !error.response) {
+        console.warn('Backend server is not running - using offline mode');
+        return null; // Trigger fallback calculation
+      }
+      
+      // 404 is expected when grade computation fails - suppress error logging
+      if (error.response?.status === 404) {
+        console.log('Grade not available for subject:', subjectId, '- will use fallback calculation');
+        return null;
+      }
+      
+      // Log other errors
+      console.error('Error fetching student grade:', error.message);
+      // Return null instead of throwing to allow fallback calculation
+      return null;
+    }
+  },
+
+  // Get detailed performance breakdown for a student
+  async getStudentPerformance(subjectId) {
+    try {
+      // Get all activities for the subject
+      const activities = await this.getActivities(subjectId);
+      const performance = [];
+
+      for (const activity of activities) {
+        try {
+          const submission = await this.getOwnSubmission(activity.id);
+          if (submission && submission.score !== null && submission.score !== undefined) {
+            const percentage = activity.max_score > 0 ? (submission.score / activity.max_score) * 100 : 0;
+            performance.push({
+              id: activity.id,
+              title: activity.title,
+              category: activity.category,
+              term: activity.term,
+              score: submission.score,
+              maxScore: activity.max_score,
+              percentage: percentage,
+              submittedAt: submission.created_at,
+              gradedAt: submission.updated_at
+            });
+          }
+        } catch (error) {
+          console.warn(`Error getting submission for activity ${activity.id}:`, error);
+        }
+      }
+
+      // Sort by submitted date (newest first)
+      performance.sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt));
+      return performance;
+    } catch (error) {
+      console.error('Error fetching student performance:', error);
+      return [];
+    }
+  },
+
 };

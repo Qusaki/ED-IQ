@@ -13,13 +13,16 @@ import {
   Image,
   KeyboardAvoidingView,
   ScrollView,
-  Platform
+  Platform,
+  ImageBackground
 } from 'react-native';
+
 import { useRouter } from 'expo-router';
 import { setupAxiosInterceptors } from './apiConfig';
 import { styles } from './styles';
-import { authService } from './authService';
+import { authService } from '../components/_authService';
 import Logo from '../assets/img/ED-IQ_LOGO.png';
+const campusBackground = require('../assets/background/prmsu-logo.png');
 
 const roles = [
   { id: 'student', label: 'Student' },
@@ -111,150 +114,153 @@ export default function AuthScreen({ onAuthSuccess }) {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}
-      >
-        <ScrollView 
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
+    <ImageBackground source={campusBackground} style={styles.backgroundImage} resizeMode="contain">
+      <View style={styles.backgroundOverlay} />
+      <SafeAreaView style={[styles.container, styles.authContainer]}>
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.keyboardView}
         >
-          <View style={styles.logoContainer}>
-            <Image 
-              source={Logo}
-              style={styles.logoImage}
-              resizeMode="contain"
-            />
-            <Text style={styles.brandText}>ED-IQ</Text>
-          </View>
+          <ScrollView 
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            <View style={styles.logoContainer}>
+              <Image 
+                source={Logo}
+                style={styles.logoImage}
+                resizeMode="contain"
+              />
+              <Text style={styles.brandText}>ED-IQ</Text>
+            </View>
 
-          <View style={styles.card}>
-            <Text style={styles.title}>
-              {isLogin ? 'Welcome Back' : 'Create Account'}
-            </Text>
-            <Text style={styles.subtitle}>
-              {isLogin ? 'Sign in to your account' : 'Sign up to get started'}
-            </Text>
+            <View style={styles.card}>
+              <Text style={styles.title}>
+                {isLogin ? 'Welcome Back' : 'Create Account'}
+              </Text>
+              <Text style={styles.subtitle}>
+                {isLogin ? 'Sign in to your account' : 'Sign up to get started'}
+              </Text>
 
-            {!isLogin && (
+              {!isLogin && (
+                <TextInput 
+                  placeholder="Enter your name" 
+                  style={styles.input} 
+                  value={name} 
+                  onChangeText={setName}
+                  placeholderTextColor="#999"
+                />
+              )}
+
               <TextInput 
-                placeholder="Enter your name" 
+                placeholder="Enter your email" 
                 style={styles.input} 
-                value={name} 
-                onChangeText={setName}
+                value={email} 
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
                 placeholderTextColor="#999"
               />
-            )}
-
-            <TextInput 
-              placeholder="Enter your email" 
-              style={styles.input} 
-              value={email} 
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              placeholderTextColor="#999"
-            />
-            
-            <View style={styles.passwordContainer}>
-              <TextInput 
-                placeholder="Enter your password" 
-                style={styles.passwordInput} 
-                secureTextEntry={!showPassword}
-                value={password} 
-                onChangeText={setPassword}
-                placeholderTextColor="#999"
-              />
-              <TouchableOpacity 
-                style={[styles.eyeButton, showPassword && styles.flashlightOn]}
-                onPress={() => setShowPassword(!showPassword)}
-              >
-                <View style={styles.flashlightContainer}>
-                  <Text style={[styles.flashlightIcon, showPassword && styles.flashlightIconOn]}>
-                    🔦
+              
+              <View style={styles.passwordContainer}>
+                <TextInput 
+                  placeholder="Enter your password" 
+                  style={styles.passwordInput} 
+                  secureTextEntry={!showPassword}
+                  value={password} 
+                  onChangeText={setPassword}
+                  placeholderTextColor="#999"
+                />
+                <TouchableOpacity 
+                  style={[styles.eyeButton, showPassword && styles.flashlightOn]}
+                  onPress={() => setShowPassword(!showPassword)}
+                >
+                  <View style={styles.flashlightContainer}>
+                    <Text style={[styles.flashlightIcon, showPassword && styles.flashlightIconOn]}>
+                      🔦
+                    </Text>
+                    {showPassword && (
+                      <View style={styles.lightBeam}>
+                        <Text style={styles.lightRays}>✨</Text>
+                      </View>
+                    )}
+                  </View>
+                  <Text style={[styles.flashlightText, showPassword && styles.flashlightTextOn]}>
+                    {showPassword ? 'ON' : 'OFF'}
                   </Text>
-                  {showPassword && (
-                    <View style={styles.lightBeam}>
-                      <Text style={styles.lightRays}>✨</Text>
-                    </View>
-                  )}
-                </View>
-                <Text style={[styles.flashlightText, showPassword && styles.flashlightTextOn]}>
-                  {showPassword ? 'ON' : 'OFF'}
+                </TouchableOpacity>
+              </View>
+
+              {!isLogin && (
+                <TouchableOpacity 
+                  style={styles.roleSelector} 
+                  onPress={() => setShowRolePicker(true)}
+                >
+                  <Text style={[styles.roleSelectorText, !selectedRole && styles.placeholder]}>
+                    {selectedRole ? roles.find(r => r.id === selectedRole)?.label : 'Enter your role'}
+                  </Text>
+                  <Text style={styles.dropdownArrow}>▼</Text>
+                </TouchableOpacity>
+              )}
+
+              {isLogin && (
+                <TouchableOpacity style={styles.forgotPassword}>
+                  <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+                </TouchableOpacity>
+              )}
+
+              <TouchableOpacity 
+                style={[styles.authButton, loading && styles.disabledButton]} 
+                onPress={handleAuth}
+                disabled={loading}
+              >
+                <Text style={styles.authButtonText}>
+                  {loading ? 'Please wait...' : (isLogin ? 'Sign In' : 'Sign Up')}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.switchContainer} 
+                onPress={() => setIsLogin(!isLogin)}
+              >
+                <Text style={styles.switchText}>
+                  {isLogin ? "Don't have an account? " : "Already have an account? "}
+                  <Text style={styles.switchLink}>
+                    {isLogin ? "Sign Up" : "Sign In"}
+                  </Text>
                 </Text>
               </TouchableOpacity>
             </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
 
-            {!isLogin && (
-              <TouchableOpacity 
-                style={styles.roleSelector} 
-                onPress={() => setShowRolePicker(true)}
-              >
-                <Text style={[styles.roleSelectorText, !selectedRole && styles.placeholder]}>
-                  {selectedRole ? roles.find(r => r.id === selectedRole)?.label : 'Enter your role'}
-                </Text>
-                <Text style={styles.dropdownArrow}>▼</Text>
-              </TouchableOpacity>
-            )}
-
-            {isLogin && (
-              <TouchableOpacity style={styles.forgotPassword}>
-                <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-              </TouchableOpacity>
-            )}
-
-            <TouchableOpacity 
-              style={[styles.authButton, loading && styles.disabledButton]} 
-              onPress={handleAuth}
-              disabled={loading}
-            >
-              <Text style={styles.authButtonText}>
-                {loading ? 'Please wait...' : (isLogin ? 'Sign In' : 'Sign Up')}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={styles.switchContainer} 
-              onPress={() => setIsLogin(!isLogin)}
-            >
-              <Text style={styles.switchText}>
-                {isLogin ? "Don't have an account? " : "Already have an account? "}
-                <Text style={styles.switchLink}>
-                  {isLogin ? "Sign Up" : "Sign In"}
-                </Text>
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-
-      <Modal
-        visible={showRolePicker}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setShowRolePicker(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Your Role</Text>
-              <TouchableOpacity 
-                onPress={() => setShowRolePicker(false)}
-                style={styles.closeButton}
-              >
-                <Text style={styles.closeButtonText}>✕</Text>
-              </TouchableOpacity>
+        <Modal
+          visible={showRolePicker}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={() => setShowRolePicker(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Select Your Role</Text>
+                <TouchableOpacity 
+                  onPress={() => setShowRolePicker(false)}
+                  style={styles.closeButton}
+                >
+                  <Text style={styles.closeButtonText}>✕</Text>
+                </TouchableOpacity>
+              </View>
+              <FlatList
+                data={roles}
+                renderItem={renderRoleItem}
+                keyExtractor={(item) => item.id}
+              />
             </View>
-            <FlatList
-              data={roles}
-              renderItem={renderRoleItem}
-              keyExtractor={(item) => item.id}
-            />
           </View>
-        </View>
-      </Modal>
-    </SafeAreaView>
+        </Modal>
+      </SafeAreaView>
+    </ImageBackground>
   );
 }

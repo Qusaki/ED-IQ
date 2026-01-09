@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
-import { TokenManager } from './TokenManager';
-import { authService } from './authService';
+import { TokenManager } from '../components/_TokenManager';
+import { authService } from '../components/_authService';
 import CustomTabBar from '../components/CustomTabBar';
 
 export default function ProfileScreen() {

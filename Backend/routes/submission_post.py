@@ -16,6 +16,7 @@ from utils.supabase import (
     extract_filename_from_url,
     upload_file_to_supabase,
 )
+from utils.notify import notify_teacher
 
 router = APIRouter()
 
@@ -53,7 +54,7 @@ async def create_submission(
 
     file_url = None
     if file and getattr(file, "filename", ""):
-        destination_name = f"submissions/{activity_id}/{file.filename}"
+        destination_name = f"submissions_{activity_id}_{file.filename}"
         file_url = upload_file_to_supabase(file, destination_name)
 
     submit = Submission(
@@ -66,6 +67,30 @@ async def create_submission(
     db.add(submit)
     db.commit()
     db.refresh(submit)
+
+    # Notify the teacher about the new submission
+    activity_type = "Activity"
+    if activity.category == "quiz":
+        activity_type = "Quiz"
+    elif activity.category == "assignment":
+        activity_type = "Assignment"
+    elif activity.category == "laboratory":
+        activity_type = "Laboratory"
+    elif activity.category == "major exam":
+        activity_type = "Exam"
+    elif activity.category == "lab exam":
+        activity_type = "Laboratory Exam"
+    elif activity.category == "project":
+        activity_type = "Project"
+
+    await notify_teacher(
+        subject_id=activity.subject_id,
+        activity_id=activity_id,
+        student_id=current_user.id,
+        title="New Submission",
+        message=f"A student submitted an answer to {activity_type}: {activity.title}",
+        db=db
+    )
 
     return submit
 
@@ -156,7 +181,7 @@ async def update_submission(
             delete_file_from_supabase(filename)
 
         # upload new file
-        destination_name = f"submissions/{submission.activity_id}/{file.filename}"
+        destination_name = f"submissions_{submission.activity_id}_{file.filename}"
         file_url = upload_file_to_supabase(file, destination_name)
 
         # upload new url in db

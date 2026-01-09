@@ -21,10 +21,8 @@ doc_url = "https://rjtiibjejbnubuteheph.supabase.co/storage/v1/object/public/EDI
 
 doc_data = httpx.get(doc_url).content
 
-message = "How to transfer?"
 
-
-def student_handbook():
+def student_handbook(message):
     response = client.models.generate_content(
         model="gemini-2.5-flash",
         contents=[
@@ -38,6 +36,3 @@ def student_handbook():
     )
 
     return response.text
-
-
-print(student_handbook())
