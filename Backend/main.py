@@ -11,6 +11,7 @@ from routes import (
     submission_post,
     user_management, chatbot
 )
+from utils.scheduler import start_scheduler, shutdown_scheduler
 
 app = FastAPI(
     title="ED-IQ Backend API",
@@ -18,8 +19,21 @@ app = FastAPI(
     version="1.0.0",
 )
 
+@app.on_event("startup")
+async def startup_event():
+    start_scheduler()
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    shutdown_scheduler()
+
 # Include routers
 app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
+
+@app.get("/health", summary="Perform a Health Check", response_description="Return HTTP Status Code 200 (OK)")
+async def health_check():
+    return {"status": "OK", "message": "Service is healthy"}
+
 app.include_router(
     user_management.router, prefix="/user_management", tags=["User Management"]
 )
