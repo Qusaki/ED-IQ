@@ -17,7 +17,7 @@ When the handbook does not explicitly cover a situation, use general school rule
 Always stay polite, clear, and supportive. If something is not allowed or not defined, explain it simply and guide the student toward the proper school procedure.
 """
 
-doc_url = "https://rjtiibjejbnubuteheph.supabase.co/storage/v1/object/public/EDIQ-bucket/Student%20Handbook.pdf"
+doc_url = "https://rjtiibjejbnubuteheph.supabase.co/storage/v1/object/public/EDIQ-bucket/Student%20Handbook%20(1).pdf"
 
 doc_data = httpx.get(doc_url).content
 
@@ -32,7 +32,10 @@ def student_handbook(message):
             ),
             message,
         ],
-        config=types.GenerateContentConfig(system_instruction=SYSTEM_PROMPT),
+        config=types.GenerateContentConfig(
+            system_instruction=SYSTEM_PROMPT,
+            max_output_tokens=500,
+        ),
     )
 
     return response.text
