@@ -31,9 +31,9 @@ def start_scheduler():
     Starts the APScheduler and adds the heartbeat job.
     """
     if not scheduler.running:
-        scheduler.add_job(heartbeat_job, "interval", minutes=15, id="heartbeat_job")
+        scheduler.add_job(heartbeat_job, "interval", minutes=10, id="heartbeat_job")
         scheduler.start()
-        logger.info("Scheduler started with heartbeat job (every 15 minutes).")
+        logger.info("Scheduler started with heartbeat job (every 10 minutes).")
 
 def shutdown_scheduler():
     """
