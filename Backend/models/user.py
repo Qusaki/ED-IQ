@@ -12,3 +12,8 @@ class User(Base):
     password = Column(
         LargeBinary, nullable=False
     )  # Store hashed password as binary data
+    profile_picture = Column(
+        TEXT,
+        nullable=False,
+        default="https://rjtiibjejbnubuteheph.supabase.co/storage/v1/object/public/EDIQ-bucket/default_profile_pictures/default_profile.jpg",
+    )

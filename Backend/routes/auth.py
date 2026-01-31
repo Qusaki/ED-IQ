@@ -43,12 +43,15 @@ def signup_user(user: UserCreate, db: Session = Depends(get_db)) -> UserResponse
         name=user.name,
         role=user.role,
         password=hashed_pw,
+        profile_picture="https://rjtiibjejbnubuteheph.supabase.co/storage/v1/object/public/EDIQ-bucket/default_profile_pictures/default_profile.jpg",
     )
 
     # Add user to the database
     db.add(user_db)
     db.commit()
     db.refresh(user_db)
+
+    
 
     return UserResponse.model_validate(user_db)
 

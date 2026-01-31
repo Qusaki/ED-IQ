@@ -24,10 +24,12 @@ class UserSelfUpdate(BaseModel):
     name: Optional[str] = None
     email: Optional[EmailStr] = None
     password: Optional[str] = None
+    profile_picture: Optional[str] = None
 
 
 class UserResponse(UserBase):
     id: str
+    profile_picture: str
 
     class Config:
         from_attributes = True
