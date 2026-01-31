@@ -150,7 +150,7 @@ def get_subject_students(
     "/{subject_id}/students/{student_id}/accept",
     response_model=EnrollmentActionResponse,
 )
-def accept_student(
+async def accept_student(
     subject_id: str,
     student_id: str,
     db: Session = Depends(get_db),
@@ -191,7 +191,7 @@ def accept_student(
     "/{subject_id}/students/{student_id}/reject",
     response_model=EnrollmentActionResponse,
 )
-def reject_student(
+async def reject_student(
     subject_id: str,
     student_id: str,
     db: Session = Depends(get_db),
