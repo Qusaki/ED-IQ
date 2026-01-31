@@ -15,6 +15,7 @@ from schemas.enrollment import (
 )
 from schemas.subject import SubjectCreate, SubjectJoin, SubjectResponse
 from sqlalchemy.orm import Session
+from utils.notify import notify_user # Added notify_user
 
 router = APIRouter()
 
@@ -176,6 +177,13 @@ def accept_student(
 
     enrollment.status = EnrollmentStatus.APPROVED.value
     db.commit()
+    # Notify the student
+    await notify_user(
+        user_id=student_id,
+        title="Enrollment Accepted",
+        message=f"Your enrollment request for subject '{subject.name}' has been accepted!",
+        db=db
+    )
     return EnrollmentActionResponse(success=True, message="Student accepted")
 
 
@@ -210,6 +218,13 @@ def reject_student(
 
     enrollment.status = EnrollmentStatus.REJECTED.value
     db.commit()
+    # Notify the student
+    await notify_user(
+        user_id=student_id,
+        title="Enrollment Rejected",
+        message=f"Your enrollment request for subject '{subject.name}' has been rejected.",
+        db=db
+    )
     return EnrollmentActionResponse(success=True, message="Student rejected")
 
 

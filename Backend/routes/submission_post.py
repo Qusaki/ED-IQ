@@ -16,7 +16,7 @@ from utils.supabase import (
     extract_filename_from_url,
     upload_file_to_supabase,
 )
-from utils.notify import notify_teacher
+from utils.notify import notify_teacher, notify_user
 
 router = APIRouter()
 
@@ -250,10 +250,19 @@ async def score_submission(
             status_code=400, detail=f"Score must be between 0 and {activity.max_score}"
         )
 
-    submission.score = score
-
     db.commit()
     db.refresh(submission)
+
+    # Notify the student that their submission has been scored
+    # Get the activity to provide context for the notification
+    activity = db.query(Activity).filter(Activity.id == submission.activity_id).first()
+    if activity:
+        await notify_user(
+            user_id=submission.student_id,
+            title="Submission Scored",
+            message=f"Your submission for '{activity.title}' has been scored: {submission.score}/{activity.max_score}",
+            db=db
+        )
 
     return submission
 

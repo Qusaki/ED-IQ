@@ -73,3 +73,25 @@ async def notify_teacher(subject_id: str, activity_id: str, student_id: str, tit
             "id": notif.id,
         },
     )
+
+async def notify_user(user_id: str, title: str, message: str, db):
+    notif = Notification(
+        id=str(uuid4()),
+        user_id=user_id,
+        title=title,
+        message=message,
+    )
+    db.add(notif)
+    db.commit()
+    db.refresh(notif)
+
+    await manager.send_personal(
+        user_id,
+        {
+            "type": "notification",
+            "title": title,
+            "message": message,
+            "created_at": str(notif.created_at),
+            "id": notif.id,
+        },
+    )
