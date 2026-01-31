@@ -54,7 +54,7 @@ async def self_update(
         if user.profile_picture:
             old_filename = extract_filename_from_url(user.profile_picture)
             if old_filename:
-                if old_filename.startswith("profile_pictures/"): # only delete if it's an uploaded file
+                if old_filename.startswith("profile_pictures_"): # only delete if it's an uploaded file
                      delete_file_from_supabase(old_filename)
 
         # Generate a unique name for the new profile picture
