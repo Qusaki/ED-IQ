@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ScrollView, 
-  TouchableOpacity, 
-  Image, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Image,
   Alert,
   ActivityIndicator,
   TextInput,
@@ -62,20 +62,20 @@ export default function ActivityDetail() {
   const [editActivityDescription, setEditActivityDescription] = useState('');
   const [editActivityFile, setEditActivityFile] = useState(null);
   const [fileNameCache, setFileNameCache] = useState({}); // Cache for fetched filenames
-  
-    // Function to get submission file URL
+
+  // Function to get submission file URL
   const getSubmissionFileUrl = (submission) => {
     if (!submission) return null;
-    
+
     console.log('Checking submission for file URL:', submission.id || 'unknown');
-    
+
     // Check for direct URL properties
     const directUrl = submission.file_url || submission.fileURL || submission.fileUrl;
     if (directUrl) {
       console.log('Found direct URL:', directUrl);
       return directUrl;
     }
-    
+
     // Check for nested file object with URL
     if (submission.file) {
       console.log('Checking file object:', submission.file);
@@ -85,21 +85,21 @@ export default function ActivityDetail() {
       if (submission.file.url) return submission.file.url;
       if (submission.file.uri) return submission.file.uri;
     }
-    
+
     // Check for attachments array
     if (submission.attachments && submission.attachments.length > 0) {
       const attachment = submission.attachments[0];
       const attachmentUrl = attachment.url || attachment.file_url || attachment.uri;
       if (attachmentUrl) return attachmentUrl;
     }
-    
+
     // Check for files array
     if (submission.files && submission.files.length > 0) {
       const file = submission.files[0];
       const fileUrl = file.url || file.file_url || file.uri;
       if (fileUrl) return fileUrl;
     }
-    
+
     // Check for image field specifically (for image submissions)
     if (submission.image) {
       console.log('Found image field:', submission.image);
@@ -110,26 +110,26 @@ export default function ActivityDetail() {
         return submission.image.url || submission.image.uri;
       }
     }
-    
+
     // Check for content field that might be an image URL
-    if (submission.content && typeof submission.content === 'string' && 
-        (submission.content.startsWith('http') || 
-         submission.content.match(/\.(jpg|jpeg|png|gif|bmp|webp|heic|heif)$/i))) {
+    if (submission.content && typeof submission.content === 'string' &&
+      (submission.content.startsWith('http') ||
+        submission.content.match(/\.(jpg|jpeg|png|gif|bmp|webp|heic|heif)$/i))) {
       console.log('Found image URL in content:', submission.content);
       return submission.content;
     }
-    
+
     // Check for answer field that might contain image (Quiz specific)
     if (submission.answer) {
       console.log('Checking answer field:', submission.answer);
-      if (typeof submission.answer === 'string' && 
-          (submission.answer.startsWith('http') || 
-           submission.answer.match(/\.(jpg|jpeg|png|gif|bmp|webp|heic|heif)$/i))) {
+      if (typeof submission.answer === 'string' &&
+        (submission.answer.startsWith('http') ||
+          submission.answer.match(/\.(jpg|jpeg|png|gif|bmp|webp|heic|heif)$/i))) {
         console.log('Found image URL in answer:', submission.answer);
         return submission.answer;
       }
     }
-    
+
     // Check for submission_data field (Quiz specific)
     if (submission.submission_data) {
       console.log('Checking submission_data:', submission.submission_data);
@@ -147,23 +147,23 @@ export default function ActivityDetail() {
         if (data.image.url || data.image.uri) return data.image.url || data.image.uri;
       }
     }
-    
+
     console.log('No file URL found in submission');
     return null;
   };
 
   const getFileNameFromUrl = async (url) => {
     if (!url) return 'Document';
-    
+
     // Check if we already have this filename cached
     if (fileNameCache[url]) {
       return fileNameCache[url];
     }
-    
+
     try {
       // Extract the stored filename from the URL
       const storedFileName = fileMetadataService.extractStoredFileName(url);
-      
+
       if (!storedFileName) {
         console.warn('Could not extract stored filename from URL');
         return 'Document';
@@ -171,9 +171,9 @@ export default function ActivityDetail() {
 
       // Fetch metadata from backend to get original filename
       const result = await fileMetadataService.getFileMetadata(storedFileName);
-      
+
       let fileName = 'Document';
-      
+
       if (result.success && result.metadata.original_name) {
         fileName = result.metadata.original_name;
         console.log('Retrieved original filename from metadata:', fileName);
@@ -198,20 +198,20 @@ export default function ActivityDetail() {
 
         fileName = fileName.replace(/\+/g, ' ');
       }
-      
+
       // Cache the filename for future use
       setFileNameCache(prev => ({
         ...prev,
         [url]: fileName
       }));
-      
+
       return fileName;
     } catch (error) {
       console.error('Error extracting filename:', error);
       return 'Document';
     }
   };
-  
+
   // Synchronous wrapper for immediate fallback - returns cached value or placeholder
   const getFileNameSync = (url) => {
     if (!url) return 'Document';
@@ -221,12 +221,12 @@ export default function ActivityDetail() {
   // Memoized prefetch effect to prevent constant re-renders
   const prefetchFileNamesCallback = React.useCallback(async () => {
     const urlsToPrefetch = [];
-    
+
     // Add activity file URL
     if (activity?.file_url && !fileNameCache[activity.file_url]) {
       urlsToPrefetch.push(activity.file_url);
     }
-    
+
     // Add submission file URLs
     if (submissions && submissions.length > 0) {
       submissions.forEach(sub => {
@@ -235,18 +235,18 @@ export default function ActivityDetail() {
         }
       });
     }
-    
+
     // Add student submission file URL
     if (studentSubmissionData?.file_url && !fileNameCache[studentSubmissionData.file_url]) {
       urlsToPrefetch.push(studentSubmissionData.file_url);
     }
-    
+
     // Prefetch all URLs in parallel
     if (urlsToPrefetch.length > 0) {
       try {
         await Promise.all(
-          urlsToPrefetch.map(url => 
-            getFileNameFromUrl(url).catch(error => 
+          urlsToPrefetch.map(url =>
+            getFileNameFromUrl(url).catch(error =>
               console.error('Error prefetching filename for:', url, error)
             )
           )
@@ -275,62 +275,62 @@ export default function ActivityDetail() {
   // Function to block download requests and force inline viewing
   const blockDownloads = (request) => {
     if (!request || !request.url) return true;
-    
+
     const url = request.url.toLowerCase();
-    
+
     // Skip if this is a navigation to 'about:blank' or empty URL
     if (url === 'about:blank') return true;
-    
+
     // Check for download indicators in the URL
-    const isDownload = 
-      url.includes('download') || 
+    const isDownload =
+      url.includes('download') ||
       /[?&]download=1(?:&|$)/.test(url) ||
       /[?&]download=true(?:&|$)/.test(url) ||
       url.includes('force-download') ||
       url.includes('content-disposition=attachment') ||
       /\b(?:pdf|docx?|xlsx?|zip|rar|7z|exe|dmg|pkg)(?:[?#]|$)/i.test(url);
-    
+
     if (isDownload) {
       console.log('Blocking download attempt:', url);
-      
+
       // For Google Docs/Drive, force the viewer
       if (url.includes('docs.google.com') || url.includes('drive.google.com')) {
-        const viewerUrl = url.includes('?') 
-          ? `${url}&embedded=true&rm=minimal` 
+        const viewerUrl = url.includes('?')
+          ? `${url}&embedded=true&rm=minimal`
           : `${url}?embedded=true&rm=minimal`;
-        
+
         // Update the URL without causing a re-render
         if (url !== viewerUrl) {
           setFilePreviewUrl(viewerUrl);
         }
       }
-      
+
       return false;
     }
     return true;
   };
-  
+
   // Memoized function to get WebView source with forced inline viewing
   const getWebViewSource = React.useCallback((url) => {
     if (!url) return null;
-    
+
     console.log('Processing URL for WebView:', url);
-    
+
     // For PDF files and documents, use Google Docs viewer
-    if (url.toLowerCase().includes('.pdf') || 
-        url.toLowerCase().includes('.doc') || 
-        url.toLowerCase().includes('.docx') || 
-        url.toLowerCase().includes('.xls') || 
-        url.toLowerCase().includes('.xlsx') || 
-        url.toLowerCase().includes('.ppt') || 
-        url.toLowerCase().includes('.pptx')) {
-      
+    if (url.toLowerCase().includes('.pdf') ||
+      url.toLowerCase().includes('.doc') ||
+      url.toLowerCase().includes('.docx') ||
+      url.toLowerCase().includes('.xls') ||
+      url.toLowerCase().includes('.xlsx') ||
+      url.toLowerCase().includes('.ppt') ||
+      url.toLowerCase().includes('.pptx')) {
+
       // Use Google Docs viewer for all document types with better parameters
       const googleDocsUrl = `https://docs.google.com/gview?embedded=true&rm=minimal&dpi=72&url=${encodeURIComponent(url)}`;
       console.log('Using Google Docs viewer URL:', googleDocsUrl);
       return { uri: googleDocsUrl };
     }
-    
+
     // Add parameters to force inline viewing for Google Docs/Drive
     let processedUrl = url;
     if (url.includes('docs.google.com') || url.includes('drive.google.com')) {
@@ -339,17 +339,17 @@ export default function ActivityDetail() {
         .replace(/[?&]download=1(?:&|$)/, '$1')
         .replace(/[?&]download=true(?:&|$)/, '$1')
         .replace(/[?&]force-download(?:&|$)/, '$1');
-      
+
       // Add viewer parameters if not already present
       if (!processedUrl.includes('embedded=true')) {
-        processedUrl = processedUrl.includes('?') 
-          ? `${processedUrl}&embedded=true&rm=minimal` 
+        processedUrl = processedUrl.includes('?')
+          ? `${processedUrl}&embedded=true&rm=minimal`
           : `${processedUrl}?embedded=true&rm=minimal`;
       }
     }
-    
+
     console.log('Final WebView URL:', processedUrl);
-    return { 
+    return {
       uri: processedUrl,
       headers: {
         'Accept': 'text/html,application/xhtml+xml,application/xml',
@@ -397,18 +397,18 @@ export default function ActivityDetail() {
     try {
       // Always use the submission data we have first
       let fullSubmission = submission;
-      
+
       // Only fetch full submission details if we don't have the file URL
       if (!getSubmissionFileUrl(submission)) {
         console.log('Fetching full submission details...');
         fullSubmission = await contentService.getSubmissionById(submission.id);
         console.log('Loaded full submission details:', fullSubmission);
       }
-      
+
       setSelectedSubmission(fullSubmission || submission);
       const fileUrl = getSubmissionFileUrl(fullSubmission || submission);
       console.log('File URL for preview:', fileUrl);
-      
+
       if (fileUrl) {
         // Ensure the URL is properly formatted
         const formattedUrl = fileUrl.startsWith('http') ? fileUrl : `https:${fileUrl}`;
@@ -443,7 +443,7 @@ export default function ActivityDetail() {
     // Block any requests that look like file downloads
     const downloadExtensions = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.zip', '.rar', '.7z', '.exe', '.dmg', '.pkg'];
     const isDownload = downloadExtensions.some(ext => request.url.toLowerCase().includes(ext));
-    
+
     if (isDownload) {
       Alert.alert(
         'View Only',
@@ -454,8 +454,8 @@ export default function ActivityDetail() {
     }
 
     // Only allow navigation within the current domain
-    const isAllowed = request.url.startsWith('https://docs.google.com/') || 
-                     request.url.startsWith('https://drive.google.com/');
+    const isAllowed = request.url.startsWith('https://docs.google.com/') ||
+      request.url.startsWith('https://drive.google.com/');
     if (!isAllowed) {
       // Block external navigation to prevent downloads
       console.log('Blocking external navigation to:', request.url);
@@ -550,10 +550,10 @@ export default function ActivityDetail() {
           setFile(
             existingSubmission.file_url
               ? {
-                  uri: existingSubmission.file_url,
-                  name: getFileNameFromUrl(existingSubmission.file_url) || 'Submitted Document',
-                  type: 'application/octet-stream',
-                }
+                uri: existingSubmission.file_url,
+                name: getFileNameFromUrl(existingSubmission.file_url) || 'Submitted Document',
+                type: 'application/octet-stream',
+              }
               : null
           );
           setStudentSubmissionData(existingSubmission);
@@ -564,7 +564,7 @@ export default function ActivityDetail() {
       } else if (isTeacher) {
         const allSubmissions = await contentService.getSubmissions(activity.id);
         console.log('Quiz submissions loaded:', allSubmissions?.length || 0, 'submissions');
-        
+
         // Debug: Show first submission structure for Quiz activities
         if (activity.category === 'quiz' && allSubmissions?.length > 0) {
           console.log('=== QUIZ SUBMISSION DEBUG ===');
@@ -582,7 +582,7 @@ export default function ActivityDetail() {
           });
           console.log('=== END QUIZ DEBUG ===');
         }
-        
+
         setSubmissions(allSubmissions);
 
         if (allSubmissions.length > 0) {
@@ -670,7 +670,7 @@ export default function ActivityDetail() {
       });
 
       await contentService.submitActivity(activity.id, submissionData);
-      
+
       // Update submission status
       const status = await contentService.getSubmissionStatus(activity.id);
       setSubmissionStatus(status);
@@ -678,7 +678,7 @@ export default function ActivityDetail() {
       const latestSubmission = await contentService.getOwnSubmission(activity.id);
       console.log('Latest submission fetched after submit:', latestSubmission);
       setStudentSubmissionData(latestSubmission);
-      
+
       // Show submitted popup and navigate back after a short delay
       setShowSubmittedPopup(true);
 
@@ -703,25 +703,31 @@ export default function ActivityDetail() {
   };
 
   // Handle grading
-  const handleGrade = async (submissionId, score) => {
-    try {
-      await contentService.gradeSubmission(submissionId, score);
-      
-      // Update submissions list
-      const updatedSubmissions = await contentService.getSubmissions(activity.id);
-      setSubmissions(updatedSubmissions);
-      
-      Alert.alert('Success', 'Grade assigned successfully!');
-      setGradingMode(false);
-      setGrading({});
-      
-      // Immediately trigger refresh of grading system with current timestamp
-      // This will be picked up by SubjectDetail's useEffect for refreshGrading
-      router.setParams({ refreshGrading: Date.now().toString() });
-    } catch (error) {
-      console.error('Grading error:', error);
-      Alert.alert('Error', 'Failed to assign grade. Please try again.');
+  const handleGrade = (submissionId, score) => {
+    const parsedScore = parseInt(score);
+
+    if (!parsedScore || parsedScore <= 0) {
+      Alert.alert('Error', 'Please enter a valid score greater than 0');
+      return;
     }
+
+    // Immediately update the UI state
+    setSubmissions(prev => prev.map(sub =>
+      sub.id === submissionId ? { ...sub, score: parsedScore } : sub
+    ));
+
+    // Clear grading input state
+    setGrading({});
+
+    // Send to backend in background
+    contentService.gradeSubmission(submissionId, parsedScore)
+      .then(() => {
+        Alert.alert('Success', 'Grade assigned successfully!');
+        router.setParams({ refreshGrading: Date.now().toString() });
+      })
+      .catch(() => {
+        Alert.alert('Warning', 'Grade shown locally but may not have saved to server. Please try again.');
+      });
   };
 
   // Handle student editing their submission
@@ -795,7 +801,7 @@ export default function ActivityDetail() {
       } else {
         await contentService.submitActivity(activity.id, updatedData);
       }
-      
+
       // Update submission status
       const status = await contentService.getSubmissionStatus(activity.id);
       setSubmissionStatus(status);
@@ -809,11 +815,11 @@ export default function ActivityDetail() {
           type: 'application/octet-stream',
         });
       }
-      
+
       setIsEditingSubmission(false);
       setEditSubmissionText('');
       setEditSubmissionFile(null);
-      
+
       Alert.alert('Success', 'Your submission has been updated!');
     } catch (error) {
       console.error('Edit submission error:', error);
@@ -869,15 +875,15 @@ export default function ActivityDetail() {
       } else {
         await contentService.submitActivity(activity.id, updatedData);
       }
-      
+
       // Reload submissions
       const updatedSubmissions = await contentService.getSubmissions(activity.id);
       setSubmissions(updatedSubmissions);
-      
+
       setIsEditingTeacherSubmission(null);
       setEditTeacherText('');
       setEditTeacherFile(null);
-      
+
       Alert.alert('Success', 'Submission has been updated!');
     } catch (error) {
       console.error('Edit submission error:', error);
@@ -934,19 +940,19 @@ export default function ActivityDetail() {
       // Update activity - you may need to add an updateActivity method to contentService
       // For now, we'll use a similar approach to submission
       console.log('Updating activity:', updatedActivity);
-      
+
       // Update the local activity state
       setActivity({
         ...activity,
         title: updatedActivity.title,
         description: updatedActivity.description
       });
-      
+
       setIsEditingActivity(false);
       setEditActivityTitle('');
       setEditActivityDescription('');
       setEditActivityFile(null);
-      
+
       Alert.alert('Success', 'Activity has been updated!');
     } catch (error) {
       console.error('Edit activity error:', error);
@@ -968,13 +974,13 @@ export default function ActivityDetail() {
       try {
         const activityData = JSON.parse(activityString);
         setActivity(activityData);
-        
+
         // Extract subject_id from activity object if available and not already set
         if (activityData.subject_id && !routeSubjectId) {
           console.log('Extracted subject_id from activity:', activityData.subject_id);
           setSubjectId(activityData.subject_id);
         }
-        
+
         setLoading(false);
       } catch (error) {
         console.error('Error parsing activity data:', error);
@@ -1011,7 +1017,7 @@ export default function ActivityDetail() {
 
   const getActivityType = () => {
     if (!activity) return '';
-    
+
     if (activity.category === 'major exam') return 'Written Exam';
     if (activity.category === 'lab exam') return 'Laboratory Exam';
     if (activity.category === 'laboratory') return 'Laboratory Activity';
@@ -1023,7 +1029,7 @@ export default function ActivityDetail() {
 
   const getActivityIcon = () => {
     if (!activity) return 'help-circle';
-    
+
     if (activity.category === 'major exam' || activity.category === 'lab exam') return 'school';
     if (activity.category === 'laboratory') return 'flask';
     if (activity.category === 'assignment') return 'create';
@@ -1046,13 +1052,13 @@ export default function ActivityDetail() {
 
   const getActivityColor = () => {
     if (!activity) return '#28a745';
-    
+
     if (activity.category === 'major exam' || activity.category === 'lab exam') return '#dc3545';
     if (activity.category === 'laboratory') return '#6f42c1';
     if (activity.category === 'assignment') return '#ffc107';
     if (activity.category === 'project') return '#20c997';
     if (activity.category === 'quiz') return '#17a2b8';
-    
+
     // Default color if no category matches
     return '#6c757d';
   };
@@ -1092,10 +1098,10 @@ export default function ActivityDetail() {
         <View style={[styles.card, { borderLeftColor: getActivityColor() }]}>
           <View style={styles.cardHeader}>
             <View style={[styles.iconContainer, { backgroundColor: getActivityColor() + '20' }]}>
-              <Ionicons 
-                name={getActivityIcon()} 
-                size={24} 
-                color={getActivityColor()} 
+              <Ionicons
+                name={getActivityIcon()}
+                size={24}
+                color={getActivityColor()}
               />
             </View>
             <View style={styles.cardHeaderText}>
@@ -1108,7 +1114,7 @@ export default function ActivityDetail() {
               )}
             </View>
             {isTeacher && (
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.menuButton}
                 onPress={() => setShowActivityEditMenu(true)}
               >
@@ -1170,7 +1176,7 @@ export default function ActivityDetail() {
         {isStudent && (
           <View style={styles.submissionContainer}>
             <Text style={styles.sectionTitle}>Your Submission</Text>
-            
+
             {/* Show submission status if already submitted */}
             {submissionStatus && submissionStatus.submitted && (
               <>
@@ -1223,7 +1229,7 @@ export default function ActivityDetail() {
                 )}
               </>
             )}
-            
+
             {/* Show submission form if not submitted */}
             {!submissionStatus?.submitted && (
               <>
@@ -1240,7 +1246,7 @@ export default function ActivityDetail() {
                 </View>
 
                 <Text style={[styles.inputLabel, { marginTop: 16 }]}>Or Upload a File</Text>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.uploadButton}
                   onPress={pickDocument}
                 >
@@ -1262,8 +1268,8 @@ export default function ActivityDetail() {
                   </View>
                 )}
 
-                <View style={{marginTop: 20}}>
-                  <TouchableOpacity 
+                <View style={{ marginTop: 20 }}>
+                  <TouchableOpacity
                     style={[
                       styles.submitButton,
                       (!submission.trim() && !file) && styles.submitButtonDisabled
@@ -1296,8 +1302,7 @@ export default function ActivityDetail() {
               submissions.map((sub) => {
                 const studentName = studentNames[sub.student_id] || `Student ${sub.student_id.slice(-6)}`;
                 console.log(`Rendering submission for student ${sub.student_id}:`, studentName);
-                console.log('Current studentNames state:', studentNames);
-                
+
                 return (
                   <View key={sub.id} style={styles.submissionCard}>
                     <View style={styles.submissionHeader}>
@@ -1308,30 +1313,30 @@ export default function ActivityDetail() {
                         Submitted: {formatDate(sub.created_at)}
                       </Text>
                     </View>
-                  
-                  {sub.content && (
-                    <View style={styles.submissionContent}>
-                      <Text style={styles.contentLabel}>Response:</Text>
-                      <Text style={styles.contentText}>{sub.content}</Text>
-                    </View>
-                  )}
-                  
-                  {getSubmissionFileUrl(sub) && (
-                    <>
-                      {isImageUrl(getSubmissionFileUrl(sub)) ? (
-                        <TouchableOpacity 
-                          onPress={() => {
-                            openSubmissionModal(sub);
-                          }}
-                        >
-                          <Image
-                            source={{ uri: getSubmissionFileUrl(sub) }}
-                            style={styles.teacherImagePreview}
-                            resizeMode="cover"
-                          />
-                        </TouchableOpacity>
-                      ) : (
-                        <View style={styles.teacherWebViewContainer}>
+
+                    {sub.content && (
+                      <View style={styles.submissionContent}>
+                        <Text style={styles.contentLabel}>Response:</Text>
+                        <Text style={styles.contentText}>{sub.content}</Text>
+                      </View>
+                    )}
+
+                    {getSubmissionFileUrl(sub) && (
+                      <>
+                        {isImageUrl(getSubmissionFileUrl(sub)) ? (
+                          <TouchableOpacity
+                            onPress={() => {
+                              openSubmissionModal(sub);
+                            }}
+                          >
+                            <Image
+                              source={{ uri: getSubmissionFileUrl(sub) }}
+                              style={styles.teacherImagePreview}
+                              resizeMode="cover"
+                            />
+                          </TouchableOpacity>
+                        ) : (
+                          <View style={styles.teacherWebViewContainer}>
                             <WebView
                               source={getWebViewSource(getSubmissionFileUrl(sub))}
                               style={styles.teacherWebView}
@@ -1358,13 +1363,13 @@ export default function ActivityDetail() {
                               onShouldStartLoadWithRequest={(request) => {
                                 // Skip navigation to 'about:blank' or empty URL
                                 if (!request.url || request.url === 'about:blank') return true;
-                                
+
                                 // Block download requests and force inline viewing
                                 const shouldBlock = !blockDownloads(request);
                                 if (shouldBlock) {
                                   return false;
                                 }
-                                
+
                                 // Only allow navigation within the same domain
                                 try {
                                   const currentUrl = new URL(filePreviewUrl || '');
@@ -1374,82 +1379,88 @@ export default function ActivityDetail() {
                                   return true; // Allow if URL parsing fails
                                 }
                               }}
-                            renderLoading={() => (
-                              <View style={styles.webViewLoader}>
-                                <ActivityIndicator size="large" color="#28a745" />
-                                <Text style={styles.loadingText}>Loading document...</Text>
-                              </View>
-                            )}
-                            onError={(syntheticEvent) => {
-                              const { nativeEvent } = syntheticEvent;
-                              // Only show error if not a navigation error (which can be common with WebView)
-                              if (!nativeEvent.description.includes('net::ERR_ABORTED')) {
-                                console.warn('WebView error:', nativeEvent);
-                              }
-                            }}
-                            onHttpError={(syntheticEvent) => {
-                              const { nativeEvent } = syntheticEvent;
-                              // Only log non-200 status codes
-                              if (nativeEvent.statusCode >= 400) {
-                                console.warn('WebView HTTP error:', nativeEvent.statusCode, nativeEvent.url);
-                              }
-                            }}
+                              renderLoading={() => (
+                                <View style={styles.webViewLoader}>
+                                  <ActivityIndicator size="large" color="#28a745" />
+                                  <Text style={styles.loadingText}>Loading document...</Text>
+                                </View>
+                              )}
+                              onError={(syntheticEvent) => {
+                                const { nativeEvent } = syntheticEvent;
+                                // Only show error if not a navigation error (which can be common with WebView)
+                                if (!nativeEvent.description.includes('net::ERR_ABORTED')) {
+                                  console.warn('WebView error:', nativeEvent);
+                                }
+                              }}
+                              onHttpError={(syntheticEvent) => {
+                                const { nativeEvent } = syntheticEvent;
+                                // Only log non-200 status codes
+                                if (nativeEvent.statusCode >= 400) {
+                                  console.warn('WebView HTTP error:', nativeEvent.statusCode, nativeEvent.url);
+                                }
+                              }}
+                            />
+                          </View>
+                        )}
+                      </>
+                    )}
+
+                    <TouchableOpacity
+                      style={styles.viewSubmissionButton}
+                      onPress={() => {
+                        console.log('=== BUTTON CLICK DEBUG ===');
+                        console.log('Submission clicked:', sub);
+                        console.log('Submission ID:', sub.id);
+                        console.log('All submission keys:', Object.keys(sub));
+
+                        const fileUrl = getSubmissionFileUrl(sub);
+                        console.log('Final file URL result:', fileUrl);
+
+                        if (fileUrl) {
+                          console.log('Opening full-screen viewer with URL:', fileUrl);
+                          openFullScreenFile(fileUrl, getFileNameFromUrl(fileUrl) || 'Submission');
+                        } else {
+                          console.log('No file URL found, showing alert');
+                          Alert.alert('No File', 'This submission does not have a file to view.');
+                        }
+                        console.log('=== END BUTTON DEBUG ===');
+                      }}
+                    >
+                      <Ionicons name="document-text" size={18} color="#fff" />
+                      <Text style={styles.viewSubmissionButtonText}>View Full Submission</Text>
+                    </TouchableOpacity>
+
+                    <View style={styles.gradeSection}>
+                      {sub.score > 0 ? (
+                        <View style={styles.gradedContainer}>
+                          <View style={styles.gradedBadge}>
+                            <Ionicons name="checkmark-circle" size={18} color="#155724" />
+                            <Text style={styles.gradedText}>Graded</Text>
+                          </View>
+                          <View style={styles.gradeDisplay}>
+                            <Text style={styles.gradeLabel}>Score:</Text>
+                            <Text style={styles.gradeValue}>{sub.score} / {activity.max_score || 100}</Text>
+                          </View>
+                        </View>
+                      ) : (
+                        <View style={styles.gradeInput}>
+                          <TextInput
+                            style={styles.gradeTextInput}
+                            placeholder="Enter score"
+                            value={grading[sub.id] || ''}
+                            onChangeText={(text) => setGrading(prev => ({ ...prev, [sub.id]: text }))}
+                            keyboardType="numeric"
                           />
+                          <TouchableOpacity
+                            style={styles.gradeButton}
+                            onPress={() => handleGrade(sub.id, parseInt(grading[sub.id]) || 0)}
+                          >
+                            <Text style={styles.gradeButtonText}>Grade</Text>
+                          </TouchableOpacity>
                         </View>
                       )}
-                    </>
-                  )}
-                  
-                  <TouchableOpacity
-                    style={styles.viewSubmissionButton}
-                    onPress={() => {
-                      console.log('=== BUTTON CLICK DEBUG ===');
-                      console.log('Submission clicked:', sub);
-                      console.log('Submission ID:', sub.id);
-                      console.log('All submission keys:', Object.keys(sub));
-                      
-                      const fileUrl = getSubmissionFileUrl(sub);
-                      console.log('Final file URL result:', fileUrl);
-                      
-                      if (fileUrl) {
-                        console.log('Opening full-screen viewer with URL:', fileUrl);
-                        openFullScreenFile(fileUrl, getFileNameFromUrl(fileUrl) || 'Submission');
-                      } else {
-                        console.log('No file URL found, showing alert');
-                        Alert.alert('No File', 'This submission does not have a file to view.');
-                      }
-                      console.log('=== END BUTTON DEBUG ===');
-                    }}
-                  >
-                    <Ionicons name="document-text" size={18} color="#fff" />
-                    <Text style={styles.viewSubmissionButtonText}>View Full Submission</Text>
-                  </TouchableOpacity>
-
-                  <View style={styles.gradeSection}>
-                    {sub.score > 0 ? (
-                      <View style={styles.gradeDisplay}>
-                        <Text style={styles.gradeLabel}>Grade:</Text>
-                        <Text style={styles.gradeValue}>{sub.score} points</Text>
-                      </View>
-                    ) : (
-                      <View style={styles.gradeInput}>
-                        <TextInput
-                          style={styles.gradeTextInput}
-                          placeholder="Enter score"
-                          value={grading[sub.id] || ''}
-                          onChangeText={(text) => setGrading(prev => ({...prev, [sub.id]: text}))}
-                          keyboardType="numeric"
-                        />
-                        <TouchableOpacity
-                          style={styles.gradeButton}
-                          onPress={() => handleGrade(sub.id, parseInt(grading[sub.id]) || 0)}
-                        >
-                          <Text style={styles.gradeButtonText}>Grade</Text>
-                        </TouchableOpacity>
-                      </View>
-                    )}
+                    </View>
                   </View>
-                </View>
                 );
               })
             )}
@@ -1463,12 +1474,12 @@ export default function ActivityDetail() {
           animationType="fade"
           onRequestClose={() => setShowActivityEditMenu(false)}
         >
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.modalOverlay}
             onPress={() => setShowActivityEditMenu(false)}
           >
             <View style={styles.menuDropdown}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.menuItem}
                 onPress={startEditActivity}
               >
@@ -1520,7 +1531,7 @@ export default function ActivityDetail() {
                 </View>
 
                 <Text style={[styles.inputLabel, { marginTop: 16 }]}>Activity File</Text>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.uploadButton}
                   onPress={handleEditActivityPickFile}
                 >
@@ -1610,7 +1621,7 @@ export default function ActivityDetail() {
                 )}
 
                 <Text style={[styles.inputLabel, { marginTop: 16 }]}>Or Upload a Different File</Text>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.uploadButton}
                   onPress={handleEditSubmissionPickFile}
                 >
@@ -1687,7 +1698,7 @@ export default function ActivityDetail() {
                 </View>
 
                 <Text style={[styles.inputLabel, { marginTop: 16 }]}>Or Update the File</Text>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.uploadButton}
                   onPress={handleEditTeacherPickFile}
                 >
@@ -1812,7 +1823,7 @@ export default function ActivityDetail() {
                             // Block any requests that look like file downloads
                             const downloadExtensions = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.zip', '.rar', '.7z', '.exe', '.dmg', '.pkg'];
                             const isDownload = downloadExtensions.some(ext => request.url.toLowerCase().includes(ext));
-                            
+
                             if (isDownload) {
                               Alert.alert(
                                 'View Only',
@@ -1896,12 +1907,12 @@ export default function ActivityDetail() {
                       if (!nativeEvent.description.includes('net::ERR_ABORTED')) {
                         // Show error with fallback option
                         Alert.alert(
-                          'Error Loading Document', 
+                          'Error Loading Document',
                           'Failed to load the document using the secure viewer. Would you like to try opening it directly?',
                           [
                             { text: 'Cancel', style: 'cancel' },
-                            { 
-                              text: 'Try Direct View', 
+                            {
+                              text: 'Try Direct View',
                               onPress: () => {
                                 // Fallback: try direct URL without Google Docs viewer
                                 console.log('Trying direct view for:', filePreviewUrl);
@@ -1916,7 +1927,7 @@ export default function ActivityDetail() {
                       const { nativeEvent } = syntheticEvent;
                       console.error('WebView HTTP error:', nativeEvent.statusCode, nativeEvent.url);
                       Alert.alert(
-                        'Error', 
+                        'Error',
                         `Failed to load the document (HTTP ${nativeEvent.statusCode}). The file may not be accessible.`,
                         [{ text: 'OK' }]
                       );
@@ -1924,7 +1935,7 @@ export default function ActivityDetail() {
                     onShouldStartLoadWithRequest={(request) => {
                       // Skip navigation to 'about:blank' or empty URL
                       if (!request.url || request.url === 'about:blank') return true;
-                      
+
                       // Block download requests and force inline viewing
                       const shouldBlock = !blockDownloads(request);
                       return !shouldBlock;
@@ -1935,7 +1946,7 @@ export default function ActivityDetail() {
                     allowsBackForwardNavigationGestures={false}
                     allowsLinkPreview={false}
                   />
-                  
+
                   {/* Fallback info text */}
                   <View style={{ padding: 12, backgroundColor: '#f8f9fa', borderTopWidth: 1, borderTopColor: '#e9ecef' }}>
                     <Text style={{ fontSize: 12, color: '#6c757d', textAlign: 'center' }}>
@@ -1958,7 +1969,7 @@ export default function ActivityDetail() {
           <View style={styles.fullScreenFileModalContainer}>
             {/* Header */}
             <View style={styles.fullScreenFileModalHeader}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.fullScreenFileCloseButton}
                 onPress={closeFullScreenFileModal}
               >
@@ -2003,9 +2014,9 @@ export default function ActivityDetail() {
                       // Block any requests that look like file downloads
                       const downloadExtensions = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.zip', '.rar', '.7z', '.exe', '.dmg', '.pkg'];
                       const isDownload = downloadExtensions.some(ext => request.url.toLowerCase().includes(ext)) ||
-                                       request.url.toLowerCase().includes('download') ||
-                                       request.url.toLowerCase().includes('force-download');
-                      
+                        request.url.toLowerCase().includes('download') ||
+                        request.url.toLowerCase().includes('force-download');
+
                       if (isDownload) {
                         Alert.alert(
                           'View Only',
@@ -2014,15 +2025,15 @@ export default function ActivityDetail() {
                         );
                         return false;
                       }
-                      
+
                       // Only allow navigation within Google Docs domain
-                      const isAllowed = request.url.startsWith('https://docs.google.com/') || 
-                                       request.url.startsWith('https://drive.google.com/');
+                      const isAllowed = request.url.startsWith('https://docs.google.com/') ||
+                        request.url.startsWith('https://drive.google.com/');
                       if (!isAllowed) {
                         console.log('Blocking external navigation to:', request.url);
                         return false;
                       }
-                      
+
                       return true;
                     }}
                     javaScriptEnabled={true}
@@ -2799,5 +2810,29 @@ const styles = StyleSheet.create({
   },
   gradeButtonDisabled: {
     opacity: 0.6,
+  },
+  gradedContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#d4edda',
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#c3e6cb',
+  },
+  gradedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#c3e6cb',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  gradedText: {
+    color: '#155724',
+    fontWeight: 'bold',
+    fontSize: 12,
+    marginLeft: 4,
   },
 });

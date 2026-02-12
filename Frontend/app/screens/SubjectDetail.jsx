@@ -1,11 +1,11 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { 
-  View, 
-  Text, 
-  FlatList, 
-  StyleSheet, 
-  Pressable, 
-  Alert, 
+import {
+  View,
+  Text,
+  FlatList,
+  StyleSheet,
+  Pressable,
+  Alert,
   Image,
   TouchableOpacity,
   Modal,
@@ -32,13 +32,13 @@ import { WebView } from 'react-native-webview';
 const DonutChart = ({ size = 200, data, centerGrade }) => {
   // Generate colors for different activity types
   const colors = [
-    '#32cd32', '#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', 
+    '#32cd32', '#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4',
     '#feca57', '#ff9ff3', '#54a0ff', '#48dbfb', '#00d2d3'
   ];
-  
+
   // Process data for chart - group by activity type and calculate average
   const groupedData = {};
-  
+
   try {
     data.forEach(item => {
       const key = item.category || 'Activity';
@@ -48,18 +48,18 @@ const DonutChart = ({ size = 200, data, centerGrade }) => {
           maxScore: 0,
           count: 0,
           title: key === 'quiz' ? 'Quiz' :
-                 key === 'major exam' ? 'Major Exam' :
-                 key === 'lab exam' ? 'Lab Exam' :
-                 key === 'assignment' ? 'Assignment' :
-                 key === 'laboratory' ? 'Laboratory' :
-                 key === 'project' ? 'Project' : 'Activity'
+            key === 'major exam' ? 'Major Exam' :
+              key === 'lab exam' ? 'Lab Exam' :
+                key === 'assignment' ? 'Assignment' :
+                  key === 'laboratory' ? 'Laboratory' :
+                    key === 'project' ? 'Project' : 'Activity'
         };
       }
       groupedData[key].totalScore += item.score || 0;
       groupedData[key].maxScore += item.maxScore || 100;
       groupedData[key].count += 1;
     });
-    
+
     // Calculate percentages for each activity type
     const chartData = Object.values(groupedData).map((item, index) => {
       const percentage = item.maxScore > 0 ? (item.totalScore / item.maxScore) * 100 : 0;
@@ -69,7 +69,7 @@ const DonutChart = ({ size = 200, data, centerGrade }) => {
         color: colors[index % colors.length]
       };
     }).filter(item => item.count > 0); // Only include activities that exist
-    
+
     return (
       <View style={styles.chartContainer}>
         <View style={styles.donutWrapper}>
@@ -78,16 +78,16 @@ const DonutChart = ({ size = 200, data, centerGrade }) => {
             {chartData.length > 0 ? (
               <>
                 {/* Background circle */}
-                <View style={[styles.donutBackground, { 
-                  width: size, 
-                  height: size, 
-                  borderRadius: size / 2 
+                <View style={[styles.donutBackground, {
+                  width: size,
+                  height: size,
+                  borderRadius: size / 2
                 }]} />
-                
+
                 {/* Performance rings */}
                 {chartData.map((item, index) => {
                   const ringSize = size - (index * 15);
-                  
+
                   return (
                     <View
                       key={index}
@@ -108,10 +108,10 @@ const DonutChart = ({ size = 200, data, centerGrade }) => {
                     />
                   );
                 })}
-                
+
                 {/* Center circle for donut hole */}
-                <View style={[styles.donutHole, { 
-                  width: size * 0.6, 
+                <View style={[styles.donutHole, {
+                  width: size * 0.6,
                   height: size * 0.6,
                   borderRadius: size * 0.3
                 }]}>
@@ -120,8 +120,8 @@ const DonutChart = ({ size = 200, data, centerGrade }) => {
                 </View>
               </>
             ) : (
-              <View style={[styles.donutHole, { 
-                width: size * 0.8, 
+              <View style={[styles.donutHole, {
+                width: size * 0.8,
                 height: size * 0.8,
                 borderRadius: size * 0.4
               }]}>
@@ -131,7 +131,7 @@ const DonutChart = ({ size = 200, data, centerGrade }) => {
             )}
           </View>
         </View>
-        
+
         {/* Legend */}
         {chartData.length > 0 && (
           <View style={styles.legendContainer}>
@@ -153,8 +153,8 @@ const DonutChart = ({ size = 200, data, centerGrade }) => {
     return (
       <View style={styles.chartContainer}>
         <View style={styles.donutWrapper}>
-          <View style={[styles.donutHole, { 
-            width: size * 0.8, 
+          <View style={[styles.donutHole, {
+            width: size * 0.8,
             height: size * 0.8,
             borderRadius: size * 0.4
           }]}>
@@ -171,13 +171,13 @@ export default function SubjectDetail() {
   const { isTeacher, isStudent } = useRBAC();
   const router = useRouter();
   const { subjectId, subjectName, refreshGrading } = useLocalSearchParams();
-  
+
   const [content, setContent] = useState([]);
   const [enrolledStudents, setEnrolledStudents] = useState([]);
   const [pendingStudents, setPendingStudents] = useState([]);
   const [creating, setCreating] = useState(false);
   const [directCreateType, setDirectCreateType] = useState(null); // Track direct creation from filter buttons
-  
+
   // Add ref for the performance section
   const performanceSectionRef = useRef(null);
   // Add ref for the main favorites scroll
@@ -198,12 +198,12 @@ export default function SubjectDetail() {
   const [showNotificationsModal, setShowNotificationsModal] = useState(false);
   const [studentGrades, setStudentGrades] = useState([]);
   const [studentGradesLoading, setStudentGradesLoading] = useState(false);
-  
+
   // Student performance state for Favorites tab
   const [studentPerformance, setStudentPerformance] = useState([]);
   const [currentGrade, setCurrentGrade] = useState(null);
   const [performanceLoading, setPerformanceLoading] = useState(false);
-  
+
   // Content creation form
   const [contentType, setContentType] = useState('lecture'); // 'lecture', 'activity', 'quiz', 'exam'
   const [examCategory, setExamCategory] = useState('written'); // 'written', 'laboratory'
@@ -213,7 +213,7 @@ export default function SubjectDetail() {
   const [maxScore, setMaxScore] = useState('100');
   const [selectedImage, setSelectedImage] = useState(null);
   const [selectedPdf, setSelectedPdf] = useState(null);
-  
+
   // PDF Viewer state
   const [selectedLecture, setSelectedLecture] = useState(null);
   const [pdfLoading, setPdfLoading] = useState(false);
@@ -264,16 +264,16 @@ export default function SubjectDetail() {
 
   const loadData = async (preserveExisting = false) => {
     if (!subjectId) return;
-    
+
     try {
       // Load content
       const contentData = await contentService.getSubjectContent(subjectId);
       console.log('Loaded content data:', contentData?.length || 0, 'items');
-      
+
       // Only update if we got actual data
       if (contentData && Array.isArray(contentData) && contentData.length > 0) {
         setContent(contentData);
-        
+
         // Load submission statuses for students
         if (isStudent) {
           loadSubmissionStatuses(contentData);
@@ -288,14 +288,14 @@ export default function SubjectDetail() {
         setContent([]);
       }
     }
-    
+
     if (isTeacher) {
       try {
         // Load students
         const students = await subjectService.getSubjectStudents(subjectId);
         const enrolled = students.filter(student => student.status === 'approved');
         const pending = students.filter(student => student.status === 'pending');
-        
+
         setEnrolledStudents(enrolled);
         setPendingStudents(pending);
       } catch (error) {
@@ -307,7 +307,7 @@ export default function SubjectDetail() {
   // Load submission statuses for activities and exams
   const loadSubmissionStatuses = async (contentData) => {
     const statuses = {};
-    
+
     for (const item of contentData) {
       if (item.type === 'activity') {
         try {
@@ -322,7 +322,7 @@ export default function SubjectDetail() {
         }
       }
     }
-    
+
     setSubmissionStatuses(statuses);
   };
 
@@ -364,16 +364,17 @@ export default function SubjectDetail() {
       const enrolledStudents = await subjectService.getSubjectStudents(subjectId);
       console.log('Found enrolled students:', enrolledStudents.length);
       console.log('Enrolled students:', enrolledStudents.map(s => ({ id: s.id, student_id: s.student_id, email: s.email, name: s.name })));
-      
+
       // Load all content for this subject to get activities
       const allContent = await contentService.getSubjectContent(subjectId);
       console.log('Loaded content items:', allContent?.length || 0);
       const activities = (allContent || []).filter(item => item.type === 'activity');
       console.log('Found activities:', activities.length);
-      
+
       const studentGrades = [];
-      
-      // For each enrolled student, calculate their grade
+
+      // For each enrolled student, calculate their grade by calling the backend
+      // This ensures we get the correct weighted average (30/10/5/5 etc.)
       for (const student of enrolledStudents) {
         if (student.status === 'approved' || !student.status) {
           // Skip if student has no identifying information
@@ -381,62 +382,43 @@ export default function SubjectDetail() {
             console.warn('Skipping student with no ID or email:', student);
             continue;
           }
-          
+
           const studentId = student.id;
-          const studentEmail = student.email;
-          console.log(`Student: ${student.name || 'Unknown'} (ID: ${studentId}, Email: ${studentEmail})`);
-          
-          let totalScore = 0;
-          let totalMaxScore = 0;
-          
-          // Get all activities and check for student's submissions
+          console.log(`Computing grade for student: ${student.name || 'Unknown'} (ID: ${studentId})`);
+
           try {
-            for (const activity of activities) {
-              try {
-                console.log(`Checking activity: ${activity.title} (ID: ${activity.id})`);
-                const submissions = await contentService.getSubmissions(activity.id);
-                console.log(`Found ${submissions.length} submissions for activity`);
-                console.log('Submissions:', submissions.map(s => ({ id: s.id, student_id: s.student_id, student_email: s.student_email, score: s.score, student_name: s.student_name })));
-                
-                // Try to match by student_id first, then by email
-                const studentSubmission = submissions.find(sub => 
-                  (studentId && sub.student_id && sub.student_id === studentId) ||
-                  (studentEmail && sub.student_email && sub.student_email === studentEmail)
-                );
-                console.log(`Looking for student ID: ${studentId}, Email: ${studentEmail}`);
-                console.log(`Found submission for this student:`, studentSubmission);
-                
-                if (studentSubmission) {
-                  const score = Number(studentSubmission.score);
-                  console.log(`Score value: ${studentSubmission.score}, converted: ${score}, type: ${typeof score}`);
-                  
-                  // Include submission if it has a score (even if 0, as long as it's been graded)
-                  if (score >= 0 && studentSubmission.score !== null && studentSubmission.score !== undefined) {
-                    totalScore += score;
-                    totalMaxScore += activity.max_score || 100;
-                    console.log(`${student.name} - ${activity.title}: +${score}`);
-                  }
-                }
-              } catch (error) {
-                console.warn(`Error checking activity ${activity.id}:`, error);
-              }
+            // Call the backend to compute the grade
+            const computedGrade = await contentService.computeStudentGrade(studentId, subjectId);
+
+            if (computedGrade) {
+              console.log(`Computed grade for ${student.name}:`, computedGrade.score);
+
+              // Add to results
+              studentGrades.push({
+                student_id: studentId,
+                student_name: student.name || student.email || `Student ${String(studentId).slice(-6)}`,
+                final_grade: typeof computedGrade.score === 'number' ? computedGrade.score : 0
+              });
+            } else {
+              // If computation failed or returned null (e.g. no activities), show 0
+              studentGrades.push({
+                student_id: studentId,
+                student_name: student.name || student.email || `Student ${String(studentId).slice(-6)}`,
+                final_grade: 0
+              });
             }
           } catch (error) {
-            console.warn('Error getting activities:', error);
+            console.error(`Error computing grade for ${student.name}:`, error);
+            // Fallback to 0 on error
+            studentGrades.push({
+              student_id: studentId,
+              student_name: student.name || student.email || `Student ${String(studentId).slice(-6)}`,
+              final_grade: 0
+            });
           }
-          
-          // Calculate percentage
-          const finalGrade = totalMaxScore > 0 ? (totalScore / totalMaxScore) * 100 : 0;
-          console.log(`${student.name} final grade: ${finalGrade.toFixed(1)}%`);
-          
-          studentGrades.push({
-            student_id: studentId || studentEmail,
-            student_name: student.name || studentEmail || `Student ${String(studentId).slice(-6)}`,
-            final_grade: finalGrade
-          });
         }
       }
-    
+
       console.log('Updated student grades:', studentGrades);
       console.log('Setting studentGrades state with', studentGrades.length, 'students');
       setStudentGrades(studentGrades);
@@ -465,46 +447,25 @@ export default function SubjectDetail() {
       // Load current grade from backend with offline handling
       try {
         const grade = await contentService.getStudentGrade(subjectId);
-        console.log('Loaded current grade from backend:', grade);
-        
-        // If backend grade fails or returns null, calculate from performance data
+        console.log('Loaded current grade from backend/cache:', grade);
+
+        // If backend grade fails or returns null, we should NOT calculate it locally
+        // because the backend uses a complex weighted formula (30/10/5/5 etc.)
+        // and a simple average here would be misleading.
         if (!grade || grade.score === undefined || grade.score === null) {
-          console.log('Backend grade not available, calculating from performance data');
-          if (performance.length > 0) {
-            // Calculate overall grade from performance data
-            const totalScore = performance.reduce((sum, item) => sum + (item.score || 0), 0);
-            const totalMaxScore = performance.reduce((sum, item) => sum + (item.maxScore || 100), 0);
-            const calculatedGrade = totalMaxScore > 0 ? (totalScore / totalMaxScore) * 100 : 0;
-            
-            console.log('Calculated grade:', {
-              totalScore,
-              totalMaxScore,
-              calculatedGrade
-            });
-            
-            setCurrentGrade({ score: calculatedGrade });
-          } else {
-            setCurrentGrade({ score: 0 });
-          }
+          console.log('Backend grade not available yet.');
+          setCurrentGrade(null);
         } else {
           setCurrentGrade(grade);
         }
       } catch (gradeError) {
         console.warn('Backend not available - using offline grade calculation:', gradeError.message);
-        // Fallback to calculation from performance data
-        if (performance.length > 0) {
-          const totalScore = performance.reduce((sum, item) => sum + (item.score || 0), 0);
-          const totalMaxScore = performance.reduce((sum, item) => sum + (item.maxScore || 100), 0);
-          const calculatedGrade = totalMaxScore > 0 ? (totalScore / totalMaxScore) * 100 : 0;
-          setCurrentGrade({ score: calculatedGrade });
-        } else {
-          setCurrentGrade({ score: 0 });
-        }
+        setCurrentGrade(null);
       }
     } catch (error) {
       console.error('Failed to load student performance:', error);
       setStudentPerformance([]);
-      setCurrentGrade({ score: 0 }); // Set to 0 instead of null to avoid display issues
+      setCurrentGrade(null);
     } finally {
       setPerformanceLoading(false);
     }
@@ -553,24 +514,24 @@ export default function SubjectDetail() {
       if (isTeacher) {
         // Don't clear generated notifications - preserve them like Student Interface
         // notificationService.clearAllNotificationsOnRefresh();
-        
+
         // Get backend notifications and preserve their read state
         const backend = await notificationService.getBackendNotifications();
         const backendReadIds = new Set(backend.filter(n => n.is_read === true || n.is_read === 1).map(n => n.id));
-        
+
         // Also get generated notification read state
         const generatedReadIds = notificationService.getReadGeneratedNotifications();
-        
+
         // Also get inside notification read state
         const insideReadIds = notificationService.getReadInsideNotifications();
-        
+
         // Merge all read states and set globally
         const allReadIds = new Set([...backendReadIds, ...generatedReadIds, ...insideReadIds]);
         notificationService.setGlobalReadNotifications(allReadIds);
         setReadNotifications(allReadIds);
       }
     };
-    
+
     initializeReadNotifications();
   }, [isTeacher]);
 
@@ -589,10 +550,10 @@ export default function SubjectDetail() {
   const markNotificationAsRead = (notificationId) => {
     // Update global shared state
     notificationService.addToGlobalReadNotifications(notificationId);
-    
+
     // Update local state for immediate UI update
     setReadNotifications(prev => new Set([...prev, notificationId]));
-    
+
     // Also update persistent storage
     notificationService.markInsideNotificationAsRead(notificationId);
   };
@@ -615,11 +576,11 @@ export default function SubjectDetail() {
     console.log('Notification type:', notification.type);
     console.log('Is already read:', readNotifications.has(notification.id));
     console.log('Current read notifications:', Array.from(readNotifications.values()));
-    
+
     // Mark as read if not already read
     if (!readNotifications.has(notification.id)) {
       console.log('Marking notification as read:', notification.id);
-      
+
       // Use main notificationService.markAsRead for proper persistence like general notifications
       try {
         await notificationService.markAsRead(notification.id);
@@ -627,7 +588,7 @@ export default function SubjectDetail() {
       } catch (error) {
         console.warn('Failed to mark notification as read on backend:', error);
       }
-      
+
       // Then mark locally for immediate UI update
       markNotificationAsRead(notification.id);
       console.log('Updated local read state');
@@ -644,7 +605,7 @@ export default function SubjectDetail() {
           // Navigate to activity detail screen
           router.push({
             pathname: '/screens/ActivityDetail',
-            params: { 
+            params: {
               activity: JSON.stringify(activityDetails),
               subjectId: subjectId,
               subjectName: subjectName || 'Subject'
@@ -658,7 +619,7 @@ export default function SubjectDetail() {
           if (foundActivity) {
             router.push({
               pathname: '/screens/ActivityDetail',
-              params: { 
+              params: {
                 activity: JSON.stringify(foundActivity),
                 subjectId: subjectId,
                 subjectName: subjectName || 'Subject'
@@ -776,10 +737,10 @@ export default function SubjectDetail() {
         content: description.trim() || '',
         type: contentType,
       };
-      
+
       console.log('=== CREATING CONTENT ===');
       console.log('Data to send:', { title: data.title, content: data.content, type: data.type, hasFile: !!file });
-      
+
       if (file) {
         console.log('File details:', {
           uri: file.uri,
@@ -816,7 +777,7 @@ export default function SubjectDetail() {
 
       const result = await contentService.createContent(subjectId, data);
       console.log('Created successfully:', result);
-      
+
       // Reset form
       setTitle('');
       setDescription('');
@@ -826,7 +787,7 @@ export default function SubjectDetail() {
       setExamCategory('written');
       setExamTerm('midterm');
       closeModal();
-      
+
       // Immediately show the created item
       if (result && result.id) {
         // Add the created item to the state immediately
@@ -846,13 +807,13 @@ export default function SubjectDetail() {
         console.log('Added item to state:', newItem);
         console.log('Updated content count:', content.length + 1);
       }
-      
+
       // Also reload content in case backend returned something different
       // But preserve existing content in case reload fails
       setTimeout(async () => {
         await loadData(true);
       }, 1000);
-      
+
       Alert.alert('Success', `${contentType} created successfully`);
     } catch (error) {
       console.error('=== ERROR CREATING CONTENT ===');
@@ -860,7 +821,7 @@ export default function SubjectDetail() {
       console.error('Error response:', error?.response);
       console.error('Error data:', error?.response?.data);
       console.error('Error status:', error?.response?.status);
-      
+
       const errorMessage = error?.message || error?.response?.data?.detail || 'Failed to create content. Please try again.';
       Alert.alert('Error', errorMessage);
     }
@@ -888,7 +849,7 @@ export default function SubjectDetail() {
     // Navigate to activity detail screen with the item data
     router.push({
       pathname: '/screens/ActivityDetail',
-      params: { 
+      params: {
         activity: JSON.stringify(item),
         subjectId: subjectId,
         subjectName: subjectName || 'Subject'
@@ -906,10 +867,10 @@ export default function SubjectDetail() {
     const isQuiz = item.type === 'activity' && item.category === 'quiz';
     const isActivity = isExam || isLab || isAssignment || isProject || isQuiz;
     const showTerm = (item.type === 'activity' || item.type === 'quiz' || isExam || isLab || isAssignment || isProject) && item.term;
-    
+
     // Check submission status for students
     const submissionStatus = isStudent && isActivity ? submissionStatuses[item.id] : null;
-    
+
     // Determine the onPress handler based on content type
     const onPressHandler = () => {
       if (item.type === 'lecture' && hasPdf) {
@@ -918,16 +879,16 @@ export default function SubjectDetail() {
         handleActivityPress(item);
       }
     };
-    
+
     return (
-      <TouchableOpacity 
+      <TouchableOpacity
         style={[styles.contentWrapper, isActivity && styles.activityWrapper]}
         onPress={onPressHandler}
         activeOpacity={0.7}
       >
         <View style={styles.contentRow}>
           <View style={[
-            styles.contentThumb, 
+            styles.contentThumb,
             (hasPdf || isActivity) && styles.contentThumbActive,
             isExam && styles.examThumb,
             isLab && styles.labThumb,
@@ -957,8 +918,8 @@ export default function SubjectDetail() {
           <View style={styles.contentBar}>
             <Text style={styles.contentTitle}>{(item.title || 'Untitled').toUpperCase()}</Text>
             <Text style={styles.contentType}>
-              {isExam ? 'EXAM' : isLab ? 'LAB' : isAssignment ? 'ASSIGNMENT' : 
-               isProject ? 'PROJECT' : isQuiz ? 'QUIZ' : (item.type || 'content').toUpperCase()}
+              {isExam ? 'EXAM' : isLab ? 'LAB' : isAssignment ? 'ASSIGNMENT' :
+                isProject ? 'PROJECT' : isQuiz ? 'QUIZ' : (item.type || 'content').toUpperCase()}
               {isExam && ` - ${item.category === 'major exam' ? 'Written' : 'Laboratory'}`}
               {showTerm && ` (${item.term || 'Midterm'})`}
             </Text>
@@ -967,7 +928,7 @@ export default function SubjectDetail() {
             ) : isActivity ? (
               <Text style={styles.contentSubtext}>Tap to view details</Text>
             ) : null}
-            
+
             {/* Show submission status for students */}
             {submissionStatus && (
               <View style={styles.submissionStatus}>
@@ -999,14 +960,14 @@ export default function SubjectDetail() {
       </View>
       <Text style={styles.studentName}>{item.name}</Text>
       <View style={styles.actionButtons}>
-        <TouchableOpacity 
-          style={styles.rejectButton} 
+        <TouchableOpacity
+          style={styles.rejectButton}
           onPress={() => handleReject(item.id)}
         >
           <Ionicons name="close" size={16} color="#fff" />
         </TouchableOpacity>
-        <TouchableOpacity 
-          style={styles.acceptButton} 
+        <TouchableOpacity
+          style={styles.acceptButton}
           onPress={() => handleAccept(item.id)}
         >
           <Ionicons name="checkmark" size={16} color="#fff" />
@@ -1020,11 +981,11 @@ export default function SubjectDetail() {
     console.log('Student name:', item.student_name);
     console.log('Final grade:', item.final_grade);
     console.log('Final grade type:', typeof item.final_grade);
-    
+
     // Ensure final_grade is a number
     const grade = Number(item.final_grade) || 0;
     console.log('Converted grade:', grade, 'type:', typeof grade);
-    
+
     return (
       <View style={styles.simpleGradedCard}>
         <View style={styles.simpleGradedRow}>
@@ -1044,7 +1005,7 @@ export default function SubjectDetail() {
   return (
     <View style={styles.container}>
       <View style={styles.headerRow}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.backButton}
           onPress={() => router.back()}
         >
@@ -1054,7 +1015,7 @@ export default function SubjectDetail() {
           {isTeacher ? (selectedTab === 'notifications' ? 'GRADING SYSTEM' : selectedTab === 'students' ? 'STUDENTS LIST' : (contentFilter === 'activity' || contentFilter === 'lecture') ? 'ASSESSMENT TASK' : 'STUDENTS LIST') : studentTab === 'lessons' ? 'LESSONS' : studentTab === 'activities' ? 'ACT/ASS' : 'PERFORMANCE'}
         </Text>
         {isTeacher && (
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.refreshButton}
             onPress={() => {
               // Toggle notifications modal
@@ -1133,8 +1094,8 @@ export default function SubjectDetail() {
 
       {/* FAB Button for creating content (Teachers only) */}
       {isTeacher && !creating && selectedTab !== 'students' && selectedTab !== 'notifications' && (
-        <FABButton 
-          bottom={120} 
+        <FABButton
+          bottom={120}
           onPress={() => {
             if (contentFilter === 'exam') {
               // Toggle the project menu for exams
@@ -1148,7 +1109,7 @@ export default function SubjectDetail() {
               // Default behavior - show type selection
               setCreating(true);
             }
-          }} 
+          }}
         />
       )}
 
@@ -1157,7 +1118,7 @@ export default function SubjectDetail() {
         <View style={[styles.floatingMenuContainer, { bottom: 180 }]}>
           <View style={styles.floatingMenu}>
             {/* Exam Button */}
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[
                 styles.floatingMenuItem,
                 styles.floatingMenuItem5, // Style for exam button
@@ -1176,7 +1137,7 @@ export default function SubjectDetail() {
             </TouchableOpacity>
 
             {/* Project Button */}
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[
                 styles.floatingMenuItem,
                 styles.floatingMenuItem4, // Style for project button
@@ -1202,7 +1163,7 @@ export default function SubjectDetail() {
         <View style={styles.floatingMenuContainer}>
           <View style={styles.floatingMenu}>
             {/* Quiz Button */}
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[
                 styles.floatingMenuItem,
                 styles.floatingMenuItem1,
@@ -1221,7 +1182,7 @@ export default function SubjectDetail() {
             </TouchableOpacity>
 
             {/* Assignment Button */}
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[
                 styles.floatingMenuItem,
                 styles.floatingMenuItem2,
@@ -1240,7 +1201,7 @@ export default function SubjectDetail() {
             </TouchableOpacity>
 
             {/* Laboratory Button */}
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[
                 styles.floatingMenuItem,
                 styles.floatingMenuItem3,
@@ -1266,7 +1227,7 @@ export default function SubjectDetail() {
         <ScrollView style={styles.contentArea}>
           {/* Filter Buttons */}
           <View style={styles.filterContainer}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.filterButton, contentFilter === 'lecture' && styles.filterButtonActive]}
               onPress={() => {
                 setContentFilter('lecture');
@@ -1277,7 +1238,7 @@ export default function SubjectDetail() {
                 LECTURE
               </Text>
             </TouchableOpacity>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.filterButton, contentFilter === 'activity' && styles.filterButtonActive]}
               onPress={() => {
                 setContentFilter('activity');
@@ -1289,7 +1250,7 @@ export default function SubjectDetail() {
                 ACTIVITY
               </Text>
             </TouchableOpacity>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.filterButton, contentFilter === 'exam' && styles.filterButtonActive]}
               onPress={() => {
                 setContentFilter('exam');
@@ -1311,11 +1272,11 @@ export default function SubjectDetail() {
                 if (contentFilter === 'exam') return item.category === 'major exam' || item.category === 'lab exam' || item.category === 'project';
                 return true;
               });
-              console.log('Filtered content:', { 
-                total: content.length, 
-                filter: contentFilter, 
+              console.log('Filtered content:', {
+                total: content.length,
+                filter: contentFilter,
                 filteredCount: filtered.length,
-                filtered: filtered 
+                filtered: filtered
               });
               return filtered;
             })()}
@@ -1353,12 +1314,12 @@ export default function SubjectDetail() {
           {studentTab === 'activities' && (
             <View style={styles.studentContentContainer}>
               {/* Activity Type Filter Buttons */}
-              <ScrollView 
-                horizontal 
+              <ScrollView
+                horizontal
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.activityFilterContainer}
               >
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={[styles.activityFilterButton, activityFilter === 'all' && styles.activityFilterButtonActive]}
                   onPress={() => setActivityFilter('all')}
                 >
@@ -1366,8 +1327,8 @@ export default function SubjectDetail() {
                     All
                   </Text>
                 </TouchableOpacity>
-                
-                <TouchableOpacity 
+
+                <TouchableOpacity
                   style={[styles.activityFilterButton, activityFilter === 'quiz' && styles.activityFilterButtonActive]}
                   onPress={() => setActivityFilter('quiz')}
                 >
@@ -1375,8 +1336,8 @@ export default function SubjectDetail() {
                     Quiz
                   </Text>
                 </TouchableOpacity>
-                
-                <TouchableOpacity 
+
+                <TouchableOpacity
                   style={[styles.activityFilterButton, activityFilter === 'assignment' && styles.activityFilterButtonActive]}
                   onPress={() => setActivityFilter('assignment')}
                 >
@@ -1384,8 +1345,8 @@ export default function SubjectDetail() {
                     Assignment
                   </Text>
                 </TouchableOpacity>
-                
-                <TouchableOpacity 
+
+                <TouchableOpacity
                   style={[styles.activityFilterButton, activityFilter === 'lab' && styles.activityFilterButtonActive]}
                   onPress={() => setActivityFilter('lab')}
                 >
@@ -1393,8 +1354,8 @@ export default function SubjectDetail() {
                     Laboratory
                   </Text>
                 </TouchableOpacity>
-                
-                <TouchableOpacity 
+
+                <TouchableOpacity
                   style={[styles.activityFilterButton, activityFilter === 'project' && styles.activityFilterButtonActive]}
                   onPress={() => setActivityFilter('project')}
                 >
@@ -1402,8 +1363,8 @@ export default function SubjectDetail() {
                     Project
                   </Text>
                 </TouchableOpacity>
-                
-                <TouchableOpacity 
+
+                <TouchableOpacity
                   style={[styles.activityFilterButton, activityFilter === 'exam' && styles.activityFilterButtonActive]}
                   onPress={() => setActivityFilter('exam')}
                 >
@@ -1411,8 +1372,8 @@ export default function SubjectDetail() {
                     Exam
                   </Text>
                 </TouchableOpacity>
-                
-                <TouchableOpacity 
+
+                <TouchableOpacity
                   style={[styles.activityFilterButton, activityFilter === 'lab_exam' && styles.activityFilterButtonActive]}
                   onPress={() => setActivityFilter('lab_exam')}
                 >
@@ -1427,7 +1388,7 @@ export default function SubjectDetail() {
                 data={content.filter(item => {
                   // Filter by activity type
                   if (item.type !== 'activity') return false;
-                  
+
                   // Apply activity type filter
                   if (activityFilter === 'all') return true;
                   if (activityFilter === 'quiz') return item.category === 'quiz';
@@ -1444,8 +1405,8 @@ export default function SubjectDetail() {
                 scrollEnabled={false}
                 ListEmptyComponent={
                   <Text style={styles.emptyText}>
-                    {activityFilter === 'all' 
-                      ? 'No activities yet' 
+                    {activityFilter === 'all'
+                      ? 'No activities yet'
                       : `No ${activityFilter.replace('_', ' ').toLowerCase()} activities yet`
                     }
                   </Text>
@@ -1463,16 +1424,16 @@ export default function SubjectDetail() {
                   <Text style={styles.loadingText}>Loading your performance...</Text>
                 </View>
               ) : (
-                <ScrollView 
+                <ScrollView
                   showsVerticalScrollIndicator={true}
                   style={styles.favoritesScrollView}
                   contentContainerStyle={styles.favoritesScrollContent}
                   ref={favoritesScrollViewRef}
                 >
                   {/* Donut Chart - Performance Overview */}
-                  <DonutChart 
-                    size={200} 
-                    data={studentPerformance} 
+                  <DonutChart
+                    size={200}
+                    data={studentPerformance}
                     centerGrade={currentGrade && currentGrade.score !== undefined ? currentGrade.score.toFixed(1) : '0.0'}
                   />
 
@@ -1481,7 +1442,7 @@ export default function SubjectDetail() {
                     <View style={styles.performanceHeaderContainer}>
                       <Text style={styles.performanceTitle}>Activity Performance</Text>
                       {studentPerformance.length > 3 && (
-                        <TouchableOpacity 
+                        <TouchableOpacity
                           style={styles.scrollButton}
                           onPress={scrollToBottomOfActivities}
                         >
@@ -1512,11 +1473,11 @@ export default function SubjectDetail() {
                             <View style={styles.performanceDetails}>
                               <Text style={styles.performanceCategory}>
                                 {item.category === 'quiz' ? 'Quiz' :
-                                 item.category === 'major exam' ? 'Major Exam' :
-                                 item.category === 'lab exam' ? 'Lab Exam' :
-                                 item.category === 'assignment' ? 'Assignment' :
-                                 item.category === 'laboratory' ? 'Laboratory' :
-                                 item.category === 'project' ? 'Project' : 'Activity'}
+                                  item.category === 'major exam' ? 'Major Exam' :
+                                    item.category === 'lab exam' ? 'Lab Exam' :
+                                      item.category === 'assignment' ? 'Assignment' :
+                                        item.category === 'laboratory' ? 'Laboratory' :
+                                          item.category === 'project' ? 'Project' : 'Activity'}
                               </Text>
                               <Text style={styles.performanceScoreDetail}>
                                 Score: {item.score}/{item.maxScore}
@@ -1538,16 +1499,16 @@ export default function SubjectDetail() {
       )}
 
       {/* Create Content Modal - Opens from FAB button */}
-      <Modal 
-        visible={creating} 
-        transparent 
-        animationType="slide" 
+      <Modal
+        visible={creating}
+        transparent
+        animationType="slide"
         onRequestClose={closeModal}
       >
         <View style={styles.modalBackdrop}>
           <ScrollView style={styles.modal} contentContainerStyle={styles.modalScrollContent}>
             <Text style={styles.modalTitle}>Create {contentType.toUpperCase()}</Text>
-            
+
             <TextInput
               placeholder="Title"
               value={title}
@@ -1581,7 +1542,7 @@ export default function SubjectDetail() {
               <View style={styles.typeContainer}>
                 <Text style={styles.label}>Term:</Text>
                 <View style={styles.typeButtons}>
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={[styles.typeButton, examTerm === 'midterm' && styles.typeButtonActive]}
                     onPress={() => setExamTerm('midterm')}
                   >
@@ -1589,7 +1550,7 @@ export default function SubjectDetail() {
                       Midterm
                     </Text>
                   </TouchableOpacity>
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={[styles.typeButton, examTerm === 'final' && styles.typeButtonActive]}
                     onPress={() => setExamTerm('final')}
                   >
@@ -1607,7 +1568,7 @@ export default function SubjectDetail() {
                 <View style={styles.typeContainer}>
                   <Text style={styles.label}>Exam Type:</Text>
                   <View style={styles.typeButtons}>
-                    <TouchableOpacity 
+                    <TouchableOpacity
                       style={[styles.typeButton, examCategory === 'written' && styles.typeButtonActive]}
                       onPress={() => setExamCategory('written')}
                     >
@@ -1615,7 +1576,7 @@ export default function SubjectDetail() {
                         Written
                       </Text>
                     </TouchableOpacity>
-                    <TouchableOpacity 
+                    <TouchableOpacity
                       style={[styles.typeButton, examCategory === 'laboratory' && styles.typeButtonActive]}
                       onPress={() => setExamCategory('laboratory')}
                     >
@@ -1629,7 +1590,7 @@ export default function SubjectDetail() {
                 <View style={styles.typeContainer}>
                   <Text style={styles.label}>Exam Term:</Text>
                   <View style={styles.typeButtons}>
-                    <TouchableOpacity 
+                    <TouchableOpacity
                       style={[styles.typeButton, examTerm === 'midterm' && styles.typeButtonActive]}
                       onPress={() => setExamTerm('midterm')}
                     >
@@ -1637,7 +1598,7 @@ export default function SubjectDetail() {
                         Midterm
                       </Text>
                     </TouchableOpacity>
-                    <TouchableOpacity 
+                    <TouchableOpacity
                       style={[styles.typeButton, examTerm === 'final' && styles.typeButtonActive]}
                       onPress={() => setExamTerm('final')}
                     >
@@ -1688,17 +1649,17 @@ export default function SubjectDetail() {
       </Modal>
 
       {/* Activity Submenu Modal */}
-      <Modal 
-        visible={showActivitySubmenu} 
-        transparent 
-        animationType="slide" 
+      <Modal
+        visible={showActivitySubmenu}
+        transparent
+        animationType="slide"
         onRequestClose={() => setShowActivitySubmenu(false)}
       >
         <View style={styles.modalBackdrop}>
           <View style={styles.modal}>
             <Text style={styles.modalTitle}>Choose Activity Type</Text>
-            
-            <TouchableOpacity 
+
+            <TouchableOpacity
               style={styles.submenuButton}
               onPress={() => {
                 setShowActivitySubmenu(false);
@@ -1709,7 +1670,7 @@ export default function SubjectDetail() {
               <Text style={styles.submenuButtonText}>Quiz</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.submenuButton}
               onPress={() => {
                 setShowActivitySubmenu(false);
@@ -1720,7 +1681,7 @@ export default function SubjectDetail() {
               <Text style={styles.submenuButtonText}>Assignment</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.submenuButton}
               onPress={() => {
                 setShowActivitySubmenu(false);
@@ -1745,7 +1706,7 @@ export default function SubjectDetail() {
         {isTeacher ? (
           <>
             {/* Tab 1: Students */}
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.subjectTabItem, selectedTab === 'students' && styles.activeTab]}
               onPress={() => setSelectedTab('students')}
             >
@@ -1753,9 +1714,9 @@ export default function SubjectDetail() {
                 <Ionicons name="people" size={24} color={selectedTab === 'students' ? '#28a745' : '#000'} />
               </View>
             </TouchableOpacity>
-            
+
             {/* Tab 2: Content/Create */}
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.subjectTabItem, selectedTab !== 'students' && selectedTab !== 'notifications' && styles.activeTab]}
               onPress={() => {
                 setSelectedTab(null); // Show content view
@@ -1765,9 +1726,9 @@ export default function SubjectDetail() {
                 <Ionicons name="document-text" size={24} color="#28a745" />
               </View>
             </TouchableOpacity>
-            
+
             {/* Tab 3: Grading System */}
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.subjectTabItem, selectedTab === 'notifications' && styles.activeTab]}
               onPress={() => setSelectedTab('notifications')}
             >
@@ -1779,7 +1740,7 @@ export default function SubjectDetail() {
         ) : (
           <>
             {/* Student Navigation - Lessons Tab */}
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.subjectTabItem, studentTab === 'lessons' && styles.activeTab]}
               onPress={() => setStudentTab('lessons')}
             >
@@ -1787,9 +1748,9 @@ export default function SubjectDetail() {
                 <Ionicons name="book" size={24} color={studentTab === 'lessons' ? '#28a745' : '#000'} />
               </View>
             </TouchableOpacity>
-            
+
             {/* Student Navigation - Activities Tab */}
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.subjectTabItem, studentTab === 'activities' && styles.activeTab]}
               onPress={() => setStudentTab('activities')}
             >
@@ -1797,9 +1758,9 @@ export default function SubjectDetail() {
                 <Ionicons name="document-text" size={24} color={studentTab === 'activities' ? '#28a745' : '#000'} />
               </View>
             </TouchableOpacity>
-            
+
             {/* Student Navigation - Performance Tab */}
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.subjectTabItem, studentTab === 'favorites' && styles.activeTab]}
               onPress={() => setStudentTab('favorites')}
             >
@@ -1821,7 +1782,7 @@ export default function SubjectDetail() {
         <View style={styles.pdfModalContainer}>
           {/* Header */}
           <View style={styles.pdfModalHeader}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.pdfCloseButton}
               onPress={() => setSelectedLecture(null)}
             >
@@ -1859,9 +1820,9 @@ export default function SubjectDetail() {
                   // Block any requests that look like file downloads
                   const downloadExtensions = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.zip', '.rar', '.7z', '.exe', '.dmg', '.pkg'];
                   const isDownload = downloadExtensions.some(ext => request.url.toLowerCase().includes(ext)) ||
-                                   request.url.toLowerCase().includes('download') ||
-                                   request.url.toLowerCase().includes('force-download');
-                  
+                    request.url.toLowerCase().includes('download') ||
+                    request.url.toLowerCase().includes('force-download');
+
                   if (isDownload) {
                     Alert.alert(
                       'View Only',
@@ -1870,15 +1831,15 @@ export default function SubjectDetail() {
                     );
                     return false;
                   }
-                  
+
                   // Only allow navigation within Google Docs domain
-                  const isAllowed = request.url.startsWith('https://docs.google.com/') || 
-                                   request.url.startsWith('https://drive.google.com/');
+                  const isAllowed = request.url.startsWith('https://docs.google.com/') ||
+                    request.url.startsWith('https://drive.google.com/');
                   if (!isAllowed) {
                     console.log('Blocking external navigation to:', request.url);
                     return false;
                   }
-                  
+
                   return true;
                 }}
                 javaScriptEnabled={true}
@@ -1913,15 +1874,15 @@ export default function SubjectDetail() {
           <View style={styles.notificationsModal}>
             <View style={styles.notificationsModalHeader}>
               <Text style={styles.notificationsModalTitle}>Notifications</Text>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.notificationsModalCloseButton}
                 onPress={() => setShowNotificationsModal(false)}
               >
                 <Ionicons name="close" size={24} color="#6c757d" />
               </TouchableOpacity>
             </View>
-            
-            <ScrollView 
+
+            <ScrollView
               style={styles.notificationsModalContent}
               refreshControl={<RefreshControl refreshing={notifRefreshing} onRefresh={refreshInsideNotifications} />}
             >
@@ -1933,7 +1894,7 @@ export default function SubjectDetail() {
                 (insideNotifications || []).map((notif) => {
                   const isRead = readNotifications.has(notif.id);
                   return (
-                    <TouchableOpacity 
+                    <TouchableOpacity
                       key={notif.id}
                       style={[styles.notificationItem, isRead && styles.notificationItemRead]}
                       onPress={() => handleNotificationPress(notif)}

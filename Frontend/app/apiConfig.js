@@ -4,7 +4,11 @@ import { Alert } from 'react-native';
 import { TokenManager } from '../components/_TokenManager';
 
 // Backend base URL
+// Backend base URL
+// export const API_URL = 'https://ed-iq.onrender.com';
+// Backend base URL
 export const API_URL = 'https://ed-iq.onrender.com';
+// export const API_URL = 'http://localhost:8000'; // Local backend for testing logic fix
 export const USE_MOCK_DATA = false; // Enable real API calls
 
 
@@ -58,7 +62,7 @@ export const setupAxiosInterceptors = () => {
       } else {
         console.error('API Error:', error.message);
       }
-      
+
       // Handle network errors
       if (error.code === 'NETWORK_ERROR' || error.message === 'Network Error' || !error.response) {
         console.error('Network connectivity issue detected');
@@ -70,7 +74,7 @@ export const setupAxiosInterceptors = () => {
       if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
         console.error('Request timeout');
         Alert.alert(
-          'Request Timeout', 
+          'Request Timeout',
           'Server is taking too long to respond. Please try again.'
         );
         return Promise.reject(error);
@@ -91,11 +95,11 @@ export const setupAxiosInterceptors = () => {
       } else if (error.response?.status >= 500) {
         console.error('Server error:', error.response?.status);
         Alert.alert(
-          'Server Error', 
+          'Server Error',
           'Server is experiencing issues. Please try again later.'
         );
       }
-      
+
       return Promise.reject(error);
     }
   );
