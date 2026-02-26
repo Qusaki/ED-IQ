@@ -351,7 +351,90 @@ export default function SubjectDetail() {
     setNotifRefreshing(false);
   }, [loadInsideNotifications]);
 
-  // Load students for grading system - SIMPLE VERSION
+  // Weighted grade computation - replicates backend gradecomputation.py
+  const computeWeightedGrade = (activities, getScore) => {
+    const computeTermGrade = (termActivities) => {
+      const labScores = [], labMax = [];
+      const quizScores = [], quizMax = [];
+      const assignmentScores = [], assignmentMax = [];
+      const attendanceScores = [], attendanceMax = [];
+      let majorExam = 0, majorExamTotal = 0;
+      let labExam = 0, labExamTotal = 0;
+      let project = 0, projectTotal = 0;
+
+      for (const activity of termActivities) {
+        const score = getScore(activity);
+        const maxScore = activity.max_score || 100;
+
+        if (activity.category === 'laboratory') {
+          if (score > 0) labScores.push(score);
+          labMax.push(maxScore);
+        } else if (activity.category === 'quiz') {
+          if (score > 0) quizScores.push(score);
+          quizMax.push(maxScore);
+        } else if (activity.category === 'assignment') {
+          if (score > 0) assignmentScores.push(score);
+          assignmentMax.push(maxScore);
+        } else if (activity.category === 'attendance') {
+          if (score > 0) attendanceScores.push(score);
+          attendanceMax.push(maxScore);
+        } else if (activity.category === 'major exam') {
+          if (score > 0) majorExam = score;
+          majorExamTotal = maxScore;
+        } else if (activity.category === 'lab exam') {
+          if (score > 0) labExam = score;
+          labExamTotal = maxScore;
+        } else if (activity.category === 'project') {
+          if (score > 0) project = score;
+          projectTotal = maxScore;
+        }
+      }
+
+      // Class Standing: lab 30%, quiz 10%, assignment 5%, attendance 5%
+      const labTotal = labMax.reduce((a, b) => a + b, 0);
+      const quizTotal = quizMax.reduce((a, b) => a + b, 0);
+      const assignmentTotal = assignmentMax.reduce((a, b) => a + b, 0);
+      const attendanceTotal = attendanceMax.reduce((a, b) => a + b, 0);
+
+      const labPercent = labTotal > 0 ? (labScores.reduce((a, b) => a + b, 0) / labTotal) * 100 : 0;
+      const quizPercent = quizTotal > 0 ? (quizScores.reduce((a, b) => a + b, 0) / quizTotal) * 100 : 0;
+      const assignmentPercent = assignmentTotal > 0 ? (assignmentScores.reduce((a, b) => a + b, 0) / assignmentTotal) * 100 : 0;
+      const attendancePercent = attendanceTotal > 0 ? (attendanceScores.reduce((a, b) => a + b, 0) / attendanceTotal) * 100 : 0;
+
+      const classStanding = (labPercent * 0.3) + (quizPercent * 0.1) + (assignmentPercent * 0.05) + (attendancePercent * 0.05);
+
+      // Exams: major exam 20%, lab exam 25%, project 5%
+      const majorExamPercent = majorExamTotal > 0 ? (majorExam / majorExamTotal) * 100 : 0;
+      const labExamPercent = labExamTotal > 0 ? (labExam / labExamTotal) * 100 : 0;
+      const projectPercent = projectTotal > 0 ? (project / projectTotal) * 100 : 0;
+
+      const examScore = (majorExamPercent * 0.2) + (labExamPercent * 0.25) + (projectPercent * 0.05);
+
+      return classStanding + examScore;
+    };
+
+    const midtermActivities = activities.filter(a => a.term === 'midterm');
+    const finalActivities = activities.filter(a => a.term === 'final');
+
+    let midtermGrade = 0;
+    if (midtermActivities.length > 0) {
+      midtermGrade = computeTermGrade(midtermActivities);
+    }
+
+    let finalGrade = 100; // Backend default when no final activities
+    if (finalActivities.length > 0) {
+      finalGrade = computeTermGrade(finalActivities);
+    }
+
+    // If no midterm activities exist either, return 0 instead of averaging with 100
+    if (midtermActivities.length === 0 && finalActivities.length === 0) {
+      return 0;
+    }
+
+    return (midtermGrade + finalGrade) / 2;
+  };
+
+  // Load students for grading system - replicates backend weighted formula
   const loadStudentGrades = useCallback(async () => {
     if (!subjectId) {
       setStudentGrades([]);
@@ -360,68 +443,52 @@ export default function SubjectDetail() {
 
     console.log('=== LOADING GRADING SYSTEM ===');
     try {
-      // Get all enrolled students for the subject
+      // Get all enrolled students
       const enrolledStudents = await subjectService.getSubjectStudents(subjectId);
       console.log('Found enrolled students:', enrolledStudents.length);
-      console.log('Enrolled students:', enrolledStudents.map(s => ({ id: s.id, student_id: s.student_id, email: s.email, name: s.name })));
 
-      // Load all content for this subject to get activities
+      // Get all activities for this subject
       const allContent = await contentService.getSubjectContent(subjectId);
-      console.log('Loaded content items:', allContent?.length || 0);
       const activities = (allContent || []).filter(item => item.type === 'activity');
       console.log('Found activities:', activities.length);
 
-      const studentGrades = [];
-
-      // For each enrolled student, calculate their grade by calling the backend
-      // This ensures we get the correct weighted average (30/10/5/5 etc.)
-      for (const student of enrolledStudents) {
-        if (student.status === 'approved' || !student.status) {
-          // Skip if student has no identifying information
-          if (!student.id && !student.email) {
-            console.warn('Skipping student with no ID or email:', student);
-            continue;
-          }
-
-          const studentId = student.id;
-          console.log(`Computing grade for student: ${student.name || 'Unknown'} (ID: ${studentId})`);
-
-          try {
-            // Call the backend to compute the grade
-            const computedGrade = await contentService.computeStudentGrade(studentId, subjectId);
-
-            if (computedGrade) {
-              console.log(`Computed grade for ${student.name}:`, computedGrade.score);
-
-              // Add to results
-              studentGrades.push({
-                student_id: studentId,
-                student_name: student.name || student.email || `Student ${String(studentId).slice(-6)}`,
-                final_grade: typeof computedGrade.score === 'number' ? computedGrade.score : 0
-              });
-            } else {
-              // If computation failed or returned null (e.g. no activities), show 0
-              studentGrades.push({
-                student_id: studentId,
-                student_name: student.name || student.email || `Student ${String(studentId).slice(-6)}`,
-                final_grade: 0
-              });
-            }
-          } catch (error) {
-            console.error(`Error computing grade for ${student.name}:`, error);
-            // Fallback to 0 on error
-            studentGrades.push({
-              student_id: studentId,
-              student_name: student.name || student.email || `Student ${String(studentId).slice(-6)}`,
-              final_grade: 0
-            });
-          }
+      // Pre-fetch all submissions for all activities (teacher can see all)
+      const submissionsMap = {};
+      for (const activity of activities) {
+        try {
+          submissionsMap[activity.id] = await contentService.getSubmissions(activity.id);
+        } catch (error) {
+          submissionsMap[activity.id] = [];
         }
       }
 
-      console.log('Updated student grades:', studentGrades);
-      console.log('Setting studentGrades state with', studentGrades.length, 'students');
-      setStudentGrades(studentGrades);
+      const grades = [];
+
+      for (const student of enrolledStudents) {
+        if (student.status === 'approved' || !student.status) {
+          if (!student.id && !student.email) continue;
+
+          const studentId = student.id;
+
+          // Compute weighted grade using the same formula as backend
+          const finalGrade = computeWeightedGrade(activities, (activity) => {
+            const submissions = submissionsMap[activity.id] || [];
+            const sub = submissions.find(s => s.student_id === studentId);
+            return (sub && sub.score > 0) ? sub.score : 0;
+          });
+
+          console.log(`${student.name || student.email}: ${finalGrade.toFixed(1)}%`);
+
+          grades.push({
+            student_id: studentId || student.email,
+            student_name: student.name || student.email || `Student ${String(studentId).slice(-6)}`,
+            final_grade: finalGrade
+          });
+        }
+      }
+
+      console.log('Loaded student grades:', grades.length, 'students');
+      setStudentGrades(grades);
     } catch (error) {
       console.error('Failed to load students:', error);
       setStudentGrades([]);
@@ -447,25 +514,25 @@ export default function SubjectDetail() {
       // Load current grade from backend with offline handling
       try {
         const grade = await contentService.getStudentGrade(subjectId);
-        console.log('Loaded current grade from backend/cache:', grade);
+        console.log('Loaded current grade from backend:', grade);
 
-        // If backend grade fails or returns null, we should NOT calculate it locally
-        // because the backend uses a complex weighted formula (30/10/5/5 etc.)
-        // and a simple average here would be misleading.
         if (!grade || grade.score === undefined || grade.score === null) {
-          console.log('Backend grade not available yet.');
-          setCurrentGrade(null);
+          console.log('Backend grade not available, calculating with weighted formula');
+          // Use weighted formula as fallback
+          const calculatedGrade = computeWeightedGrade(performance, (item) => item.score || 0);
+          setCurrentGrade({ score: calculatedGrade });
         } else {
           setCurrentGrade(grade);
         }
       } catch (gradeError) {
-        console.warn('Backend not available - using offline grade calculation:', gradeError.message);
-        setCurrentGrade(null);
+        console.warn('Backend not available - using weighted fallback:', gradeError.message);
+        const calculatedGrade = computeWeightedGrade(performance, (item) => item.score || 0);
+        setCurrentGrade({ score: calculatedGrade });
       }
     } catch (error) {
       console.error('Failed to load student performance:', error);
       setStudentPerformance([]);
-      setCurrentGrade(null);
+      setCurrentGrade({ score: 0 });
     } finally {
       setPerformanceLoading(false);
     }

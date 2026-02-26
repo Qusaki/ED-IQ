@@ -249,7 +249,8 @@ async def score_submission(
         raise HTTPException(
             status_code=400, detail=f"Score must be between 0 and {activity.max_score}"
         )
-
+        
+    submission.score = score
     db.commit()
     db.refresh(submission)
 

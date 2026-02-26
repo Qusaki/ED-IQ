@@ -343,6 +343,7 @@ export const contentService = {
   // Grade a submission
   async gradeSubmission(submissionId, score) {
     try {
+      // Use the correct backend endpoint: PUT /submissions/score/{submissionId} with FormData
       const formData = new FormData();
       formData.append('score', score);
 
@@ -458,15 +459,14 @@ export const contentService = {
   async getStudentGrade(subjectId) {
     try {
       console.log('Fetching student grade for subject:', subjectId);
-
-      const res = await apiClient.get(`/computegrade/current/${subjectId}`);
+      const res = await apiClient.get(`/grade/current/${subjectId}`);
       console.log('Student grade response:', res.data);
       return res.data || null;
     } catch (error) {
       // Check if it's a network/connection error
       if (error.code === 'NETWORK_ERROR' || error.code === 'ECONNREFUSED' || !error.response) {
         console.warn('Backend server is not running - using offline mode');
-        return null;
+        return null; // Trigger fallback calculation
       }
 
       // 404 is expected when grade computation fails - suppress error logging
@@ -475,19 +475,26 @@ export const contentService = {
         return null;
       }
 
+      // Log other errors
       console.error('Error fetching student grade:', error.message);
+      // Return null instead of throwing to allow fallback calculation
       return null;
     }
   },
 
-  // Trigger auto-computation of a student's grade (for Teacher view)
-  async computeStudentGrade(studentId, subjectId) {
+  // Get a specific student's computed grade (teacher use - calls backend weighted formula)
+  async getStudentGradeAsTeacher(studentId, subjectId) {
     try {
-      const res = await apiClient.get(`/computegrade/${studentId}/${subjectId}`);
-      return res.data;
+      console.log(`Fetching grade for student ${studentId} in subject ${subjectId}`);
+      const res = await apiClient.get(`/grade/${studentId}/${subjectId}`);
+      console.log(`Grade API response for ${studentId}:`, res.data);
+      return res.data?.score ?? 0;
     } catch (error) {
-      console.error('Error computing grade:', error);
-      return null;
+      const status = error.response?.status;
+      const detail = error.response?.data?.detail;
+      console.warn(`Grade API failed for student ${studentId}: status=${status}, detail=${detail}, message=${error.message}`);
+      // Return 0 when backend computation fails (e.g., no activities yet)
+      return 0;
     }
   },
 

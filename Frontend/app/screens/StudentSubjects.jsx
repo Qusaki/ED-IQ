@@ -155,5 +155,3 @@ const styles = StyleSheet.create({
   primary: { backgroundColor: '#28a745' },
   btnText: { color: '#fff', fontWeight: '600' },
 });
-
-

@@ -169,5 +169,3 @@ const styles = StyleSheet.create({
   btnText: { color: '#fff', fontWeight: '600' },
   bigCode: { fontSize: 28, fontWeight: 'bold', textAlign: 'center', color: '#28a745', marginVertical: 10 },
 });
-
-

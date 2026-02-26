@@ -703,31 +703,25 @@ export default function ActivityDetail() {
   };
 
   // Handle grading
-  const handleGrade = (submissionId, score) => {
-    const parsedScore = parseInt(score);
+  const handleGrade = async (submissionId, score) => {
+    try {
+      await contentService.gradeSubmission(submissionId, score);
 
-    if (!parsedScore || parsedScore <= 0) {
-      Alert.alert('Error', 'Please enter a valid score greater than 0');
-      return;
+      // Update submissions list
+      const updatedSubmissions = await contentService.getSubmissions(activity.id);
+      setSubmissions(updatedSubmissions);
+
+      Alert.alert('Success', 'Grade assigned successfully!');
+      setGradingMode(false);
+      setGrading({});
+
+      // Immediately trigger refresh of grading system with current timestamp
+      // This will be picked up by SubjectDetail's useEffect for refreshGrading
+      router.setParams({ refreshGrading: Date.now().toString() });
+    } catch (error) {
+      console.error('Grading error:', error);
+      Alert.alert('Error', 'Failed to assign grade. Please try again.');
     }
-
-    // Immediately update the UI state
-    setSubmissions(prev => prev.map(sub =>
-      sub.id === submissionId ? { ...sub, score: parsedScore } : sub
-    ));
-
-    // Clear grading input state
-    setGrading({});
-
-    // Send to backend in background
-    contentService.gradeSubmission(submissionId, parsedScore)
-      .then(() => {
-        Alert.alert('Success', 'Grade assigned successfully!');
-        router.setParams({ refreshGrading: Date.now().toString() });
-      })
-      .catch(() => {
-        Alert.alert('Warning', 'Grade shown locally but may not have saved to server. Please try again.');
-      });
   };
 
   // Handle student editing their submission
@@ -1302,6 +1296,7 @@ export default function ActivityDetail() {
               submissions.map((sub) => {
                 const studentName = studentNames[sub.student_id] || `Student ${sub.student_id.slice(-6)}`;
                 console.log(`Rendering submission for student ${sub.student_id}:`, studentName);
+                console.log('Current studentNames state:', studentNames);
 
                 return (
                   <View key={sub.id} style={styles.submissionCard}>
@@ -1432,15 +1427,9 @@ export default function ActivityDetail() {
 
                     <View style={styles.gradeSection}>
                       {sub.score > 0 ? (
-                        <View style={styles.gradedContainer}>
-                          <View style={styles.gradedBadge}>
-                            <Ionicons name="checkmark-circle" size={18} color="#155724" />
-                            <Text style={styles.gradedText}>Graded</Text>
-                          </View>
-                          <View style={styles.gradeDisplay}>
-                            <Text style={styles.gradeLabel}>Score:</Text>
-                            <Text style={styles.gradeValue}>{sub.score} / {activity.max_score || 100}</Text>
-                          </View>
+                        <View style={styles.gradeDisplay}>
+                          <Text style={styles.gradeLabel}>Grade:</Text>
+                          <Text style={styles.gradeValue}>{sub.score} points</Text>
                         </View>
                       ) : (
                         <View style={styles.gradeInput}>
@@ -2810,29 +2799,5 @@ const styles = StyleSheet.create({
   },
   gradeButtonDisabled: {
     opacity: 0.6,
-  },
-  gradedContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#d4edda',
-    padding: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#c3e6cb',
-  },
-  gradedBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#c3e6cb',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  gradedText: {
-    color: '#155724',
-    fontWeight: 'bold',
-    fontSize: 12,
-    marginLeft: 4,
   },
 });
