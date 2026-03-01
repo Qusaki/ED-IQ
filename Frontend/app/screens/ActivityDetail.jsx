@@ -705,12 +705,13 @@ export default function ActivityDetail() {
       if (studentIds.length > 0) {
         try {
           console.log('Fetching enrolled students for subject:', subjectId);
-          const enrolledStudents = await subjectService.getSubjectStudents(subjectId);
-          console.log('Enrolled students:', enrolledStudents);
+          // Use the offline students endpoint which we know works reliably and returns UserResponse
+          const allStudents = await contentService.getOfflineStudents(subjectId);
+          console.log('Enrolled students fetched successfully.');
 
-          enrolledStudents.forEach((student) => {
+          allStudents.forEach((student) => {
             const key = student?.student_id || student?.id;
-            if (key && (!student.status || student.status === 'approved')) {
+            if (key) {
               names[key] =
                 student.name ||
                 student.email ||
