@@ -144,6 +144,61 @@ export const contentService = {
     }
   },
 
+  // Update a lecture
+  async updateLecture(lectureId, data) {
+    try {
+      const formData = new FormData();
+
+      if (data.title) formData.append('title', data.title);
+      if (data.content !== undefined) formData.append('content', data.content);
+
+      if (data.file && data.file.uri) {
+        try {
+          let filename = data.file.filename || data.file.name || data.file.uri.split('/').pop() || 'file';
+          if (!filename.includes('.') && data.file.uri) {
+            if (data.file.uri.endsWith('.pdf')) filename += '.pdf';
+            else if (data.file.uri.match(/\.(jpg|jpeg|png|gif)$/i)) filename += data.file.uri.match(/\.(jpg|jpeg|png|gif)$/i)[0];
+          }
+
+          let fileType = data.file.mimeType || data.file.type;
+          if (!fileType) {
+            if (data.file.uri.endsWith('.pdf')) fileType = 'application/pdf';
+            else if (data.file.uri.match(/\.(jpg|jpeg)$/i)) fileType = 'image/jpeg';
+            else if (data.file.uri.endsWith('.png')) fileType = 'image/png';
+            else fileType = 'application/octet-stream';
+          }
+
+          formData.append('file', {
+            uri: data.file.uri,
+            type: fileType,
+            name: filename,
+          });
+        } catch (e) {
+          console.error('Could not add file to lecture update FormData:', e);
+        }
+      }
+
+      const res = await apiClient.put(`/lectures/${lectureId}`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      return res.data;
+    } catch (error) {
+      console.error('Error in updateLecture:', error);
+      throw new Error(error?.response?.data?.detail || error?.message || 'Failed to update lecture');
+    }
+  },
+
+  // Delete a lecture
+  async deleteLecture(lectureId) {
+    try {
+      const res = await apiClient.delete(`/lectures/${lectureId}`);
+      return res.data;
+    } catch (error) {
+      console.error('Error in deleteLecture:', error);
+      throw new Error(error?.response?.data?.detail || error?.message || 'Failed to delete lecture');
+    }
+  },
+
   // Create an activity or quiz
   async createActivity(subjectId, data) {
     try {
@@ -257,6 +312,69 @@ export const contentService = {
     }
   },
 
+  // Update an activity
+  async updateActivity(activityId, data) {
+    try {
+      const formData = new FormData();
+
+      if (data.title) {
+        formData.append('title', data.title);
+      }
+      if (data.content !== undefined) {
+        formData.append('content', data.content);
+      }
+      if (data.maxScore) {
+        formData.append('max_score', String(data.maxScore));
+      }
+      if (data.category) {
+        formData.append('category', data.category);
+      }
+      if (data.term) {
+        formData.append('term', data.term);
+      }
+      if (data.file) {
+        try {
+          // Extract filename from URI or use fallback
+          let filename = data.file.filename || data.file.name || data.file.uri.split('/').pop() || 'file';
+
+          // Ensure filename has proper extension
+          if (!filename.includes('.') && data.file.uri) {
+            if (data.file.uri.endsWith('.pdf')) {
+              filename += '.pdf';
+            } else if (data.file.uri.match(/\.(jpg|jpeg|png|gif)$/i)) {
+              filename += data.file.uri.match(/\.(jpg|jpeg|png|gif)$/i)[0];
+            }
+          }
+
+          // Determine file type
+          let fileType = data.file.mimeType || data.file.type || 'application/octet-stream';
+
+          const fileObject = {
+            uri: data.file.uri,
+            type: fileType,
+            name: filename,
+          };
+
+          formData.append('file', fileObject);
+        } catch (fileError) {
+          console.error('Could not add file to activity FormData:', fileError);
+        }
+      }
+
+      console.log('Updating activity with formData:', { title: data.title, content: data.content, hasFile: !!data.file });
+
+      const res = await apiClient.put(`/activity_post/${activityId}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return res.data;
+    } catch (error) {
+      console.error('Error in updateActivity:', error);
+      throw new Error(error?.response?.data?.detail || error?.message || 'Failed to update activity');
+    }
+  },
+
   // Unified create method
   async createContent(subjectId, data) {
     const type = data.type; // 'lecture', 'activity', 'quiz', or 'exam'
@@ -330,13 +448,38 @@ export const contentService = {
   async getSubmissions(activityId) {
     try {
       const res = await apiClient.get(`/submissions/${activityId}`);
-      return res.data || [];
+      return res.data;
     } catch (error) {
       if (error.response?.status === 404) {
-        return []; // No submissions found
+        return []; // Return empty array instead of throwing error if no submissions
       }
       console.error('Error getting submissions:', error);
       throw error;
+    }
+  },
+
+  // OFFLINE SCORING
+
+  // Get all approved students in a subject for offline grading
+  async getOfflineStudents(subjectId) {
+    try {
+      const res = await apiClient.get(`/offline/students/${subjectId}`);
+      return res.data;
+    } catch (error) {
+      console.error('Error fetching offline students:', error);
+      throw new Error(error?.response?.data?.detail || 'Failed to fetch offline students');
+    }
+  },
+
+  // Submit bulk grades for offline activity
+  async submitOfflineScores(activityId, scoresArray) {
+    try {
+      // scoresArray should be in format: [{ student_id: "...", score: 100 }, ...]
+      const res = await apiClient.post(`/offline/score/${activityId}`, scoresArray);
+      return res.data;
+    } catch (error) {
+      console.error('Error submitting offline scores:', error);
+      throw new Error(error?.response?.data?.detail || 'Failed to submit offline scores');
     }
   },
 

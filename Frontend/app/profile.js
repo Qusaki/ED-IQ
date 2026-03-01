@@ -11,6 +11,7 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  DeviceEventEmitter,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -172,18 +173,10 @@ export default function ProfileScreen() {
           onPress: async () => {
             try {
               await authService.logout();
-              setTimeout(() => {
-                if (typeof window !== 'undefined') {
-                  window.location.reload();
-                }
-              }, 500);
+              DeviceEventEmitter.emit('appLogout');
             } catch (error) {
               console.error('Logout error:', error);
-              setTimeout(() => {
-                if (typeof window !== 'undefined') {
-                  window.location.reload();
-                }
-              }, 500);
+              DeviceEventEmitter.emit('appLogout');
             }
           },
         },

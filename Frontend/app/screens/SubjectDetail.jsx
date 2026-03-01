@@ -18,6 +18,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRBAC } from '../RBACComponents';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
@@ -71,79 +72,84 @@ const DonutChart = ({ size = 200, data, centerGrade }) => {
     }).filter(item => item.count > 0); // Only include activities that exist
 
     return (
-      <View style={styles.chartContainer}>
-        <View style={styles.donutWrapper}>
-          {/* Donut chart using overlapping circles */}
-          <View style={[styles.donutBase, { width: size, height: size }]}>
-            {chartData.length > 0 ? (
-              <>
-                {/* Background circle */}
-                <View style={[styles.donutBackground, {
-                  width: size,
-                  height: size,
-                  borderRadius: size / 2
-                }]} />
+      <View>
+        <View style={styles.chartContainer}>
+          <View style={styles.donutWrapper}>
+            {/* Donut chart using overlapping circles */}
+            <View style={[styles.donutBase, { width: size, height: size }]}>
+              {chartData.length > 0 ? (
+                <>
+                  {/* Background circle */}
+                  <View style={[styles.donutBackground, {
+                    width: size,
+                    height: size,
+                    borderRadius: size / 2
+                  }]} />
 
-                {/* Performance rings */}
-                {chartData.map((item, index) => {
-                  const ringSize = size - (index * 15);
+                  {/* Performance rings */}
+                  {chartData.map((item, index) => {
+                    const ringSize = size - (index * 15);
 
-                  return (
-                    <View
-                      key={index}
-                      style={[
-                        styles.donutRing,
-                        {
-                          width: ringSize,
-                          height: ringSize,
-                          borderRadius: ringSize / 2,
-                          borderWidth: 12,
-                          borderColor: item.color,
-                          borderTopColor: 'transparent',
-                          borderLeftColor: 'transparent',
-                          transform: [{ rotate: `${45 + (index * 30)}deg` }],
-                          opacity: 0.8
-                        }
-                      ]}
-                    />
-                  );
-                })}
+                    return (
+                      <View
+                        key={index}
+                        style={[
+                          styles.donutRing,
+                          {
+                            width: ringSize,
+                            height: ringSize,
+                            borderRadius: ringSize / 2,
+                            borderWidth: 12,
+                            borderColor: item.color,
+                            borderTopColor: 'transparent',
+                            borderLeftColor: 'transparent',
+                            transform: [{ rotate: `${45 + (index * 30)}deg` }],
+                            opacity: 0.8
+                          }
+                        ]}
+                      />
+                    );
+                  })}
 
-                {/* Center circle for donut hole */}
+                  {/* Center circle for donut hole */}
+                  <View style={[styles.donutHole, {
+                    width: size * 0.6,
+                    height: size * 0.6,
+                    borderRadius: size * 0.3
+                  }]}>
+                    <Text style={styles.centerGrade}>{centerGrade || '0.0'}%</Text>
+                    <Text style={styles.centerLabel}>Overall Grade</Text>
+                  </View>
+                </>
+              ) : (
                 <View style={[styles.donutHole, {
-                  width: size * 0.6,
-                  height: size * 0.6,
-                  borderRadius: size * 0.3
+                  width: size * 0.8,
+                  height: size * 0.8,
+                  borderRadius: size * 0.4
                 }]}>
                   <Text style={styles.centerGrade}>{centerGrade || '0.0'}%</Text>
                   <Text style={styles.centerLabel}>Overall Grade</Text>
                 </View>
-              </>
-            ) : (
-              <View style={[styles.donutHole, {
-                width: size * 0.8,
-                height: size * 0.8,
-                borderRadius: size * 0.4
-              }]}>
-                <Text style={styles.centerGrade}>{centerGrade || '0.0'}%</Text>
-                <Text style={styles.centerLabel}>Overall Grade</Text>
-              </View>
-            )}
+              )}
+            </View>
           </View>
         </View>
 
         {/* Legend */}
         {chartData.length > 0 && (
-          <View style={styles.legendContainer}>
-            {chartData.map((item, index) => (
-              <View key={index} style={styles.legendItem}>
-                <View style={[styles.legendColor, { backgroundColor: item.color }]} />
-                <View style={styles.legendInfo}>
-                  <Text style={styles.legendText}>{item.title}</Text>
-                  <Text style={styles.legendPercentage}>{item.percentage.toFixed(1)}%</Text>
+          <View style={styles.legendCard}>
+            <Text style={styles.legendTitle}>Activity Types</Text>
+            <View style={styles.legendContainer}>
+              {chartData.map((item, index) => (
+                <View key={index} style={styles.legendItem}>
+                  <View style={[styles.legendColor, { backgroundColor: item.color }]} />
+                  <View style={styles.legendInfo}>
+                    <Text style={styles.legendText}>{item.title}</Text>
+                    <Text style={styles.legendPercentage}>{item.percentage.toFixed(1)}%</Text>
+                  </View>
                 </View>
-              </View>
-            ))}
+              ))}
+            </View>
           </View>
         )}
       </View>
@@ -168,6 +174,7 @@ const DonutChart = ({ size = 200, data, centerGrade }) => {
 };
 
 export default function SubjectDetail() {
+  const insets = useSafeAreaInsets();
   const { isTeacher, isStudent } = useRBAC();
   const router = useRouter();
   const { subjectId, subjectName, refreshGrading } = useLocalSearchParams();
@@ -178,8 +185,6 @@ export default function SubjectDetail() {
   const [creating, setCreating] = useState(false);
   const [directCreateType, setDirectCreateType] = useState(null); // Track direct creation from filter buttons
 
-  // Add ref for the performance section
-  const performanceSectionRef = useRef(null);
   // Add ref for the main favorites scroll
   const favoritesScrollViewRef = useRef(null);
   const [showActivitySubmenu, setShowActivitySubmenu] = useState(false); // Track activity submenu modal
@@ -206,6 +211,7 @@ export default function SubjectDetail() {
 
   // Content creation form
   const [contentType, setContentType] = useState('lecture'); // 'lecture', 'activity', 'quiz', 'exam'
+  const [editingLecture, setEditingLecture] = useState(null); // Track lecture being edited
   const [examCategory, setExamCategory] = useState('written'); // 'written', 'laboratory'
   const [examTerm, setExamTerm] = useState('midterm'); // 'midterm', 'final'
   const [title, setTitle] = useState('');
@@ -251,6 +257,7 @@ export default function SubjectDetail() {
 
   const closeModal = () => {
     setCreating(false);
+    setEditingLecture(null);
     setDirectCreateType(null);
     // Reset form
     setTitle('');
@@ -540,8 +547,8 @@ export default function SubjectDetail() {
 
   // Scroll to bottom of performance section
   const scrollToBottomOfActivities = () => {
-    if (performanceSectionRef.current) {
-      performanceSectionRef.current.scrollToEnd({ animated: true });
+    if (favoritesScrollViewRef.current) {
+      favoritesScrollViewRef.current.scrollToEnd({ animated: true });
     }
   };
 
@@ -840,10 +847,19 @@ export default function SubjectDetail() {
       }
 
       console.log('Final data object:', data);
-      console.log('Calling contentService.createContent...');
 
-      const result = await contentService.createContent(subjectId, data);
-      console.log('Created successfully:', result);
+      let result;
+      if (editingLecture) {
+        console.log('Calling contentService.updateLecture...');
+        result = await contentService.updateLecture(editingLecture.id, data);
+        console.log('Updated successfully:', result);
+        Alert.alert('Success', `Lecture updated successfully`);
+      } else {
+        console.log('Calling contentService.createContent...');
+        result = await contentService.createContent(subjectId, data);
+        console.log('Created successfully:', result);
+        Alert.alert('Success', `${contentType} created successfully`);
+      }
 
       // Reset form
       setTitle('');
@@ -902,6 +918,38 @@ export default function SubjectDetail() {
     }
   };
 
+  const handleEditLecture = (lecture) => {
+    setContentType('lecture');
+    setTitle(lecture.title || '');
+    setDescription(lecture.content || '');
+    setEditingLecture(lecture);
+    setCreating(true);
+  };
+
+  const handleDeleteLecture = (lecture) => {
+    Alert.alert(
+      'Delete Lecture',
+      `Are you sure you want to delete "${lecture.title}"?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await contentService.deleteLecture(lecture.id);
+              setContent(prev => prev.filter(c => c.id !== lecture.id));
+              Alert.alert('Deleted', 'Lecture deleted successfully');
+            } catch (error) {
+              console.error('Delete lecture error:', error);
+              Alert.alert('Error', 'Failed to delete lecture');
+            }
+          }
+        }
+      ]
+    );
+  };
+
   const handleOpenPdf = async (url) => {
     try {
       setPdfLoading(false); // PDF viewer will handle loading
@@ -954,90 +1002,91 @@ export default function SubjectDetail() {
         activeOpacity={0.7}
       >
         <View style={styles.contentRow}>
-          <View style={[
-            styles.contentThumb,
-            (hasPdf || isActivity) && styles.contentThumbActive,
-            isExam && styles.examThumb,
-            isLab && styles.labThumb,
-            isAssignment && styles.assignmentThumb,
-            isProject && styles.projectThumb,
-            isQuiz && styles.quizThumb
-          ]}>
-            {hasPdf && item.type === 'lecture' && (
-              <Ionicons name="document-text" size={24} color="#0f7a67" />
-            )}
-            {isExam && (
-              <Ionicons name="school" size={24} color="#fff" />
-            )}
-            {isLab && (
-              <Ionicons name="flask" size={24} color="#fff" />
-            )}
-            {isAssignment && (
-              <Ionicons name="create" size={24} color="#fff" />
-            )}
-            {isProject && (
-              <Ionicons name="folder" size={24} color="#fff" />
-            )}
-            {isQuiz && (
-              <Ionicons name="help-circle" size={24} color="#fff" />
-            )}
-          </View>
-          <View style={styles.contentBar}>
-            <Text style={styles.contentTitle}>{(item.title || 'Untitled').toUpperCase()}</Text>
+          <View style={styles.contentInfo}>
+            <Text style={styles.contentTitle} numberOfLines={1}>{(item.title || 'Untitled').toUpperCase()}</Text>
             <Text style={styles.contentType}>
               {isExam ? 'EXAM' : isLab ? 'LAB' : isAssignment ? 'ASSIGNMENT' :
                 isProject ? 'PROJECT' : isQuiz ? 'QUIZ' : (item.type || 'content').toUpperCase()}
               {isExam && ` - ${item.category === 'major exam' ? 'Written' : 'Laboratory'}`}
               {showTerm && ` (${item.term || 'Midterm'})`}
             </Text>
-            {hasPdf && item.type === 'lecture' ? (
-              <Text style={styles.contentSubtext}>📄 PDF Available - Tap to view</Text>
-            ) : isActivity ? (
-              <Text style={styles.contentSubtext}>Tap to view details</Text>
-            ) : null}
 
-            {/* Show submission status for students */}
-            {submissionStatus && (
-              <View style={styles.submissionStatus}>
-                <Ionicons name="checkmark-circle" size={16} color="#28a745" />
-                <Text style={[styles.submissionStatusText, { color: '#28a745' }]}>
-                  Submitted
-                </Text>
-              </View>
-            )}
+            <View style={styles.contentMetaRow}>
+              {hasPdf && item.type === 'lecture' ? (
+                <View style={styles.metaBadge}>
+                  <Ionicons name="document-text" size={14} color="#6c757d" />
+                  <Text style={styles.contentSubtext}>PDF Available</Text>
+                </View>
+              ) : isActivity ? (
+                <View style={styles.metaBadge}>
+                  <Ionicons name="eye" size={14} color="#6c757d" />
+                  <Text style={styles.contentSubtext}>Tap to view details</Text>
+                </View>
+              ) : null}
+
+              {/* Show submission status for students */}
+              {submissionStatus && (
+                <View style={styles.submissionStatus}>
+                  <Ionicons name="checkmark-circle" size={14} color="#28a745" />
+                  <Text style={[styles.submissionStatusText, { color: '#28a745' }]}>
+                    Submitted
+                  </Text>
+                </View>
+              )}
+            </View>
           </View>
+          {isTeacher && item.type === 'lecture' ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 10 }}>
+              <TouchableOpacity
+                style={{ padding: 8 }}
+                onPress={() => handleEditLecture(item)}
+              >
+                <Ionicons name="pencil" size={20} color="#007bff" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={{ padding: 8 }}
+                onPress={() => handleDeleteLecture(item)}
+              >
+                <Ionicons name="trash" size={20} color="#dc3545" />
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={styles.cardArrow}>
+              <Text style={styles.arrowIcon}>›</Text>
+            </View>
+          )}
         </View>
       </TouchableOpacity>
     );
   };
 
   const renderEnrolledStudent = ({ item }) => (
-    <View style={styles.studentRow}>
+    <View style={styles.studentCard}>
       <View style={styles.studentIcon}>
-        <Ionicons name="person" size={20} color="#fff" />
+        <Ionicons name="person" size={20} color="#28a745" />
       </View>
-      <Text style={styles.studentName}>{item.name}</Text>
+      <Text style={styles.studentName} numberOfLines={1}>{item.name}</Text>
     </View>
   );
 
   const renderPendingStudent = ({ item }) => (
-    <View style={styles.studentRow}>
+    <View style={styles.studentCard}>
       <View style={styles.studentIcon}>
-        <Ionicons name="person" size={20} color="#fff" />
+        <Ionicons name="person" size={20} color="#6c757d" />
       </View>
-      <Text style={styles.studentName}>{item.name}</Text>
+      <Text style={styles.studentName} numberOfLines={1}>{item.name}</Text>
       <View style={styles.actionButtons}>
         <TouchableOpacity
           style={styles.rejectButton}
           onPress={() => handleReject(item.id)}
         >
-          <Ionicons name="close" size={16} color="#fff" />
+          <Ionicons name="close" size={20} color="#dc3545" />
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.acceptButton}
           onPress={() => handleAccept(item.id)}
         >
-          <Ionicons name="checkmark" size={16} color="#fff" />
+          <Ionicons name="checkmark" size={20} color="#28a745" />
         </TouchableOpacity>
       </View>
     </View>
@@ -1079,7 +1128,7 @@ export default function SubjectDetail() {
           <Ionicons name="arrow-back" size={24} color="#28a745" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>
-          {isTeacher ? (selectedTab === 'notifications' ? 'GRADING SYSTEM' : selectedTab === 'students' ? 'STUDENTS LIST' : (contentFilter === 'activity' || contentFilter === 'lecture') ? 'ASSESSMENT TASK' : 'STUDENTS LIST') : studentTab === 'lessons' ? 'LESSONS' : studentTab === 'activities' ? 'ACT/ASS' : 'PERFORMANCE'}
+          {isTeacher ? (selectedTab === 'notifications' ? 'GRADING SYSTEM' : selectedTab === 'students' ? 'STUDENTS LIST' : (contentFilter === 'activity' || contentFilter === 'lecture') ? 'ASSESSMENT TASK' : 'STUDENTS LIST') : studentTab === 'lessons' ? 'LESSONS' : studentTab === 'activities' ? 'ACTIVITIES' : 'PERFORMANCE'}
         </Text>
         {isTeacher && (
           <TouchableOpacity
@@ -1384,7 +1433,8 @@ export default function SubjectDetail() {
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.activityFilterContainer}
+                style={styles.activityFilterScrollView}
+                contentContainerStyle={styles.activityFilterContent}
               >
                 <TouchableOpacity
                   style={[styles.activityFilterButton, activityFilter === 'all' && styles.activityFilterButtonActive]}
@@ -1504,60 +1554,6 @@ export default function SubjectDetail() {
                     centerGrade={currentGrade && currentGrade.score !== undefined ? currentGrade.score.toFixed(1) : '0.0'}
                   />
 
-                  {/* Performance Breakdown - Separate ScrollView */}
-                  <View style={styles.performanceSection}>
-                    <View style={styles.performanceHeaderContainer}>
-                      <Text style={styles.performanceTitle}>Activity Performance</Text>
-                      {studentPerformance.length > 3 && (
-                        <TouchableOpacity
-                          style={styles.scrollButton}
-                          onPress={scrollToBottomOfActivities}
-                        >
-                          <Ionicons name="arrow-down" size={16} color="#32cd32" />
-                          <Text style={styles.scrollButtonText}>Scroll to Bottom</Text>
-                        </TouchableOpacity>
-                      )}
-                    </View>
-                    {studentPerformance.length === 0 ? (
-                      <Text style={styles.noPerformanceText}>
-                        No completed activities yet. Submit your work to see your performance here!
-                      </Text>
-                    ) : (
-                      <ScrollView
-                        showsVerticalScrollIndicator={true}
-                        style={styles.performanceScrollView}
-                        contentContainerStyle={styles.performanceScrollContent}
-                        ref={performanceSectionRef}
-                        nestedScrollEnabled={true}
-                      >
-                        {studentPerformance.map((item) => (
-                          <View key={item.id} style={styles.performanceItem}>
-                            <View style={styles.performanceHeader}>
-                              <Text style={styles.performanceActivityTitle}>
-                                {item.title.replace(/^(QUIZ|EXAM): /, '')}
-                              </Text>
-                            </View>
-                            <View style={styles.performanceDetails}>
-                              <Text style={styles.performanceCategory}>
-                                {item.category === 'quiz' ? 'Quiz' :
-                                  item.category === 'major exam' ? 'Major Exam' :
-                                    item.category === 'lab exam' ? 'Lab Exam' :
-                                      item.category === 'assignment' ? 'Assignment' :
-                                        item.category === 'laboratory' ? 'Laboratory' :
-                                          item.category === 'project' ? 'Project' : 'Activity'}
-                              </Text>
-                              <Text style={styles.performanceScoreDetail}>
-                                Score: {item.score}/{item.maxScore}
-                              </Text>
-                            </View>
-                            <Text style={styles.performanceDate}>
-                              Graded: {new Date(item.gradedAt).toLocaleDateString()}
-                            </Text>
-                          </View>
-                        ))}
-                      </ScrollView>
-                    )}
-                  </View>
                 </ScrollView>
               )}
             </View>
@@ -1574,7 +1570,9 @@ export default function SubjectDetail() {
       >
         <View style={styles.modalBackdrop}>
           <ScrollView style={styles.modal} contentContainerStyle={styles.modalScrollContent}>
-            <Text style={styles.modalTitle}>Create {contentType.toUpperCase()}</Text>
+            <Text style={styles.modalTitle}>
+              {editingLecture ? 'Edit' : 'Create'} {contentType.toUpperCase()}
+            </Text>
 
             <TextInput
               placeholder="Title"
@@ -1708,7 +1706,7 @@ export default function SubjectDetail() {
                 <Text style={styles.btnText}>Cancel</Text>
               </Pressable>
               <Pressable style={[styles.btn, styles.primary, styles.btnRight]} onPress={createContent}>
-                <Text style={styles.btnText}>Create</Text>
+                <Text style={styles.btnText}>{editingLecture ? 'Save' : 'Create'}</Text>
               </Pressable>
             </View>
           </ScrollView>
@@ -1769,71 +1767,131 @@ export default function SubjectDetail() {
       </Modal>
 
       {/* Navigation Bar */}
-      <View style={styles.subjectTabBar}>
+      <View style={[styles.subjectTabBar, { paddingBottom: Math.max(15, insets.bottom), height: 60 + Math.max(15, insets.bottom) }]}>
         {isTeacher ? (
           <>
             {/* Tab 1: Students */}
             <TouchableOpacity
-              style={[styles.subjectTabItem, selectedTab === 'students' && styles.activeTab]}
+              style={styles.subjectTabItem}
               onPress={() => setSelectedTab('students')}
+              activeOpacity={0.8}
             >
               <View style={styles.subjectIconContainer}>
-                <Ionicons name="people" size={24} color={selectedTab === 'students' ? '#28a745' : '#000'} />
+                <Ionicons name="people" size={22} color={selectedTab === 'students' ? '#28a745' : '#6c757d'} />
               </View>
+              <Text
+                style={[
+                  styles.subjectTabLabel,
+                  { color: selectedTab === 'students' ? '#28a745' : '#6c757d' }
+                ]}
+                numberOfLines={1}
+              >
+                Students
+              </Text>
             </TouchableOpacity>
 
             {/* Tab 2: Content/Create */}
             <TouchableOpacity
-              style={[styles.subjectTabItem, selectedTab !== 'students' && selectedTab !== 'notifications' && styles.activeTab]}
+              style={styles.subjectTabItem}
               onPress={() => {
                 setSelectedTab(null); // Show content view
               }}
+              activeOpacity={0.8}
             >
               <View style={styles.subjectIconContainer}>
-                <Ionicons name="document-text" size={24} color="#28a745" />
+                <Ionicons name="document-text" size={22} color={(selectedTab !== 'students' && selectedTab !== 'notifications') ? '#28a745' : '#6c757d'} />
               </View>
+              <Text
+                style={[
+                  styles.subjectTabLabel,
+                  { color: (selectedTab !== 'students' && selectedTab !== 'notifications') ? '#28a745' : '#6c757d' }
+                ]}
+                numberOfLines={1}
+              >
+                Content
+              </Text>
             </TouchableOpacity>
 
             {/* Tab 3: Grading System */}
             <TouchableOpacity
-              style={[styles.subjectTabItem, selectedTab === 'notifications' && styles.activeTab]}
+              style={styles.subjectTabItem}
               onPress={() => setSelectedTab('notifications')}
+              activeOpacity={0.8}
             >
               <View style={styles.subjectIconContainer}>
-                <Ionicons name="speedometer" size={24} color={selectedTab === 'notifications' ? '#28a745' : '#000'} />
+                <Ionicons name="speedometer" size={22} color={selectedTab === 'notifications' ? '#28a745' : '#6c757d'} />
               </View>
+              <Text
+                style={[
+                  styles.subjectTabLabel,
+                  { color: selectedTab === 'notifications' ? '#28a745' : '#6c757d' }
+                ]}
+                numberOfLines={1}
+              >
+                Grades
+              </Text>
             </TouchableOpacity>
           </>
         ) : (
           <>
             {/* Student Navigation - Lessons Tab */}
             <TouchableOpacity
-              style={[styles.subjectTabItem, studentTab === 'lessons' && styles.activeTab]}
+              style={styles.subjectTabItem}
               onPress={() => setStudentTab('lessons')}
+              activeOpacity={0.8}
             >
               <View style={styles.subjectIconContainer}>
-                <Ionicons name="book" size={24} color={studentTab === 'lessons' ? '#28a745' : '#000'} />
+                <Ionicons name="book" size={22} color={studentTab === 'lessons' ? '#28a745' : '#6c757d'} />
               </View>
+              <Text
+                style={[
+                  styles.subjectTabLabel,
+                  { color: studentTab === 'lessons' ? '#28a745' : '#6c757d' }
+                ]}
+                numberOfLines={1}
+              >
+                Lessons
+              </Text>
             </TouchableOpacity>
 
             {/* Student Navigation - Activities Tab */}
             <TouchableOpacity
-              style={[styles.subjectTabItem, studentTab === 'activities' && styles.activeTab]}
+              style={styles.subjectTabItem}
               onPress={() => setStudentTab('activities')}
+              activeOpacity={0.8}
             >
               <View style={styles.subjectIconContainer}>
-                <Ionicons name="document-text" size={24} color={studentTab === 'activities' ? '#28a745' : '#000'} />
+                <Ionicons name="document-text" size={22} color={studentTab === 'activities' ? '#28a745' : '#6c757d'} />
               </View>
+              <Text
+                style={[
+                  styles.subjectTabLabel,
+                  { color: studentTab === 'activities' ? '#28a745' : '#6c757d' }
+                ]}
+                numberOfLines={1}
+              >
+                Activities
+              </Text>
             </TouchableOpacity>
 
             {/* Student Navigation - Performance Tab */}
             <TouchableOpacity
-              style={[styles.subjectTabItem, studentTab === 'favorites' && styles.activeTab]}
+              style={styles.subjectTabItem}
               onPress={() => setStudentTab('favorites')}
+              activeOpacity={0.8}
             >
               <View style={styles.subjectIconContainer}>
-                <Ionicons name="star" size={24} color={studentTab === 'favorites' ? '#28a745' : '#000'} />
+                <Ionicons name="speedometer" size={22} color={studentTab === 'favorites' ? '#28a745' : '#6c757d'} />
               </View>
+              <Text
+                style={[
+                  styles.subjectTabLabel,
+                  { color: studentTab === 'favorites' ? '#28a745' : '#6c757d' }
+                ]}
+                numberOfLines={1}
+              >
+                Grades
+              </Text>
             </TouchableOpacity>
           </>
         )}
@@ -1989,7 +2047,7 @@ export default function SubjectDetail() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#f4f6f8', // Soft light gray background so white cards pop
   },
   headerRow: {
     flexDirection: 'row',
@@ -2023,42 +2081,78 @@ const styles = StyleSheet.create({
     paddingBottom: 200,
   },
   contentWrapper: {
-    backgroundColor: '#e8f5e9',
-    borderRadius: 10,
-    padding: 10,
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
     marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#cde9ce',
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  activityWrapper: {
   },
   contentRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
   },
-  contentThumb: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#d6f0ff',
-    marginRight: 12,
-  },
-  contentBar: {
+  contentInfo: {
     flex: 1,
-    backgroundColor: '#0f7a67',
-    borderRadius: 4,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
+    paddingRight: 12,
   },
   contentTitle: {
-    color: '#ffffff',
-    fontWeight: '900',
+    color: '#2c3e50',
+    fontWeight: '800',
     fontSize: 16,
-    letterSpacing: 1,
+    letterSpacing: 0.5,
+    marginBottom: 4,
   },
   contentType: {
-    color: '#c8e6c9',
+    color: '#28a745', // Brand green
     fontSize: 12,
-    marginTop: 4,
+    fontWeight: '700',
+    marginBottom: 8,
   },
+  contentMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  metaBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    gap: 4,
+  },
+  contentSubtext: {
+    color: '#6c757d',
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  submissionStatus: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#e8f5e9',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    gap: 4,
+  },
+  submissionStatusText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  cardArrow: {
+    width: 30, height: 30, borderRadius: 15, backgroundColor: '#f8f9fa',
+    justifyContent: 'center', alignItems: 'center',
+  },
+  arrowIcon: { fontSize: 20, color: '#6c757d', fontWeight: 'bold', marginTop: -2 },
   emptyText: {
     textAlign: 'center',
     marginTop: 40,
@@ -2069,60 +2163,71 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#28a745',
-    marginBottom: 8,
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#2c3e50',
+    marginBottom: 12,
     letterSpacing: 1,
-  },
-  sectionContent: {
-    backgroundColor: '#28a745',
-    borderRadius: 8,
-    padding: 12,
-    minHeight: 120,
-  },
-  studentRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 8,
     paddingHorizontal: 4,
   },
+  sectionContent: {
+    minHeight: 120,
+  },
+  studentCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
+  },
   studentIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#000',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#f8f9fa',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 14,
+    borderWidth: 1,
+    borderColor: '#e9ecef',
   },
   studentName: {
     flex: 1,
-    color: '#fff',
-    fontWeight: 'bold',
+    color: '#2c3e50',
+    fontWeight: '700',
     fontSize: 16,
     letterSpacing: 0.5,
   },
   actionButtons: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 8,
   },
   rejectButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#dc3545',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#fff5f5',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 8,
+    borderWidth: 1,
+    borderColor: '#ffe3e3',
   },
   acceptButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#28a745',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#e8f5e9',
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#cde9ce',
   },
   modalBackdrop: {
     flex: 1,
@@ -2315,46 +2420,56 @@ const styles = StyleSheet.create({
   },
   subjectTabBar: {
     flexDirection: 'row',
-    backgroundColor: '#e9ecef',
-    elevation: 8,
-    height: 64,
+    backgroundColor: '#ffffff',
+    borderTopWidth: 1,
+    borderTopColor: '#e9ecef',
     position: 'absolute',
-    left: 16,
-    right: 16,
-    bottom: 32,
-    borderRadius: 14,
-    justifyContent: 'center',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 75,
+    justifyContent: 'space-around',
     alignItems: 'center',
+    paddingBottom: 15,
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
   },
   subjectTabItem: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
     height: '100%',
-  },
-  activeTab: {
-    backgroundColor: '#ffffff',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    borderRadius: 14,
-    marginHorizontal: 4,
+    justifyContent: 'flex-start',
+    paddingTop: 8,
+    alignItems: 'center',
   },
   subjectIconContainer: {
-    padding: 8,
-    borderRadius: 24,
+    position: 'relative',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 6,
+    marginBottom: 2,
+  },
+  subjectTabLabel: {
+    fontSize: 10,
+    fontWeight: '500',
+    textAlign: 'center',
   },
   studentContentContainer: {
     flex: 1,
   },
-  activityFilterContainer: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+  activityFilterScrollView: {
+    height: 65,
+    flexGrow: 0,
     backgroundColor: '#f8f9fa',
     borderBottomWidth: 1,
     borderBottomColor: '#e9ecef',
+  },
+  activityFilterContent: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    alignItems: 'center',
   },
   activityFilterButton: {
     paddingHorizontal: 16,
@@ -2764,29 +2879,32 @@ const styles = StyleSheet.create({
   },
   // Simple Grading System Styles
   simpleGradedCard: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 10,
-    marginBottom: 6,
-    borderWidth: 1,
-    borderColor: '#e9ecef',
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 4,
   },
   simpleGradedRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    minHeight: 32,
   },
   simpleStudentName: {
     flex: 2,
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: '700',
     color: '#2c3e50',
+    letterSpacing: 0.5,
   },
   simpleFinalGrade: {
     flex: 1,
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontSize: 18,
+    fontWeight: '800',
     color: '#28a745',
     textAlign: 'right',
   },
@@ -2838,12 +2956,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
     flex: 1,
   },
-  performanceScrollView: {
+  performanceList: {
     flex: 1,
-    maxHeight: 300, // Limit height to ensure it's scrollable
-  },
-  performanceScrollContent: {
-    flexGrow: 1,
+    paddingBottom: 20,
   },
   performanceHeaderContainer: {
     flexDirection: 'row',
@@ -2966,7 +3081,7 @@ const styles = StyleSheet.create({
   },
   donutWrapper: {
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 0,
   },
   donutBase: {
     position: 'relative',
@@ -3007,6 +3122,26 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'center',
     marginTop: 4,
+  },
+  legendCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 20,
+    borderWidth: 2,
+    borderColor: '#32cd32',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  legendTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#2c3e50',
+    marginBottom: 16,
+    textAlign: 'center',
   },
   legendContainer: {
     width: '100%',

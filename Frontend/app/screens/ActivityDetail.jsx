@@ -19,8 +19,10 @@ import { subjectService } from '../subjectService';
 import { useRBAC } from '../RBACComponents';
 import { fileMetadataService } from '../fileMetadataService';
 import * as DocumentPicker from 'expo-document-picker';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function ActivityDetail() {
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const { activity: activityString, subjectId: routeSubjectId, subjectName } = useLocalSearchParams();
   const { isStudent, isTeacher } = useRBAC();
@@ -62,6 +64,11 @@ export default function ActivityDetail() {
   const [editActivityDescription, setEditActivityDescription] = useState('');
   const [editActivityFile, setEditActivityFile] = useState(null);
   const [fileNameCache, setFileNameCache] = useState({}); // Cache for fetched filenames
+  const [showOfflineScoreModal, setShowOfflineScoreModal] = useState(false);
+  const [offlineStudents, setOfflineStudents] = useState([]);
+  const [offlineScores, setOfflineScores] = useState({});
+  const [offlineMaxScore, setOfflineMaxScore] = useState('100');
+  const [offlineScoreLoading, setOfflineScoreLoading] = useState(false);
 
   // Function to get submission file URL
   const getSubmissionFileUrl = (submission) => {
@@ -261,6 +268,96 @@ export default function ActivityDetail() {
   useEffect(() => {
     prefetchFileNamesCallback();
   }, [prefetchFileNamesCallback]);
+
+  const handleOpenOfflineScore = async () => {
+    try {
+      setOfflineScoreLoading(true);
+      setShowOfflineScoreModal(true);
+
+      // Use the existing reliable endpoint used by the Student List Tab
+      const allStudentsInSubject = await subjectService.getSubjectStudents(subjectId);
+      const approvedStudents = allStudentsInSubject
+        .filter(student => student.status === 'approved')
+        .map(student => ({
+          id: student.id,
+          name: student.name,
+          email: student.email
+        }));
+
+      setOfflineStudents(approvedStudents);
+      setOfflineMaxScore(String(activity?.max_score || 100));
+
+      // Pre-populate any existing scores into the offlineScores object
+      const initialScores = {};
+      if (submissions && submissions.length > 0) {
+        submissions.forEach(sub => {
+          if (sub.score !== undefined && sub.score !== null) {
+            initialScores[sub.student_id] = String(sub.score);
+          }
+        });
+      }
+      setOfflineScores(initialScores);
+    } catch (error) {
+      console.error('Failed to open offline scores:', error);
+      Alert.alert('Error', 'Failed to load offline students.');
+      setShowOfflineScoreModal(false);
+    } finally {
+      setOfflineScoreLoading(false);
+    }
+  };
+
+  const handleSaveOfflineScores = async () => {
+    try {
+      setSubmitting(true);
+
+      // Build the score payload format: [{student_id: string, score: number}]
+      const scoresPayload = Object.entries(offlineScores).reduce((acc, [studentId, scoreString]) => {
+        const scoreNum = parseInt(scoreString, 10);
+        if (!isNaN(scoreNum) && scoreNum >= 0 && scoreString.trim() !== '') {
+          acc.push({ student_id: studentId, score: scoreNum });
+        }
+        return acc;
+      }, []);
+
+      if (scoresPayload.length === 0) {
+        Alert.alert('Notice', 'No valid scores were entered.');
+        setSubmitting(false);
+        return;
+      }
+
+      // Check if max score changed, update if so
+      const numMaxScore = parseInt(offlineMaxScore, 10);
+      if (!isNaN(numMaxScore) && numMaxScore > 0 && numMaxScore !== activity?.max_score) {
+        try {
+          await contentService.updateActivity(activity.id, { maxScore: numMaxScore });
+          // Optionally update local activity state if needed:
+          // setActivity(prev => ({ ...prev, max_score: numMaxScore }));
+        } catch (updateError) {
+          console.error("Failed to update activity max score before saving grades.", updateError);
+          // Proceed anyway as submitOfflineScores might still handle it
+        }
+      }
+
+      await contentService.submitOfflineScores(activity.id, scoresPayload);
+      Alert.alert('Success', 'Offline scores saved successfully!');
+
+      // Close the modal and refresh grading data
+      setShowOfflineScoreModal(false);
+      setOfflineScores({});
+
+      // Refresh the local submissions to reflect graded changes
+      const updatedSubmissions = await contentService.getSubmissions(activity.id);
+      setSubmissions(updatedSubmissions);
+
+      // Tell SubjectDetail that a refresh is required for the aggregate views
+      router.setParams({ refreshGrading: Date.now().toString() });
+    } catch (error) {
+      console.error('Failed to save offline scores:', error);
+      Alert.alert('Error', 'Failed to save offline scores.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const getDocumentViewerUrl = (url) => {
     if (!url) return null;
@@ -805,7 +902,7 @@ export default function ActivityDetail() {
       if (latestSubmission?.file_url) {
         setFile({
           uri: latestSubmission.file_url,
-          name: getFileNameFromUrl(latestSubmission.file_url) || 'Submitted Document',
+          name: getFileNameSync(latestSubmission.file_url) || 'Submitted Document',
           type: 'application/octet-stream',
         });
       }
@@ -890,7 +987,7 @@ export default function ActivityDetail() {
   // Handle teacher editing the activity
   const startEditActivity = () => {
     setEditActivityTitle(activity.title || '');
-    setEditActivityDescription(activity.description || '');
+    setEditActivityDescription(activity.content || '');
     setEditActivityFile(null);
     setIsEditingActivity(true);
     setShowActivityEditMenu(false);
@@ -927,19 +1024,18 @@ export default function ActivityDetail() {
     try {
       const updatedActivity = {
         title: editActivityTitle.trim(),
-        description: editActivityDescription.trim(),
+        content: editActivityDescription.trim(),
         file: editActivityFile || null
       };
 
-      // Update activity - you may need to add an updateActivity method to contentService
-      // For now, we'll use a similar approach to submission
       console.log('Updating activity:', updatedActivity);
+      await contentService.updateActivity(activity.id, updatedActivity);
 
       // Update the local activity state
       setActivity({
         ...activity,
         title: updatedActivity.title,
-        description: updatedActivity.description
+        content: updatedActivity.content
       });
 
       setIsEditingActivity(false);
@@ -997,7 +1093,7 @@ export default function ActivityDetail() {
         if (firstWithFile) {
           const fileUrl = getSubmissionFileUrl(firstWithFile);
           if (fileUrl) {
-            openFullScreenFile(fileUrl, getFileNameFromUrl(fileUrl) || 'Submission');
+            openFullScreenFile(fileUrl, getFileNameSync(fileUrl) || 'Submission');
           }
         }
       }
@@ -1088,7 +1184,13 @@ export default function ActivityDetail() {
         )}
       </View>
 
-      <ScrollView style={styles.content}>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={[
+          styles.content,
+          { paddingBottom: Math.max(30, insets.bottom + 20) }
+        ]}
+      >
         <View style={[styles.card, { borderLeftColor: getActivityColor() }]}>
           <View style={styles.cardHeader}>
             <View style={[styles.iconContainer, { backgroundColor: getActivityColor() + '20' }]}>
@@ -1136,7 +1238,7 @@ export default function ActivityDetail() {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Description</Text>
             <Text style={styles.descriptionText}>
-              {activity.description || 'No description provided.'}
+              {activity.content || 'No description provided.'}
             </Text>
           </View>
 
@@ -1154,11 +1256,11 @@ export default function ActivityDetail() {
               <Text style={styles.sectionTitle}>Attached File</Text>
               <TouchableOpacity
                 style={styles.fileButton}
-                onPress={() => openFullScreenFile(activity.file_url, getFileNameFromUrl(activity.file_url) || 'Activity File')}
+                onPress={() => openFullScreenFile(activity.file_url, getFileNameSync(activity.file_url) || 'Activity File')}
               >
                 <Ionicons name="document-text" size={20} color="#28a745" />
                 <Text style={styles.fileButtonText}>
-                  {getFileNameFromUrl(activity.file_url) || 'Activity File'}
+                  {getFileNameSync(activity.file_url) || 'Activity File'}
                 </Text>
                 <Ionicons name="open-outline" size={20} color="#28a745" />
               </TouchableOpacity>
@@ -1200,7 +1302,7 @@ export default function ActivityDetail() {
                         style={styles.viewSubmissionButton}
                         onPress={() => {
                           if (studentFileUrl) {
-                            openFullScreenFile(studentFileUrl, getFileNameFromUrl(studentFileUrl) || 'Your Submission');
+                            openFullScreenFile(studentFileUrl, getFileNameSync(studentFileUrl) || 'Your Submission');
                           } else {
                             Alert.alert('No File', 'This submission does not have a file to view.');
                           }
@@ -1211,14 +1313,16 @@ export default function ActivityDetail() {
                       </TouchableOpacity>
                     )}
 
-                    {/* Edit Button for Students */}
-                    <TouchableOpacity
-                      style={[styles.submitButton, { marginTop: 16, backgroundColor: '#007bff' }]}
-                      onPress={startEditSubmission}
-                    >
-                      <Ionicons name="create" size={18} color="#fff" />
-                      <Text style={styles.submitButtonText}>Edit Submission</Text>
-                    </TouchableOpacity>
+                    {/* Edit Button for Students - Only shown if not graded */}
+                    {!submissionStatus.graded && (
+                      <TouchableOpacity
+                        style={[styles.submitButton, { marginTop: 16, backgroundColor: '#007bff' }]}
+                        onPress={startEditSubmission}
+                      >
+                        <Ionicons name="create" size={18} color="#fff" />
+                        <Text style={styles.submitButtonText}>Edit Submission</Text>
+                      </TouchableOpacity>
+                    )}
                   </View>
                 )}
               </>
@@ -1318,7 +1422,7 @@ export default function ActivityDetail() {
 
                     {getSubmissionFileUrl(sub) && (
                       <>
-                        {isImageUrl(getSubmissionFileUrl(sub)) ? (
+                        {isImageUrl(getSubmissionFileUrl(sub)) && (
                           <TouchableOpacity
                             onPress={() => {
                               openSubmissionModal(sub);
@@ -1330,72 +1434,6 @@ export default function ActivityDetail() {
                               resizeMode="cover"
                             />
                           </TouchableOpacity>
-                        ) : (
-                          <View style={styles.teacherWebViewContainer}>
-                            <WebView
-                              source={getWebViewSource(getSubmissionFileUrl(sub))}
-                              style={styles.teacherWebView}
-                              javaScriptEnabled={true}
-                              domStorageEnabled={true}
-                              allowFileAccess={false}
-                              allowFileAccessFromFileURLs={false}
-                              allowUniversalAccessFromFileURLs={false}
-                              allowsLinkPreview={false}
-                              allowsBackForwardNavigationGestures={false}
-                              allowsFullscreenVideo={false}
-                              allowsInlineMediaPlayback={true}
-                              mediaPlaybackRequiresUserAction={true}
-                              startInLoadingState={true}
-                              renderToHardwareTextureAndroid={true}
-                              thirdPartyCookiesEnabled={false}
-                              setSupportMultipleWindows={false}
-                              setBuiltInZoomControls={false}
-                              setDisplayZoomControls={false}
-                              setLoadWithOverviewMode={true}
-                              setUseWideViewPort={true}
-                              scrollEnabled={true}
-                              overScrollMode="never"
-                              onShouldStartLoadWithRequest={(request) => {
-                                // Skip navigation to 'about:blank' or empty URL
-                                if (!request.url || request.url === 'about:blank') return true;
-
-                                // Block download requests and force inline viewing
-                                const shouldBlock = !blockDownloads(request);
-                                if (shouldBlock) {
-                                  return false;
-                                }
-
-                                // Only allow navigation within the same domain
-                                try {
-                                  const currentUrl = new URL(filePreviewUrl || '');
-                                  const newUrl = new URL(request.url);
-                                  return currentUrl.hostname === newUrl.hostname;
-                                } catch (e) {
-                                  return true; // Allow if URL parsing fails
-                                }
-                              }}
-                              renderLoading={() => (
-                                <View style={styles.webViewLoader}>
-                                  <ActivityIndicator size="large" color="#28a745" />
-                                  <Text style={styles.loadingText}>Loading document...</Text>
-                                </View>
-                              )}
-                              onError={(syntheticEvent) => {
-                                const { nativeEvent } = syntheticEvent;
-                                // Only show error if not a navigation error (which can be common with WebView)
-                                if (!nativeEvent.description.includes('net::ERR_ABORTED')) {
-                                  console.warn('WebView error:', nativeEvent);
-                                }
-                              }}
-                              onHttpError={(syntheticEvent) => {
-                                const { nativeEvent } = syntheticEvent;
-                                // Only log non-200 status codes
-                                if (nativeEvent.statusCode >= 400) {
-                                  console.warn('WebView HTTP error:', nativeEvent.statusCode, nativeEvent.url);
-                                }
-                              }}
-                            />
-                          </View>
                         )}
                       </>
                     )}
@@ -1413,7 +1451,7 @@ export default function ActivityDetail() {
 
                         if (fileUrl) {
                           console.log('Opening full-screen viewer with URL:', fileUrl);
-                          openFullScreenFile(fileUrl, getFileNameFromUrl(fileUrl) || 'Submission');
+                          openFullScreenFile(fileUrl, getFileNameSync(fileUrl) || 'Submission');
                         } else {
                           console.log('No file URL found, showing alert');
                           Alert.alert('No File', 'This submission does not have a file to view.');
@@ -1474,6 +1512,28 @@ export default function ActivityDetail() {
               >
                 <Ionicons name="create" size={20} color="#007bff" />
                 <Text style={styles.menuItemText}>Edit Activity</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={() => {
+                  setShowActivityEditMenu(false);
+                  handleOpenOfflineScore();
+                }}
+              >
+                <Ionicons name="school-outline" size={20} color="#6f42c1" />
+                <Text style={styles.menuItemText}>Offline Score</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.menuItem, { borderBottomWidth: 0 }]}
+                onPress={() => {
+                  setShowActivityEditMenu(false);
+                  handleDeleteActivity();
+                }}
+              >
+                <Ionicons name="trash" size={20} color="#dc3545" />
+                <Text style={[styles.menuItemText, { color: '#dc3545' }]}>Delete Activity</Text>
               </TouchableOpacity>
             </View>
           </TouchableOpacity>
@@ -1601,7 +1661,7 @@ export default function ActivityDetail() {
                 {studentFileUrl && !editSubmissionFile && (
                   <TouchableOpacity
                     style={[styles.submittedFileButton, { marginTop: 16, backgroundColor: '#f8f9fa' }]}
-                    onPress={() => openFullScreenFile(studentFileUrl, getFileNameFromUrl(studentFileUrl) || 'Current File')}
+                    onPress={() => openFullScreenFile(studentFileUrl, getFileNameSync(studentFileUrl) || 'Current File')}
                   >
                     <Ionicons name="document-text" size={20} color="#6c757d" />
                     <Text style={[styles.submittedFileButtonText, { color: '#6c757d' }]}>View Current File</Text>
@@ -1713,7 +1773,7 @@ export default function ActivityDetail() {
               <View style={{ padding: 16, borderTopWidth: 1, borderTopColor: '#e9ecef', flexDirection: 'row', justifyContent: 'space-between' }}>
                 <TouchableOpacity
                   style={[styles.submitButton, { flex: 1, marginRight: 8, height: 48, justifyContent: 'center' }]}
-                  onPress={() => handleSaveEditedTeacherSubmission(isEditingTeacherSubmission)}
+                  onPress={handleSaveEditedTeacherSubmission}
                   disabled={submitting}
                 >
                   {submitting ? (
@@ -1728,6 +1788,98 @@ export default function ActivityDetail() {
                   disabled={submitting}
                 >
                   <Text style={styles.submitButtonText}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Offline Scoring Modal */}
+        <Modal
+          visible={showOfflineScoreModal}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setShowOfflineScoreModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={[styles.modalContent, { height: '85%' }]}>
+              <View style={styles.modalHeaderRow}>
+                <Text style={styles.modalTitle}>Offline Scoring</Text>
+                <TouchableOpacity onPress={() => setShowOfflineScoreModal(false)} style={styles.modalCloseButton}>
+                  <Ionicons name="close" size={22} color="#6c757d" />
+                </TouchableOpacity>
+              </View>
+
+              {offlineScoreLoading ? (
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                  <ActivityIndicator size="large" color="#28a745" />
+                  <Text style={{ marginTop: 10, color: '#666' }}>Loading students...</Text>
+                </View>
+              ) : (
+                <ScrollView contentContainerStyle={{ padding: 16 }}>
+                  <Text style={{ fontSize: 14, color: '#666', marginBottom: 15 }}>
+                    Enter scores for students who submitted offline. Leave blank if not submitted.
+                  </Text>
+
+                  {offlineStudents && offlineStudents.length > 0 ? (
+                    offlineStudents.map((student) => (
+                      <View key={student.id} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 15, borderBottomWidth: 1, borderBottomColor: '#f0f0f0', paddingBottom: 10 }}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontWeight: '500', fontSize: 16 }}>{student.name || student.email}</Text>
+                        </View>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', width: 130 }}>
+                          <TextInput
+                            style={{
+                              borderWidth: 1,
+                              borderColor: '#ced4da',
+                              borderRadius: 4,
+                              padding: 8,
+                              textAlign: 'center',
+                              width: 65
+                            }}
+                            placeholder="Score"
+                            keyboardType="numeric"
+                            value={offlineScores[student.id] || ''}
+                            onChangeText={(val) => setOfflineScores(prev => ({ ...prev, [student.id]: val }))}
+                          />
+                          <Text style={{ marginLeft: 6, marginRight: 6, fontSize: 16, color: '#6c757d', fontWeight: '500' }}>
+                            /
+                          </Text>
+                          <TextInput
+                            style={{
+                              borderWidth: 1,
+                              borderColor: '#ced4da',
+                              borderRadius: 4,
+                              padding: 8,
+                              textAlign: 'center',
+                              width: 60,
+                              color: '#6c757d'
+                            }}
+                            placeholder="Max"
+                            keyboardType="numeric"
+                            value={offlineMaxScore}
+                            onChangeText={setOfflineMaxScore}
+                          />
+                        </View>
+                      </View>
+                    ))
+                  ) : (
+                    <Text style={styles.noSubmissionsText}>No approved students found.</Text>
+                  )}
+                </ScrollView>
+              )}
+
+              <View style={{ padding: 16, borderTopWidth: 1, borderTopColor: '#e9ecef', flexDirection: 'row', paddingBottom: 24 }}>
+                <TouchableOpacity
+                  style={[styles.submitButton, { flex: 1, backgroundColor: '#28a745', minHeight: 48, justifyContent: 'center', marginTop: 0 }]}
+                  onPress={handleSaveOfflineScores}
+                  disabled={submitting || offlineScoreLoading}
+                >
+                  {submitting ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text style={styles.submitButtonText}>Save All Scores</Text>
+                  )}
                 </TouchableOpacity>
               </View>
             </View>
@@ -1830,7 +1982,7 @@ export default function ActivityDetail() {
                         <View style={[styles.submittedFileButton, { marginTop: 16, backgroundColor: '#f8f9fa' }]}>
                           <Ionicons name="document-text" size={20} color="#6c757d" />
                           <Text style={[styles.submittedFileButtonText, { color: '#6c757d' }]}>
-                            {getFileNameFromUrl(submissionPreviewUrl) || 'Document'}
+                            {getFileNameSync(submissionPreviewUrl) || 'Document'}
                           </Text>
                           <Ionicons name="checkmark-circle" size={20} color="#28a745" />
                         </View>
@@ -1851,10 +2003,10 @@ export default function ActivityDetail() {
               )}
             </View>
           </View>
-        </Modal>
+        </Modal >
 
         {/* Generic file preview modal */}
-        <Modal
+        < Modal
           visible={showFilePreviewModal && !!filePreviewUrl}
           transparent
           animationType="fade"
@@ -1946,10 +2098,10 @@ export default function ActivityDetail() {
               )}
             </View>
           </View>
-        </Modal>
+        </Modal >
 
         {/* Full Screen File Modal - Similar to Lecture */}
-        <Modal
+        < Modal
           visible={showFullScreenFileModal}
           transparent={false}
           animationType="slide"
@@ -2045,20 +2197,22 @@ export default function ActivityDetail() {
               )}
             </View>
           </View>
-        </Modal>
+        </Modal >
 
         {/* Submitted Popup */}
-        {showSubmittedPopup && (
-          <View style={styles.popupOverlay}>
-            <View style={styles.submittedPopup}>
-              <Ionicons name="checkmark-circle" size={60} color="#28a745" />
-              <Text style={styles.popupTitle}>Submitted!</Text>
-              <Text style={styles.popupMessage}>Your {getActivityType()} has been submitted successfully.</Text>
+        {
+          showSubmittedPopup && (
+            <View style={styles.popupOverlay}>
+              <View style={styles.submittedPopup}>
+                <Ionicons name="checkmark-circle" size={60} color="#28a745" />
+                <Text style={styles.popupTitle}>Submitted!</Text>
+                <Text style={styles.popupMessage}>Your {getActivityType()} has been submitted successfully.</Text>
+              </View>
             </View>
-          </View>
-        )}
+          )
+        }
       </ScrollView>
-    </View>
+    </View >
   );
 }
 
@@ -2102,7 +2256,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   content: {
-    flex: 1,
     padding: 16,
     paddingBottom: 30, // Add padding at the bottom for better scrolling
   },

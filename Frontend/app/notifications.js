@@ -29,11 +29,16 @@ export default function NotificationsScreen() {
     // 1) Get backend notifications
     const backend = await notificationService.getBackendNotifications();
 
-    // 2) Keep only new posts (Lecture/Activity)
-    const newPostNotifs = (backend || []).filter((n) =>
-      (n?.title === 'New Lecture' || n?.title === 'New Activity') &&
-      typeof n?.message === 'string' && n.message.includes(' has been posted')
-    );
+    // 2) Keep new posts (Lecture/Activity) AND grading notifications
+    const relevantNotifs = (backend || []).filter((n) => {
+      if ((n?.title === 'New Lecture' || n?.title === 'New Activity') && typeof n?.message === 'string' && n.message.includes(' has been posted')) {
+        return true;
+      }
+      if ((n?.title === 'Submission Scored' || n?.title === 'Offline Submission Scored') && typeof n?.message === 'string') {
+        return true;
+      }
+      return false;
+    });
 
     // 3) Build map from content title -> subject name across the student's subjects
     let subjects = [];
@@ -58,22 +63,40 @@ export default function NotificationsScreen() {
     }));
 
     // 4) Convert to simplified student-facing list with subject name
-    const simplified = newPostNotifs.map((n) => {
-      const postedTitle = n.message.replace(/ has been posted\.?$/i, '');
-      const subjectName = titleToSubject[postedTitle];
-      
+    const simplified = relevantNotifs.map((n) => {
+      let subjectName = null;
+      let displayMessage = n.message;
+      let displayTitle = n.title;
+
+      if (n.title === 'New Lecture' || n.title === 'New Activity') {
+        const postedTitle = n.message.replace(/ has been posted\.?$/i, '');
+        subjectName = titleToSubject[postedTitle];
+        displayTitle = subjectName || 'New Post';
+        displayMessage = n.title === 'New Lecture' ? 'New Lecture posted' : 'New Activity posted';
+      } else if (n.title === 'Submission Scored' || n.title === 'Offline Submission Scored') {
+        // Extract the activity title from message: Your submission for 'Activity 1' has been scored...
+        const match = n.message.match(/for '(.*?)' has been scored/);
+        if (match && match[1]) {
+          const activityTitle = match[1];
+          subjectName = titleToSubject[activityTitle];
+        }
+        displayTitle = subjectName ? `${subjectName} - Graded` : 'Submission Graded';
+        // Keep the original message which contains the score
+        displayMessage = n.message;
+      }
+
       // Find the subject ID from the subjects list
       const subjectId = subjects.find(s => s.name === subjectName)?.id;
-      
+
       return {
         id: n.id,
-        title: subjectName || 'New Post',
-        message: n.title === 'New Lecture' ? 'New Lecture posted' : 'New Activity posted',
+        title: displayTitle,
+        message: displayMessage,
         created_at: n.created_at,
         subject_id: subjectId,
         is_read: n.is_read, // Keep the read state from backend
       };
-    });
+    }).filter(n => n.subject_id || n.title.includes('Graded')); // allow graded even if subjectId missing to prevent complete loss
 
     // 5) Sort newest first
     simplified.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
@@ -85,12 +108,13 @@ export default function NotificationsScreen() {
     const merged = await notificationService.getGeneralNotificationsForTeacher();
     console.log('Loaded teacher notifications:', merged?.length || 0, 'items');
     console.log('Notification details:', merged);
-    
+
     // Sync with global read state before setting notifications
     const globalReadIds = notificationService.getGlobalReadNotifications();
     setReadNotifications(globalReadIds);
-    
-    setGeneralNotifications(merged || []);
+
+    const filtered = (merged || []).filter(n => n.subject_id);
+    setGeneralNotifications(filtered);
   }, []);
 
   const load = useCallback(async () => {
@@ -103,22 +127,22 @@ export default function NotificationsScreen() {
       if (currentRole === 'teacher') {
         // Don't clear generated notifications - preserve them like Student Interface
         // notificationService.clearAllNotificationsOnRefresh();
-        
+
         // Get backend notifications and preserve their read state FIRST
         const backend = await notificationService.getBackendNotifications();
         const backendReadIds = new Set(backend.filter(n => n.is_read === true || n.is_read === 1).map(n => n.id));
-        
+
         // Also get generated notification read state
         const generatedReadIds = notificationService.getReadGeneratedNotifications();
-        
+
         // Also get inside notification read state
         const insideReadIds = notificationService.getReadInsideNotifications();
-        
+
         // Merge all read states and set globally
         const allReadIds = new Set([...backendReadIds, ...generatedReadIds, ...insideReadIds]);
         notificationService.setGlobalReadNotifications(allReadIds);
         setReadNotifications(allReadIds);
-        
+
         // Wait a moment for state to update
         await new Promise(resolve => setTimeout(resolve, 100));
       }
@@ -150,7 +174,7 @@ export default function NotificationsScreen() {
           console.warn('Failed to refresh notifications on focus:', error);
         }
       };
-      
+
       refreshNotifications();
     }, [load])
   );
@@ -175,10 +199,10 @@ export default function NotificationsScreen() {
 
   const markAsRead = (notificationId) => {
     console.log('Marking notification as read:', notificationId);
-    
+
     // Update global shared state
     notificationService.addToGlobalReadNotifications(notificationId);
-    
+
     // Update local state for immediate UI update
     setReadNotifications(prev => {
       const newSet = new Set([...prev, notificationId]);
@@ -194,15 +218,15 @@ export default function NotificationsScreen() {
   useEffect(() => {
     if (role === 'teacher') {
       const unread = generalNotifications.filter(n => !readNotifications.has(n.id)).length;
-      console.log('Unread count calculation:', { 
-        total: generalNotifications.length, 
-        read: readNotifications.size, 
-        unread: unread 
+      console.log('Unread count calculation:', {
+        total: generalNotifications.length,
+        read: readNotifications.size,
+        unread: unread
       });
       setUnreadCount(unread);
     } else {
       // For students, check both backend read state and local read notifications
-      const unread = generalNotifications.filter(n => 
+      const unread = generalNotifications.filter(n =>
         !readNotifications.has(n.id) && n.is_read !== true && n.is_read !== 1
       ).length;
       setUnreadCount(unread);
@@ -224,7 +248,7 @@ export default function NotificationsScreen() {
     if (notification.subject_id) {
       router.push({
         pathname: '/screens/SubjectDetail',
-        params: { 
+        params: {
           subjectId: notification.subject_id,
         },
       });
@@ -232,13 +256,13 @@ export default function NotificationsScreen() {
   };
 
   const renderNotification = (n) => {
-    const isRead = role === 'teacher' 
+    const isRead = role === 'teacher'
       ? readNotifications.has(n.id)
       : readNotifications.has(n.id) || n.is_read === true || n.is_read === 1;
-    
+
     return (
-      <TouchableOpacity 
-        key={n.id} 
+      <TouchableOpacity
+        key={n.id}
         style={[
           styles.notificationItem,
           isRead ? styles.notificationRead : null
@@ -291,8 +315,8 @@ export default function NotificationsScreen() {
             notificationIds: subjectNotifications.map(n => n.id)
           });
           return (
-            <TouchableOpacity 
-              key={subjectName} 
+            <TouchableOpacity
+              key={subjectName}
               style={styles.subjectIndicator}
               onPress={async () => {
                 console.log(`Clicking subject "${subjectName}" with ${unreadCount} unread notifications`);
@@ -302,7 +326,7 @@ export default function NotificationsScreen() {
                 if (subjectNotif && subjectNotif.subject_id) {
                   router.push({
                     pathname: '/screens/SubjectDetail',
-                    params: { 
+                    params: {
                       subjectId: subjectNotif.subject_id,
                     },
                   });
@@ -326,11 +350,11 @@ export default function NotificationsScreen() {
     <View style={styles.container}>
       <View style={styles.content}>
         <Text style={styles.title}>NOTIFICATIONS</Text>
-        
-        
+
+
         <View style={styles.tabBar}>
-          <TouchableOpacity 
-            onPress={() => setTab('general')} 
+          <TouchableOpacity
+            onPress={() => setTab('general')}
             style={[styles.tabButton, tab === 'general' && styles.tabActive]}
           >
             <Text style={[styles.tabText, tab === 'general' && styles.tabTextActive]}>

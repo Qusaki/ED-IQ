@@ -2,7 +2,7 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
-import { View, Text } from 'react-native';
+import { View, Text, DeviceEventEmitter } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import { authService } from '../components/_authService';
 import AuthScreen from './auth';
@@ -10,7 +10,7 @@ import { setupAxiosInterceptors } from './apiConfig';
 import { useRBAC } from './RBACComponents';
 import SplashAnimation from './SplashAnimation';
 
-SplashScreen.preventAutoHideAsync().catch(() => {});
+SplashScreen.preventAutoHideAsync().catch(() => { });
 
 export default function RootLayout() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -21,6 +21,14 @@ export default function RootLayout() {
   useEffect(() => {
     setupAxiosInterceptors();
     checkAuth();
+
+    const logoutListener = DeviceEventEmitter.addListener('appLogout', () => {
+      setIsAuthenticated(false);
+    });
+
+    return () => {
+      logoutListener.remove();
+    };
   }, []);
 
   const checkAuth = async () => {
@@ -59,12 +67,13 @@ export default function RootLayout() {
         <Stack
           screenOptions={{
             headerShown: false,
+            animation: 'none',
           }}
         >
-          <Stack.Screen name="index" />
-          <Stack.Screen name="profile" />
-          <Stack.Screen name="notifications" />
-          <Stack.Screen name="screens" />
+          <Stack.Screen name="index" options={{ animation: 'fade' }} />
+          <Stack.Screen name="profile" options={{ animation: 'fade' }} />
+          <Stack.Screen name="notifications" options={{ animation: 'fade' }} />
+          <Stack.Screen name="screens" options={{ animation: 'none' }} />
           <Stack.Screen name="_ui" />
         </Stack>
       )}
