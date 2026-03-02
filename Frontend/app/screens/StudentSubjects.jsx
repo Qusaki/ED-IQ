@@ -74,25 +74,33 @@ export default function StudentSubjects() {
         <View style={styles.bookSpine} />
 
         <View style={styles.bookContent}>
+          {/* Decorative Bookmark Ribbon */}
+          <Ionicons
+            name="bookmark"
+            size={40}
+            color="#1e7e34"
+            style={{ position: 'absolute', top: -4, right: 32, zIndex: 10 }}
+          />
           <View style={styles.bookHeader}>
             <MaterialCommunityIcons name="book-education-outline" size={26} color="#ffffff" style={styles.bookIcon} />
             <Text style={styles.subjectTitle} numberOfLines={2}>{(item.name || 'Subject').toUpperCase()}</Text>
           </View>
-          {!!item.code && (
-            <View style={styles.codeContainer}>
-              <Text style={styles.subjectMeta}>Class Code: {item.code}</Text>
-              {!!item.teacher_name && (
-                <Text style={[styles.subjectMeta, { marginTop: 2, fontSize: 10, color: '#e9ecef', fontStyle: 'italic' }]}>
-                  Instructor: {item.teacher_name}
+          {(!!item.code || !!item.teacher_name) && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 }}>
+              {!!item.teacher_name ? (
+                <View style={styles.codeContainer}>
+                  <Text style={[styles.subjectMeta, { fontWeight: 'bold' }]}>Instructor: {item.teacher_name}</Text>
+                </View>
+              ) : <View />}
+              {!!item.code && (
+                <Text style={[styles.subjectMeta, { fontSize: 11, fontStyle: 'italic', opacity: 0.9 }]}>
+                  Code: {item.code}
                 </Text>
               )}
             </View>
           )}
         </View>
 
-        <View style={styles.cardArrow}>
-          <Ionicons name="chevron-forward" size={18} color="#28a745" />
-        </View>
       </View>
     </TouchableOpacity>
   );

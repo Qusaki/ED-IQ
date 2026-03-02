@@ -1,5 +1,6 @@
 from typing import List, Optional
 from uuid import uuid4
+from datetime import datetime, timezone
 
 from database import get_db
 
@@ -51,6 +52,13 @@ async def create_submission(
         raise HTTPException(
             status_code=403, detail="You are not enrolled in this subject"
         )
+        
+    # Check due date
+    if activity.due_date:
+        if datetime.now(timezone.utc) > activity.due_date:
+            raise HTTPException(
+                status_code=403, detail="The submission for this activity has ended the due date."
+            )
 
     file_url = None
     if file and getattr(file, "filename", ""):

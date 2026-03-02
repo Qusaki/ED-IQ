@@ -29,6 +29,7 @@ async def create_activity(
     content: str = Form(None),
     category: str = Form('quiz'),
     term: str = Form('midterm'),
+    due_date: Optional[str] = Form(None),
     file: Optional[UploadFile] = File(None),
     max_score: int = Form(100),
     db: Session = Depends(get_db),
@@ -54,6 +55,7 @@ async def create_activity(
         file_url=file_url,
         category=category,
         term=term,
+        due_date=due_date,
         max_score=max_score,
         teacher_id=current_user.id,
         subject_id=subject_id,
@@ -152,6 +154,7 @@ async def update_activity(
     content: str = Form(None),
     category: str = Form(None),
     term: str = Form(None),
+    due_date: Optional[str] = Form(None),
     max_score: str = Form(None),
     file: Optional[UploadFile] = File(None),
     db: Session = Depends(get_db),
@@ -177,6 +180,8 @@ async def update_activity(
         activity.category = category
     if term:
         activity.term = term
+    if due_date:
+        activity.due_date = due_date
 
     if file and getattr(file, "filename", ""):
         # delete old file

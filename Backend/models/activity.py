@@ -19,6 +19,7 @@ class Activity(Base):
         VARCHAR(50), nullable=False, default="quiz"
     )  # laboratory, quiz, assignment, attendance, major exam, lab exam, project
     term = Column(VARCHAR(50), nullable=False, default="midterm")  # midterm, final
+    due_date = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

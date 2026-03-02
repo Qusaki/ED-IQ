@@ -10,6 +10,7 @@ class ActivityBase(BaseModel):
     file_url: Optional[str] = None
     category: Optional[str] = None
     term: Optional[str] = None
+    due_date: Optional[datetime] = None
     max_score: Optional[int] = None
 
 
@@ -19,6 +20,7 @@ class ActivityUpdate(BaseModel):
     file_url: Optional[str] = None
     category: Optional[str] = None
     term: Optional[str] = None
+    due_date: Optional[datetime] = None
     max_score: Optional[int] = None
 
 
@@ -28,6 +30,7 @@ class ActivityResponse(ActivityBase):
     subject_id: str
     category: str
     term: str
+    due_date: Optional[datetime]
     created_at: datetime
     updated_at: datetime
     max_score: int

@@ -221,6 +221,12 @@ export const contentService = {
       // Add max_score
       formData.append('max_score', String(data.maxScore || 100));
 
+      // Add due_date if present
+      if (data.dueDate) {
+        // Assuming data.dueDate is an ISO string or can be parsed by backend
+        formData.append('due_date', data.dueDate);
+      }
+
       // Add exam-specific fields
       if (data.type === 'exam') {
         formData.append('category', data.category || 'major exam');
@@ -331,6 +337,9 @@ export const contentService = {
       }
       if (data.term) {
         formData.append('term', data.term);
+      }
+      if (data.dueDate) {
+        formData.append('due_date', data.dueDate);
       }
       if (data.file) {
         try {

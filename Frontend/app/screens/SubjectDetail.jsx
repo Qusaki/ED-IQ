@@ -15,6 +15,7 @@ import {
   RefreshControl,
   Dimensions
 } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
@@ -220,6 +221,11 @@ export default function SubjectDetail() {
   const [selectedImage, setSelectedImage] = useState(null);
   const [selectedPdf, setSelectedPdf] = useState(null);
 
+  // Due Date state
+  const [dueDate, setDueDate] = useState(new Date(Date.now() + 24 * 60 * 60 * 1000));
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+
   // PDF Viewer state
   const [selectedLecture, setSelectedLecture] = useState(null);
   const [pdfLoading, setPdfLoading] = useState(false);
@@ -267,6 +273,7 @@ export default function SubjectDetail() {
     setSelectedPdf(null);
     setExamCategory('written');
     setExamTerm('midterm');
+    setDueDate(new Date(Date.now() + 24 * 60 * 60 * 1000));
   };
 
   const loadData = async (preserveExisting = false) => {
@@ -833,6 +840,7 @@ export default function SubjectDetail() {
       // Add term field for activities, quizzes, and exams
       if (contentType === 'activity' || contentType === 'quiz' || contentType === 'exam' || contentType === 'lab' || contentType === 'assignment' || contentType === 'project') {
         data.term = examTerm;
+        data.dueDate = dueDate ? dueDate.toISOString() : null;
       }
 
       // Add exam-specific fields
@@ -869,6 +877,7 @@ export default function SubjectDetail() {
       setSelectedPdf(null);
       setExamCategory('written');
       setExamTerm('midterm');
+      setDueDate(new Date(Date.now() + 24 * 60 * 60 * 1000));
       closeModal();
 
       // Immediately show the created item
@@ -1688,6 +1697,57 @@ export default function SubjectDetail() {
                   </View>
                 </View>
               </>
+            )}
+
+            {/* Due Date Section */}
+            {(contentType === 'activity' || contentType === 'quiz' || contentType === 'exam' || contentType === 'lab' || contentType === 'assignment' || contentType === 'project') && (
+              <View style={styles.typeContainer}>
+                <Text style={styles.label}>Due Date:</Text>
+                <View style={styles.typeButtons}>
+                  <TouchableOpacity
+                    style={[styles.typeButton, { flex: 1, marginRight: 10 }]}
+                    onPress={() => setShowDatePicker(true)}
+                  >
+                    <Ionicons name="calendar" size={18} color="#0f7a67" style={{ marginRight: 5 }} />
+                    <Text style={styles.typeButtonText}>
+                      {dueDate ? dueDate.toLocaleDateString() : 'Set Date'}
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.typeButton, { flex: 1 }]}
+                    onPress={() => setShowTimePicker(true)}
+                  >
+                    <Ionicons name="time" size={18} color="#0f7a67" style={{ marginRight: 5 }} />
+                    <Text style={styles.typeButtonText}>
+                      {dueDate ? dueDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Set Time'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                {showDatePicker && (
+                  <DateTimePicker
+                    value={dueDate || new Date()}
+                    mode="date"
+                    display="default"
+                    onChange={(event, selectedDate) => {
+                      setShowDatePicker(false);
+                      if (selectedDate) setDueDate(selectedDate);
+                    }}
+                  />
+                )}
+
+                {showTimePicker && (
+                  <DateTimePicker
+                    value={dueDate || new Date()}
+                    mode="time"
+                    display="default"
+                    onChange={(event, selectedDate) => {
+                      setShowTimePicker(false);
+                      if (selectedDate) setDueDate(selectedDate);
+                    }}
+                  />
+                )}
+              </View>
             )}
 
             {/* File Upload Section */}

@@ -1231,7 +1231,7 @@ export default function ActivityDetail() {
             <View style={styles.detailRow}>
               <Text style={styles.detailLabel}>Due Date:</Text>
               <Text style={styles.detailValue}>
-                {new Date(activity.due_date).toLocaleDateString()}
+                {new Date(activity.due_date).toLocaleString()}
               </Text>
             </View>
           )}
@@ -1314,8 +1314,8 @@ export default function ActivityDetail() {
                       </TouchableOpacity>
                     )}
 
-                    {/* Edit Button for Students - Only shown if not graded */}
-                    {!submissionStatus.graded && (
+                    {/* Edit Button for Students - Only shown if not graded and before due date */}
+                    {!submissionStatus.graded && (!activity.due_date || new Date() <= new Date(activity.due_date)) && (
                       <TouchableOpacity
                         style={[styles.submitButton, { marginTop: 16, backgroundColor: '#007bff' }]}
                         onPress={startEditSubmission}
@@ -1329,8 +1329,15 @@ export default function ActivityDetail() {
               </>
             )}
 
-            {/* Show submission form if not submitted */}
-            {!submissionStatus?.submitted && (
+            {/* Show submission form if not submitted and before due date */}
+            {!submissionStatus?.submitted && activity.due_date && new Date() > new Date(activity.due_date) ? (
+              <View style={{ marginTop: 20, alignItems: 'center', padding: 15, backgroundColor: '#ffebee', borderRadius: 8 }}>
+                <Ionicons name="time" size={24} color="#dc3545" style={{ marginBottom: 5 }} />
+                <Text style={{ color: '#dc3545', fontWeight: 'bold', textAlign: 'center' }}>
+                  The Submission for this activity is end of due date
+                </Text>
+              </View>
+            ) : !submissionStatus?.submitted && (
               <>
                 <Text style={styles.inputLabel}>Your Answer / Response</Text>
                 <View style={styles.textInputContainer}>
