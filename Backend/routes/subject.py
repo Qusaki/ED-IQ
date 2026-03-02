@@ -56,7 +56,10 @@ def list_subjects(
 ):
     # List subjects based on user role
     if current_user.role == "teacher":
-        return db.query(Subject).filter(Subject.owner_id == current_user.id).all()
+        subjects = db.query(Subject).filter(Subject.owner_id == current_user.id).all()
+        for subject in subjects:
+            subject.teacher_name = current_user.name
+        return subjects
 
     # Student view: list enrolled subjects
     enrollments = (
@@ -72,7 +75,14 @@ def list_subjects(
     # Return empty list if no enrollments
     if not subject_ids:
         return []
-    return db.query(Subject).filter(Subject.id.in_(subject_ids)).all()
+    
+    subjects = db.query(Subject).filter(Subject.id.in_(subject_ids)).all()
+    for subject in subjects:
+        owner = db.query(User).filter(User.id == subject.owner_id).first()
+        if owner:
+            subject.teacher_name = owner.name
+            
+    return subjects
 
 
 @router.post("/join", response_model=SubjectResponse)

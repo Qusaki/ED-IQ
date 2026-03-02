@@ -26,6 +26,7 @@ class SubjectResponse(SubjectBase):
     id: str
     code: str
     owner_id: str
+    teacher_name: Optional[str] = None
 
     class Config:
         from_attributes = True

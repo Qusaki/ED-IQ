@@ -81,6 +81,11 @@ export default function StudentSubjects() {
           {!!item.code && (
             <View style={styles.codeContainer}>
               <Text style={styles.subjectMeta}>Class Code: {item.code}</Text>
+              {!!item.teacher_name && (
+                <Text style={[styles.subjectMeta, { marginTop: 2, fontSize: 10, color: '#e9ecef', fontStyle: 'italic' }]}>
+                  Instructor: {item.teacher_name}
+                </Text>
+              )}
             </View>
           )}
         </View>
