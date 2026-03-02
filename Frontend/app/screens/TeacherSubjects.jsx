@@ -103,7 +103,7 @@ export default function TeacherSubjects() {
           <Text style={styles.headerBrand}>ED-IQ</Text>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <Image
-              source={require('../../assets/img/ED-IQ_LOGO.png')}
+              source={require('../../assets/Gif Logo/Logo_Animaation.gif')}
               style={styles.headerMascot}
               resizeMode="contain"
             />
