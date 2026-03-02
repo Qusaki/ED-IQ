@@ -141,6 +141,7 @@ def get_subject_students(
                     name=student.name,
                     email=student.email,
                     status=e.status,
+                    profile_picture=student.profile_picture,
                 )
             )
     return out

@@ -1062,18 +1062,32 @@ export default function SubjectDetail() {
 
   const renderEnrolledStudent = ({ item }) => (
     <View style={styles.studentCard}>
-      <View style={styles.studentIcon}>
-        <Ionicons name="person" size={20} color="#28a745" />
-      </View>
+      {item.profile_picture ? (
+        <Image
+          source={{ uri: item.profile_picture }}
+          style={styles.studentProfileImage}
+        />
+      ) : (
+        <View style={styles.studentIcon}>
+          <Ionicons name="person" size={20} color="#28a745" />
+        </View>
+      )}
       <Text style={styles.studentName} numberOfLines={1}>{item.name}</Text>
     </View>
   );
 
   const renderPendingStudent = ({ item }) => (
     <View style={styles.studentCard}>
-      <View style={styles.studentIcon}>
-        <Ionicons name="person" size={20} color="#6c757d" />
-      </View>
+      {item.profile_picture ? (
+        <Image
+          source={{ uri: item.profile_picture }}
+          style={styles.studentProfileImage}
+        />
+      ) : (
+        <View style={styles.studentIcon}>
+          <Ionicons name="person" size={20} color="#6c757d" />
+        </View>
+      )}
       <Text style={styles.studentName} numberOfLines={1}>{item.name}</Text>
       <View style={styles.actionButtons}>
         <TouchableOpacity
@@ -2193,6 +2207,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#f8f9fa',
     justifyContent: 'center',
     alignItems: 'center',
+    marginRight: 14,
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+  },
+  studentProfileImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     marginRight: 14,
     borderWidth: 1,
     borderColor: '#e9ecef',

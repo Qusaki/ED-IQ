@@ -36,6 +36,7 @@ class StudentInSubject(BaseModel):
     name: Optional[str] = None
     email: Optional[str] = None
     status: str
+    profile_picture: Optional[str] = None
 
     class Config:
         from_attributes = True
