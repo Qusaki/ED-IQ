@@ -384,6 +384,16 @@ export const contentService = {
     }
   },
 
+  // Delete an activity
+  async deleteActivity(activityId) {
+    try {
+      const res = await apiClient.delete(`/activities/${activityId}`);
+      return res.data;
+    } catch (error) {
+      console.error('Error deleting activity:', error);
+      throw error;
+    }
+  },
   // Unified create method
   async createContent(subjectId, data) {
     const type = data.type; // 'lecture', 'activity', 'quiz', or 'exam'

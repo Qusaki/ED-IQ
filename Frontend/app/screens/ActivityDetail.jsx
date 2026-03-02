@@ -1053,6 +1053,33 @@ export default function ActivityDetail() {
     }
   };
 
+  const handleDeleteActivity = () => {
+    Alert.alert(
+      "Delete Activity",
+      "Are you sure you want to delete this activity? This action cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              setLoading(true);
+              await contentService.deleteActivity(activity.id);
+              Alert.alert("Success", "Activity deleted successfully.", [
+                { text: "OK", onPress: () => router.back() }
+              ]);
+            } catch (error) {
+              console.error("Error deleting activity:", error);
+              Alert.alert("Error", "Failed to delete activity.");
+              setLoading(false);
+            }
+          }
+        }
+      ]
+    );
+  };
+
   const formatDate = (dateString) => {
     if (!dateString) return '';
     const date = new Date(dateString);
