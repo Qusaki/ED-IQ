@@ -15,8 +15,19 @@ export const contentService = {
         console.log('No lectures available or no access (status:', error.response?.status, ')');
         return [];
       }
-      console.error('Error fetching lectures:', error);
       return [];
+    }
+  },
+
+  // Get a specific activity by ID
+  async getActivityById(subjectId, activityId) {
+    try {
+      console.log(`Fetching activity ${activityId} for subject ${subjectId}`);
+      const res = await apiClient.get(`/activities/${subjectId}/${activityId}`);
+      return res.data;
+    } catch (error) {
+      console.error('Error fetching activity:', error);
+      throw error;
     }
   },
 
@@ -372,7 +383,7 @@ export const contentService = {
 
       console.log('Updating activity with formData:', { title: data.title, content: data.content, hasFile: !!data.file });
 
-      const res = await apiClient.put(`/activity_post/${activityId}`, formData, {
+      const res = await apiClient.put(`/activities/${activityId}`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },

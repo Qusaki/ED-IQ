@@ -24,7 +24,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 export default function ActivityDetail() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { activity: activityString, subjectId: routeSubjectId, subjectName } = useLocalSearchParams();
+  const { activity: activityString, activityId, subjectId: routeSubjectId, subjectName, activityTitle, type } = useLocalSearchParams();
   const { isStudent, isTeacher } = useRBAC();
   const [activity, setActivity] = useState(null);
   const [subjectId, setSubjectId] = useState(routeSubjectId);
@@ -1086,27 +1086,54 @@ export default function ActivityDetail() {
     return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  // Parse the activity data
+  // Parse or fetch the activity data
   useEffect(() => {
-    if (activityString) {
+    const loadDetails = async () => {
       try {
-        const activityData = JSON.parse(activityString);
-        setActivity(activityData);
+        if (activityString) {
+          const activityData = JSON.parse(activityString);
+          setActivity(activityData);
 
-        // Extract subject_id from activity object if available and not already set
-        if (activityData.subject_id && !routeSubjectId) {
-          console.log('Extracted subject_id from activity:', activityData.subject_id);
-          setSubjectId(activityData.subject_id);
+          // Extract subject_id from activity object if available and not already set
+          if (activityData.subject_id && !routeSubjectId) {
+            console.log('Extracted subject_id from activity:', activityData.subject_id);
+            setSubjectId(activityData.subject_id);
+          }
+          setLoading(false);
+        } else if (activityId && routeSubjectId) {
+          console.log(`Deep link detected: Fetching activity ${activityId} for subject ${routeSubjectId}`);
+
+          // Set skeleton data if available to avoid full screen loading
+          if (activityTitle) {
+            setActivity({
+              id: activityId,
+              title: activityTitle,
+              subject_id: routeSubjectId,
+              category: type?.toLowerCase() || 'quiz',
+            });
+            setLoading(false);
+          }
+
+          const fetchedActivity = await contentService.getActivityById(routeSubjectId, activityId);
+          console.log('Fetched activity details:', fetchedActivity);
+          setActivity(fetchedActivity);
+          setLoading(false);
+        } else {
+          console.log('No activity data or ID provided');
+          setLoading(false);
         }
-
-        setLoading(false);
       } catch (error) {
-        console.error('Error parsing activity data:', error);
-        Alert.alert('Error', 'Failed to load activity details');
-        setLoading(false);
+        console.error('Error loading activity data:', error);
+        // Only show alert if we don't even have a skeleton view (metadata)
+        if (!activityString && !activityTitle) {
+          Alert.alert('Error', 'Failed to load activity details');
+          setLoading(false);
+        }
       }
-    }
-  }, [activityString, routeSubjectId]);
+    };
+
+    loadDetails();
+  }, [activityString, activityId, routeSubjectId]);
 
   // Load submission status when activity is loaded
   useEffect(() => {
@@ -1200,7 +1227,7 @@ export default function ActivityDetail() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: Math.max(16, insets.top) }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </TouchableOpacity>
@@ -2144,7 +2171,7 @@ export default function ActivityDetail() {
         >
           <View style={styles.fullScreenFileModalContainer}>
             {/* Header */}
-            <View style={styles.fullScreenFileModalHeader}>
+            <View style={[styles.fullScreenFileModalHeader, { paddingTop: Math.max(16, insets.top) }]}>
               <TouchableOpacity
                 style={styles.fullScreenFileCloseButton}
                 onPress={closeFullScreenFileModal}
@@ -2272,7 +2299,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: '#28a745',
-    paddingTop: 50,
     paddingBottom: 16,
     paddingHorizontal: 16,
     elevation: 4,
@@ -2807,7 +2833,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     backgroundColor: '#28a745',
     paddingHorizontal: 16,
-    paddingTop: 50,
     paddingBottom: 16,
   },
   fullScreenFileCloseButton: {

@@ -1,5 +1,6 @@
-// styles.js ito
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Dimensions } from 'react-native';
+const { width } = Dimensions.get('window');
+const isSmallDevice = width < 375;
 
 export const styles = StyleSheet.create({
   backgroundImage: {
@@ -47,7 +48,7 @@ export const styles = StyleSheet.create({
     marginBottom: 10,
   },
   brandText: {
-    fontSize: 32,
+    fontSize: isSmallDevice ? 26 : 32,
     fontWeight: 'bold',
     color: '#2c3e50',
     textAlign: 'center',
@@ -55,8 +56,8 @@ export const styles = StyleSheet.create({
   card: {
     backgroundColor: '#ffffff',
     borderRadius: 16,
-    padding: 30,
-    marginHorizontal: 20,
+    padding: isSmallDevice ? 20 : 30,
+    marginHorizontal: isSmallDevice ? 15 : 20,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -67,25 +68,25 @@ export const styles = StyleSheet.create({
     elevation: 5,
   },
   title: {
-    fontSize: 28,
+    fontSize: isSmallDevice ? 22 : 28,
     fontWeight: 'bold',
     color: '#2c3e50',
     textAlign: 'center',
     marginBottom: 8,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: isSmallDevice ? 14 : 16,
     color: '#6c757d',
     textAlign: 'center',
-    marginBottom: 30,
+    marginBottom: isSmallDevice ? 20 : 30,
   },
   input: {
     borderWidth: 1,
     borderColor: '#dee2e6',
     borderRadius: 12,
-    padding: 16,
-    marginBottom: 20,
-    fontSize: 16,
+    padding: isSmallDevice ? 12 : 16,
+    marginBottom: isSmallDevice ? 15 : 20,
+    fontSize: isSmallDevice ? 14 : 16,
     backgroundColor: '#f8f9fa',
   },
   passwordContainer: {
@@ -99,8 +100,8 @@ export const styles = StyleSheet.create({
   },
   passwordInput: {
     flex: 1,
-    padding: 16,
-    fontSize: 16,
+    padding: isSmallDevice ? 12 : 16,
+    fontSize: isSmallDevice ? 14 : 16,
   },
   eyeButton: {
     padding: 12,

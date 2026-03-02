@@ -26,7 +26,7 @@ export default function SplashAnimation({
   const hideNativeSplashOnce = useCallback(() => {
     if (hiddenNativeSplashRef.current) return;
     hiddenNativeSplashRef.current = true;
-    SplashScreen.hideAsync().catch(() => {});
+    SplashScreen.hideAsync().catch(() => { });
   }, []);
 
   const finalize = useCallback(() => {

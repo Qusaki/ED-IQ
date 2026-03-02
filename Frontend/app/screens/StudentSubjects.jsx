@@ -43,7 +43,7 @@ export default function StudentSubjects() {
     const intervalId = setInterval(() => {
       // Silent load without triggering any loading states
       load();
-    }, 3000); // 3 seconds for near real-time
+    }, 10000); // 10 seconds polling
 
     return () => clearInterval(intervalId);
   }, []);

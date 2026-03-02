@@ -174,11 +174,16 @@ const DonutChart = ({ size = 200, data, centerGrade }) => {
   }
 };
 
+// Content Cache
+let _subjectContentCache = {}; // subjectId -> content
+let _subjectContentCacheTime = {}; // subjectId -> timestamp
+const CONTENT_CACHE_TTL = 8000; // 8 seconds
+
 export default function SubjectDetail() {
   const insets = useSafeAreaInsets();
   const { isTeacher, isStudent } = useRBAC();
   const router = useRouter();
-  const { subjectId, subjectName, refreshGrading } = useLocalSearchParams();
+  const { subjectId, subjectName, refreshGrading, initialTab } = useLocalSearchParams();
 
   const [content, setContent] = useState([]);
   const [enrolledStudents, setEnrolledStudents] = useState([]);
@@ -232,7 +237,12 @@ export default function SubjectDetail() {
 
   useEffect(() => {
     loadData();
-  }, [subjectId]);
+    if (isTeacher && initialTab) {
+      setSelectedTab(initialTab);
+    } else if (isStudent && initialTab) {
+      setStudentTab(initialTab);
+    }
+  }, [subjectId, initialTab, isTeacher, isStudent]);
 
   // Load inside notifications immediately when component mounts (for teachers)
   useEffect(() => {
@@ -265,13 +275,11 @@ export default function SubjectDetail() {
       loadData(true, true);
 
       if (isTeacher) {
-        refreshInsideNotifications(true);
         if (selectedTab === 'grading') loadStudentGrades(true);
       } else if (isStudent && studentTab === 'favorites') {
-        // We'll add silent to loadStudentPerformance shortly
         loadStudentPerformance(true);
       }
-    }, 3000); // 3 seconds for near real-time
+    }, 10000); // 10 seconds polling
 
     return () => clearInterval(intervalId);
   }, [subjectId, isTeacher, isStudent, selectedTab, studentTab]);
@@ -300,21 +308,35 @@ export default function SubjectDetail() {
   const loadData = async (preserveExisting = false, silent = false) => {
     if (!subjectId) return;
 
+    // 1) Check Cache first if not silent/polling
+    const now = Date.now();
+    if (!silent && _subjectContentCache[subjectId] && (now - _subjectContentCacheTime[subjectId]) < CONTENT_CACHE_TTL) {
+      setContent(_subjectContentCache[subjectId]);
+      // Still load submission statuses in background if student
+      if (isStudent) {
+        loadSubmissionStatuses(_subjectContentCache[subjectId]);
+      }
+      // If we are teacher, we might still want to load students in bg
+    }
+
     try {
       // Load content
       const contentData = await contentService.getSubjectContent(subjectId);
       console.log('Loaded content data:', contentData?.length || 0, 'items');
 
-      // Only update if we got actual data
-      if (contentData && Array.isArray(contentData) && contentData.length > 0) {
+      // Update Cache
+      _subjectContentCache[subjectId] = contentData;
+      _subjectContentCacheTime[subjectId] = Date.now();
+
+      // Only update if we got actual data or if we are not preserving
+      if (contentData && Array.isArray(contentData)) {
         setContent(contentData);
 
         // Load submission statuses for students
-        if (isStudent) {
+        if (isStudent && contentData.length > 0) {
           loadSubmissionStatuses(contentData);
         }
       } else if (!preserveExisting) {
-        // Only clear content if we're not preserving and got empty data
         setContent([]);
       }
     } catch (error) {
@@ -1164,7 +1186,7 @@ export default function SubjectDetail() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.headerRow}>
+      <View style={[styles.headerRow, { paddingTop: Math.max(16, insets.top) }]}>
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => router.back()}
@@ -2130,7 +2152,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingTop: 42,
     paddingBottom: 8,
     marginBottom: 16,
   },

@@ -16,6 +16,11 @@ import { subjectService } from './subjectService';
 import { contentService } from './contentService';
 import RBACManager from './rbacManager';
 
+// Cache for student notifications
+let _studentNotifCache = null;
+let _studentNotifCacheTime = 0;
+const STUDENT_CACHE_TTL = 8000; // 8 seconds
+
 export default function NotificationsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -25,8 +30,15 @@ export default function NotificationsScreen() {
   const [tab, setTab] = useState('general');
   const [readNotifications, setReadNotifications] = useState(new Set());
 
-  const loadForStudent = useCallback(async () => {
-    // 1) Get backend notifications
+  const loadForStudent = useCallback(async (silent = false) => {
+    // 1) Check cache first
+    const now = Date.now();
+    if (!silent && _studentNotifCache && (now - _studentNotifCacheTime) < STUDENT_CACHE_TTL) {
+      setGeneralNotifications(_studentNotifCache);
+      return;
+    }
+
+    // 2) Get backend notifications
     const backend = await notificationService.getBackendNotifications();
 
     // 2) Keep new posts (Lecture/Activity) AND grading notifications
@@ -48,15 +60,19 @@ export default function NotificationsScreen() {
       subjects = [];
     }
 
-    const titleToSubject = {};
+    const titleToContent = {};
     await Promise.all((subjects || []).map(async (subj) => {
       try {
         const [lectures, activities] = await Promise.all([
           contentService.getLectures(subj.id),
           contentService.getActivities(subj.id),
         ]);
-        (lectures || []).forEach((lec) => { titleToSubject[lec.title] = subj.name; });
-        (activities || []).forEach((act) => { titleToSubject[act.title] = subj.name; });
+        (lectures || []).forEach((lec) => {
+          titleToContent[lec.title] = { subjectName: subj.name, subjectId: subj.id, id: lec.id, type: 'lecture' };
+        });
+        (activities || []).forEach((act) => {
+          titleToContent[act.title] = { subjectName: subj.name, subjectId: subj.id, id: act.id, type: 'activity' };
+        });
       } catch (e) {
         // ignore
       }
@@ -70,23 +86,38 @@ export default function NotificationsScreen() {
 
       if (n.title === 'New Lecture' || n.title === 'New Activity') {
         const postedTitle = n.message.replace(/ has been posted\.?$/i, '');
-        subjectName = titleToSubject[postedTitle];
+        const contentInfo = titleToContent[postedTitle];
+        subjectName = contentInfo?.subjectName;
         displayTitle = subjectName || 'New Post';
         displayMessage = n.title === 'New Lecture' ? 'New Lecture posted' : 'New Activity posted';
+
+        if (contentInfo) {
+          if (contentInfo.type === 'lecture') {
+            n.lecture_id = contentInfo.id;
+          } else {
+            n.activity_id = contentInfo.id;
+            n.activity_title = postedTitle;
+          }
+        }
       } else if (n.title === 'Submission Scored' || n.title === 'Offline Submission Scored') {
         // Extract the activity title from message: Your submission for 'Activity 1' has been scored...
         const match = n.message.match(/for '(.*?)' has been scored/);
         if (match && match[1]) {
           const activityTitle = match[1];
-          subjectName = titleToSubject[activityTitle];
+          const contentInfo = titleToContent[activityTitle];
+          subjectName = contentInfo?.subjectName;
+          if (contentInfo) {
+            n.activity_id = contentInfo.id;
+            n.activity_title = activityTitle;
+          }
         }
         displayTitle = subjectName ? `${subjectName} - Graded` : 'Submission Graded';
         // Keep the original message which contains the score
         displayMessage = n.message;
       }
 
-      // Find the subject ID from the subjects list
-      const subjectId = subjects.find(s => s.name === subjectName)?.id;
+      // Find the subject ID
+      const subjectId = n.subject_id || subjects.find(s => s.name === subjectName)?.id;
 
       return {
         id: n.id,
@@ -94,12 +125,20 @@ export default function NotificationsScreen() {
         message: displayMessage,
         created_at: n.created_at,
         subject_id: subjectId,
+        activity_id: n.activity_id,
+        activity_title: n.activity_title,
+        lecture_id: n.lecture_id,
         is_read: n.is_read, // Keep the read state from backend
       };
     });
 
     // 5) Sort newest first
     simplified.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+    // Update Cache
+    _studentNotifCache = simplified;
+    _studentNotifCacheTime = Date.now();
+
     setGeneralNotifications(simplified);
   }, []);
 
@@ -122,32 +161,17 @@ export default function NotificationsScreen() {
       const currentRole = await RBACManager.getCurrentUserRole();
       setRole(currentRole);
 
-      // For teachers, preserve read state from both backend and generated notifications
+      // For teachers, preserve read state from persistence
       if (currentRole === 'teacher') {
-        // Don't clear generated notifications - preserve them like Student Interface
-        // notificationService.clearAllNotificationsOnRefresh();
-
-        // Get backend notifications and preserve their read state FIRST
-        const backend = await notificationService.getBackendNotifications();
-        const backendReadIds = new Set(backend.filter(n => n.is_read === true || n.is_read === 1).map(n => n.id));
-
-        // Also get generated notification read state
-        const generatedReadIds = notificationService.getReadGeneratedNotifications();
-
-        // Also get inside notification read state
-        const insideReadIds = notificationService.getReadInsideNotifications();
-
-        // Merge all read states and set globally
-        const allReadIds = new Set([...backendReadIds, ...generatedReadIds, ...insideReadIds]);
-        notificationService.setGlobalReadNotifications(allReadIds);
-        setReadNotifications(allReadIds);
+        const persistedReadIds = notificationService.getGlobalReadNotifications();
+        setReadNotifications(persistedReadIds);
       }
 
       // Now load notifications after read state is set
       if (currentRole === 'teacher') {
         await loadForTeacher();
       } else {
-        await loadForStudent();
+        await loadForStudent(silent);
       }
     } catch (err) {
       if (!silent) console.warn('Failed to load notifications', err);
@@ -156,14 +180,17 @@ export default function NotificationsScreen() {
     }
   }, [loadForStudent, loadForTeacher]);
 
-  // Background polling for real-time feel (every 3 seconds)
+  // Initial load with persistence
   useEffect(() => {
-    load(); // initial load
+    const init = async () => {
+      await notificationService.loadReadNotifications();
+      await load();
+    };
+    init();
 
     const intervalId = setInterval(() => {
-      // Silent load without triggering any loading states
       load(true);
-    }, 3000); // 3 seconds for near real-time
+    }, 10000);
 
     return () => clearInterval(intervalId);
   }, [load]);
@@ -238,17 +265,100 @@ export default function NotificationsScreen() {
   }, [generalNotifications, readNotifications, role]);
 
   const handleNotificationPress = async (notification) => {
-    // For teachers, DON'T mark as read when navigating from General Notifications
-    // Only mark as read when actually clicked inside the subject
-    if (role !== 'teacher') {
-      // Mark as read if not already read (for students)
-      if (!readNotifications.has(notification.id)) {
-        await notificationService.markAsRead(notification.id);
-        markAsRead(notification.id);
+    const currentRole = await RBACManager.getCurrentUserRole();
+
+    // Mark as read if not already read (Now for both teachers and students)
+    if (!readNotifications.has(notification.id)) {
+      await notificationService.markAsRead(notification.id);
+      markAsRead(notification.id);
+    }
+
+    // Determine if it's an enrollment request (Teacher)
+    const isEnrollmentRequest =
+      (currentRole === 'teacher' && notification.type === 'enrollment_request') ||
+      (currentRole === 'teacher' && notification.title?.toLowerCase()?.includes('request'));
+
+    // Determine if it's a submission (Teacher)
+    const isSubmission =
+      (currentRole === 'teacher' && notification.type === 'submission') ||
+      (currentRole === 'teacher' && notification.title?.toLowerCase()?.includes('submission'));
+
+    // Deep linking for teacher notifications
+    if (currentRole === 'teacher') {
+      if (isSubmission && notification.activity_id) {
+        // Find the activity type to route correctly (ActivityDetail needs activity type)
+        let actType = 'Activity';
+        if (notification.title) {
+          const lowerTitle = notification.title.toLowerCase();
+          if (lowerTitle.includes('quiz')) actType = 'Quiz';
+          else if (lowerTitle.includes('assignment')) actType = 'Assignment';
+          else if (lowerTitle.includes('laboratory') || lowerTitle.includes('lab')) actType = 'Laboratory';
+          else if (lowerTitle.includes('exam')) actType = 'Exam';
+          else if (lowerTitle.includes('project')) actType = 'Project';
+        }
+
+        // Push directly to ActivityDetail
+        router.push({
+          pathname: '/screens/ActivityDetail',
+          params: {
+            activityId: notification.activity_id,
+            isTeacher: 'true',
+            subjectId: notification.subject_id,
+            type: actType,
+            activityTitle: notification.activity_title,
+          },
+        });
+        return;
+      } else if (isEnrollmentRequest) {
+        // Route to Subject detail but straight to students tab
+        router.push({
+          pathname: '/screens/SubjectDetail',
+          params: {
+            subjectId: notification.subject_id,
+            initialTab: 'students',
+          },
+        });
+        return;
       }
     }
 
-    // Navigate to the subject if it's a student notification or teacher navigating to subject
+    // Deep linking for student notifications
+    if (currentRole !== 'teacher') {
+      if (notification.activity_id) {
+        let actType = 'Activity';
+        if (notification.title) {
+          const lowerTitle = notification.title.toLowerCase();
+          if (lowerTitle.includes('quiz')) actType = 'Quiz';
+          else if (lowerTitle.includes('assignment')) actType = 'Assignment';
+          else if (lowerTitle.includes('laboratory') || lowerTitle.includes('lab')) actType = 'Laboratory';
+          else if (lowerTitle.includes('exam')) actType = 'Exam';
+          else if (lowerTitle.includes('project')) actType = 'Project';
+        }
+
+        router.push({
+          pathname: '/screens/ActivityDetail',
+          params: {
+            activityId: notification.activity_id,
+            isStudent: 'true',
+            subjectId: notification.subject_id,
+            type: actType,
+            activityTitle: notification.activity_title,
+          },
+        });
+        return;
+      } else if (notification.lecture_id) {
+        router.push({
+          pathname: '/screens/SubjectDetail',
+          params: {
+            subjectId: notification.subject_id,
+            initialTab: 'lessons',
+          },
+        });
+        return;
+      }
+    }
+
+    // Default: Navigate to the subject if it's a student notification or regular teacher notification
     if (notification.subject_id) {
       router.push({
         pathname: '/screens/SubjectDetail',
@@ -260,9 +370,7 @@ export default function NotificationsScreen() {
   };
 
   const renderNotification = (n) => {
-    const isRead = role === 'teacher'
-      ? readNotifications.has(n.id)
-      : readNotifications.has(n.id) || n.is_read === true || n.is_read === 1;
+    const isRead = readNotifications.has(n.id) || n.is_read === true || n.is_read === 1;
 
     return (
       <TouchableOpacity

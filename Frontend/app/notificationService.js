@@ -1,6 +1,9 @@
 import apiClient from './apiConfig';
 import { contentService } from './contentService';
 import { subjectService } from './subjectService';
+import storage from './storage';
+
+const READ_NOTIFS_KEY = 'ed_iq_read_notifications';
 
 // Store for tracking read generated notifications locally
 const readGeneratedNotifications = new Set();
@@ -14,6 +17,15 @@ let globalReadNotifications = new Set();
 // Store for app session start time to filter notifications
 let appSessionStartTime = null;
 
+// Cache for expensive API calls
+let _teacherNotifCache = null;
+let _teacherNotifCacheTime = 0;
+const TEACHER_CACHE_TTL = 8000; // 8 seconds
+
+let _backendNotifCache = null;
+let _backendNotifCacheTime = 0;
+const BACKEND_CACHE_TTL = 5000; // 5 seconds
+
 // Helper function to get date from X days ago
 const getDaysAgoDate = (days) => {
   const date = new Date();
@@ -24,13 +36,19 @@ const getDaysAgoDate = (days) => {
 // Frontend-only notification aggregator. Does not change backend.
 export const notificationService = {
   // Fetch backend-persisted notifications for current user
-  async getBackendNotifications() {
+  async getBackendNotifications(skipCache = false) {
     try {
+      const now = Date.now();
+      if (!skipCache && _backendNotifCache && (now - _backendNotifCacheTime) < BACKEND_CACHE_TTL) {
+        return _backendNotifCache;
+      }
       const res = await apiClient.get('/notification');
-      return res.data || [];
+      _backendNotifCache = res.data || [];
+      _backendNotifCacheTime = Date.now();
+      return _backendNotifCache;
     } catch (err) {
       console.warn('Failed to fetch backend notifications:', err?.response?.data || err.message);
-      return [];
+      return _backendNotifCache || [];
     }
   },
 
@@ -45,12 +63,16 @@ export const notificationService = {
     if (id.startsWith('gen-')) {
       // Store in local set for generated notifications
       readGeneratedNotifications.add(id);
+      // Also trigger global state
+      this.addToGlobalReadNotifications(id);
+
       // Also try to mark it on backend if it's a real notification
       try {
         await apiClient.put(`/notification/${id}/read`);
       } catch (e) {
         // Ignore if backend doesn't recognize generated notification ID
       }
+      this.persistReadNotifications();
       return true;
     }
 
@@ -58,21 +80,55 @@ export const notificationService = {
     if (id.startsWith('submission-') || id.startsWith('enroll-')) {
       // Store in local set for inside notifications
       readInsideNotificationsStore.add(id);
+      // Also trigger global state
+      this.addToGlobalReadNotifications(id);
+
       // Also try to mark it on backend if it's a real notification
       try {
         await apiClient.put(`/notification/${id}/read`);
       } catch (e) {
         // Ignore if backend doesn't recognize inside notification ID
       }
+      this.persistReadNotifications();
       return true;
     }
 
     try {
       await apiClient.put(`/notification/${id}/read`);
+      // Also persist for backend notifications to be sure
+      this.persistReadNotifications();
       return true;
     } catch (err) {
       console.warn('Failed to mark notification as read:', id, err?.response?.data || err.message);
+      // Still persist locally even if backend fail (redundancy)
+      this.persistReadNotifications();
       return false;
+    }
+  },
+
+  // Persist read notifications to storage
+  async persistReadNotifications() {
+    try {
+      const ids = Array.from(globalReadNotifications);
+      await storage.setItem(READ_NOTIFS_KEY, JSON.stringify(ids));
+    } catch (e) {
+      console.error('Failed to persist read notifications:', e);
+    }
+  },
+
+  // Load read notifications from storage
+  async loadReadNotifications() {
+    try {
+      const stored = await storage.getItem(READ_NOTIFS_KEY);
+      if (stored) {
+        const ids = JSON.parse(stored);
+        if (Array.isArray(ids)) {
+          ids.forEach(id => globalReadNotifications.add(id));
+          console.log('Loaded', ids.length, 'read notifications from storage');
+        }
+      }
+    } catch (e) {
+      console.error('Failed to load read notifications:', e);
     }
   },
 
@@ -120,10 +176,10 @@ export const notificationService = {
   clearAllNotificationsOnRefresh() {
     // Set session start time to current time
     appSessionStartTime = new Date().toISOString();
-    // Clear all local notification stores
-    readGeneratedNotifications.clear();
+    // Clear only temporary inside store, NOT the permanent readGenerated/global lists
+    // unless we want a full reset. User asked for permanent, so we keep them.
     readInsideNotificationsStore.clear();
-    console.log('Set app session start time and cleared notification stores:', appSessionStartTime);
+    console.log('Set app session start time and cleared inside notification store:', appSessionStartTime);
   },
 
   // Get app session start time
@@ -220,21 +276,23 @@ export const notificationService = {
 
   // Build a generalized notification list for teacher's global notifications screen
   // This merges backend notifications with generated ones from all teacher subjects
-  async getGeneralNotificationsForTeacher(limitSubjects = 10) {
+  async getGeneralNotificationsForTeacher(limitSubjects = 10, skipCache = false) {
     try {
-      console.log('Building general notifications for teacher...');
+      // Return cached result if still fresh
+      const now = Date.now();
+      if (!skipCache && _teacherNotifCache && (now - _teacherNotifCacheTime) < TEACHER_CACHE_TTL) {
+        return _teacherNotifCache;
+      }
+
       const backend = await this.getBackendNotifications();
-      console.log('Backend notifications:', backend?.length || 0, 'items');
 
       // Get teacher subjects (if endpoint available)
       let generated = [];
       try {
         const subjects = await subjectService.listMySubjects();
-        console.log('Teacher subjects:', subjects?.length || 0, 'items');
         const toProcess = (subjects || []).slice(0, limitSubjects);
 
         const subjectPromises = toProcess.map(async (subj) => {
-          console.log('Processing subject in parallel:', subj.name);
           let subjGenerated = [];
 
           try {
@@ -356,10 +414,12 @@ export const notificationService = {
       });
       console.log('Final filtered notifications:', filtered.length, 'items');
       filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      _teacherNotifCache = filtered;
+      _teacherNotifCacheTime = Date.now();
       return filtered;
     } catch (err) {
       console.error('Error building general notifications:', err);
-      return [];
+      return _teacherNotifCache || [];
     }
   },
 };
