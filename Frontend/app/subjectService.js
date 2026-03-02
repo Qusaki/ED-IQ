@@ -16,6 +16,20 @@ export const subjectService = {
     return res.data; // subject
   },
 
+  async updateSubject(subjectId, name) {
+    const formData = new FormData();
+    formData.append('name', name);
+    const res = await apiClient.put(`/subjects/${subjectId}`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    return res.data;
+  },
+
+  async deleteSubject(subjectId) {
+    const res = await apiClient.delete(`/subjects/${subjectId}`);
+    return res.data;
+  },
+
   // Enrollment management functions
   async getSubjectStudents(subjectId) {
     const res = await apiClient.get(`/subjects/${subjectId}/students`);

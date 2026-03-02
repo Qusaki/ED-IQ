@@ -16,8 +16,10 @@ export default function TeacherSubjects() {
   const router = useRouter();
   const [subjects, setSubjects] = useState([]);
   const [creating, setCreating] = useState(false);
+  const [editingSubject, setEditingSubject] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [name, setName] = useState('');
+  const [editName, setEditName] = useState('');
   const [createdCode, setCreatedCode] = useState(null);
   const [chatbotVisible, setChatbotVisible] = useState(false);
   const tooltipAnim = React.useRef(new Animated.Value(0)).current;
@@ -60,6 +62,55 @@ export default function TeacherSubjects() {
     }
   };
 
+  const handleEdit = (subject) => {
+    setEditingSubject(subject);
+    setEditName(subject.name);
+  };
+
+  const saveEdit = async () => {
+    try {
+      if (!editName.trim()) return;
+      await subjectService.updateSubject(editingSubject.id, editName.trim());
+      setEditingSubject(null);
+      setEditName('');
+      await load();
+    } catch (e) {
+      Alert.alert('Edit failed', e?.response?.data?.detail || e.message);
+    }
+  };
+
+  const confirmDelete = (subjectId) => {
+    Alert.alert(
+      'Delete Subject',
+      'Are you sure you want to delete this subject?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', style: 'destructive', onPress: () => deleteSubject(subjectId) }
+      ]
+    );
+  };
+
+  const showOptions = (item) => {
+    Alert.alert(
+      'Subject Options',
+      'Choose an action for this subject',
+      [
+        { text: 'Edit', onPress: () => handleEdit(item) },
+        { text: 'Delete', onPress: () => confirmDelete(item.id), style: 'destructive' },
+        { text: 'Cancel', style: 'cancel' }
+      ]
+    );
+  };
+
+  const deleteSubject = async (subjectId) => {
+    try {
+      await subjectService.deleteSubject(subjectId);
+      await load();
+    } catch (e) {
+      Alert.alert('Delete failed', e?.response?.data?.detail || e.message);
+    }
+  };
+
   const renderItem = ({ item }) => (
     <TouchableOpacity
       style={styles.cardTouchable}
@@ -88,8 +139,10 @@ export default function TeacherSubjects() {
           )}
         </View>
 
-        <View style={styles.cardArrow}>
-          <Ionicons name="chevron-forward" size={18} color="#28a745" />
+        <View style={styles.cardActions}>
+          <TouchableOpacity style={styles.actionButton} onPress={() => showOptions(item)}>
+            <MaterialCommunityIcons name="dots-vertical" size={24} color="#ffffff" />
+          </TouchableOpacity>
         </View>
       </View>
     </TouchableOpacity>
@@ -157,6 +210,29 @@ export default function TeacherSubjects() {
                 </Pressable>
                 <Pressable style={[styles.btn, styles.primary, styles.btnRight]} onPress={create}>
                   <Text style={styles.btnText}>Create</Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </Modal>
+
+        <Modal visible={!!editingSubject} transparent animationType="slide" onRequestClose={() => setEditingSubject(null)}>
+          <View style={styles.modalBackdrop}>
+            <View style={styles.modal}>
+              <Text style={styles.modalTitle}>Edit Subject</Text>
+              <TextInput
+                placeholder="Subject name"
+                value={editName}
+                onChangeText={setEditName}
+                style={styles.input}
+                autoFocus
+              />
+              <View style={styles.row}>
+                <Pressable style={[styles.btn, styles.cancel, styles.btnLeft]} onPress={() => setEditingSubject(null)}>
+                  <Text style={styles.btnText}>Cancel</Text>
+                </Pressable>
+                <Pressable style={[styles.btn, styles.primary, styles.btnRight]} onPress={saveEdit}>
+                  <Text style={styles.btnText}>Save</Text>
                 </Pressable>
               </View>
             </View>
@@ -288,6 +364,20 @@ const styles = StyleSheet.create({
     fontSize: 12,
     letterSpacing: 0.5,
   },
+  cardActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  actionButton: {
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+    backgroundColor: 'rgba(0,0,0,0.1)',
+    borderRadius: 16,
+  },
   cardArrow: {
     width: 28,
     height: 28,
@@ -295,8 +385,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     justifyContent: 'center',
     alignItems: 'center',
-    alignSelf: 'center',
-    marginRight: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,

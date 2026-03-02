@@ -5,7 +5,7 @@ from uuid import uuid4
 
 from database import get_db
 from dependencies import get_current_user, required_role
-from fastapi import APIRouter, Depends, HTTPException, Form
+from fastapi import APIRouter, Depends, Form, HTTPException
 from models.subject import EnrollmentStatus, Subject, SubjectEnrollment
 from models.user import User
 from schemas.enrollment import (
@@ -13,9 +13,9 @@ from schemas.enrollment import (
     StudentInSubject,
     SubjectEnrollmentResponse,
 )
-from schemas.subject import SubjectCreate, SubjectJoin, SubjectResponse, SubjectUpdate
+from schemas.subject import SubjectCreate, SubjectJoin, SubjectResponse
 from sqlalchemy.orm import Session
-from utils.notify import notify_user # Added notify_user
+from utils.notify import notify_user  # Added notify_user
 
 router = APIRouter()
 
@@ -182,7 +182,7 @@ async def accept_student(
         user_id=student_id,
         title="Enrollment Accepted",
         message=f"Your enrollment request for subject '{subject.name}' has been accepted!",
-        db=db
+        db=db,
     )
     return EnrollmentActionResponse(success=True, message="Student accepted")
 
@@ -223,7 +223,7 @@ async def reject_student(
         user_id=student_id,
         title="Enrollment Rejected",
         message=f"Your enrollment request for subject '{subject.name}' has been rejected.",
-        db=db
+        db=db,
     )
     return EnrollmentActionResponse(success=True, message="Student rejected")
 
@@ -255,7 +255,7 @@ def get_student_subject_status(
 # to edit the subject details
 @router.put("/{subject_id}", response_model=SubjectResponse)
 def update_subject(
-    subject_id = str,
+    subject_id: str,
     name: str = Form(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -266,7 +266,9 @@ def update_subject(
     if not subject:
         raise HTTPException(status_code=404, detail="Subjet not founded")
     if subject.owner_id != current_user.id:
-        raise HTTPException(status_code=403, detail="only owner of the subejct can edit")
+        raise HTTPException(
+            status_code=403, detail="only owner of the subejct can edit"
+        )
 
     if name:
         subject.name = name.strip()
@@ -281,10 +283,11 @@ def update_subject(
 
     return subject
 
+
 # to delete the subject
 @router.delete("/{subject_id}", response_model=SubjectResponse)
 def delete_subject(
-    subject_id = str,
+    subject_id: str,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
     role=Depends(required_role("teacher")),
@@ -294,7 +297,9 @@ def delete_subject(
     if not subject:
         raise HTTPException(status_code=404, detail="Subjet not founded")
     if subject.owner_id != current_user.id:
-        raise HTTPException(status_code=403, detail="only owner of the subejct can delete")
+        raise HTTPException(
+            status_code=403, detail="only owner of the subejct can delete"
+        )
 
     db.delete(subject)
     db.commit()
