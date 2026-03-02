@@ -202,4 +202,3 @@ export default function RootLayout() {
 
 
 // Intentionally simple icons to match provided design
-

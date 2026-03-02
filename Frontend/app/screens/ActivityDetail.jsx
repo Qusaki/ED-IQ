@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ScrollView, 
-  TouchableOpacity, 
-  Image, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Image,
   Alert,
   ActivityIndicator,
   TextInput,
@@ -19,8 +19,10 @@ import { subjectService } from '../subjectService';
 import { useRBAC } from '../RBACComponents';
 import { fileMetadataService } from '../fileMetadataService';
 import * as DocumentPicker from 'expo-document-picker';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function ActivityDetail() {
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const { activity: activityString, subjectId: routeSubjectId, subjectName } = useLocalSearchParams();
   const { isStudent, isTeacher } = useRBAC();
@@ -62,20 +64,25 @@ export default function ActivityDetail() {
   const [editActivityDescription, setEditActivityDescription] = useState('');
   const [editActivityFile, setEditActivityFile] = useState(null);
   const [fileNameCache, setFileNameCache] = useState({}); // Cache for fetched filenames
-  
-    // Function to get submission file URL
+  const [showOfflineScoreModal, setShowOfflineScoreModal] = useState(false);
+  const [offlineStudents, setOfflineStudents] = useState([]);
+  const [offlineScores, setOfflineScores] = useState({});
+  const [offlineMaxScore, setOfflineMaxScore] = useState('100');
+  const [offlineScoreLoading, setOfflineScoreLoading] = useState(false);
+
+  // Function to get submission file URL
   const getSubmissionFileUrl = (submission) => {
     if (!submission) return null;
-    
+
     console.log('Checking submission for file URL:', submission.id || 'unknown');
-    
+
     // Check for direct URL properties
     const directUrl = submission.file_url || submission.fileURL || submission.fileUrl;
     if (directUrl) {
       console.log('Found direct URL:', directUrl);
       return directUrl;
     }
-    
+
     // Check for nested file object with URL
     if (submission.file) {
       console.log('Checking file object:', submission.file);
@@ -85,21 +92,21 @@ export default function ActivityDetail() {
       if (submission.file.url) return submission.file.url;
       if (submission.file.uri) return submission.file.uri;
     }
-    
+
     // Check for attachments array
     if (submission.attachments && submission.attachments.length > 0) {
       const attachment = submission.attachments[0];
       const attachmentUrl = attachment.url || attachment.file_url || attachment.uri;
       if (attachmentUrl) return attachmentUrl;
     }
-    
+
     // Check for files array
     if (submission.files && submission.files.length > 0) {
       const file = submission.files[0];
       const fileUrl = file.url || file.file_url || file.uri;
       if (fileUrl) return fileUrl;
     }
-    
+
     // Check for image field specifically (for image submissions)
     if (submission.image) {
       console.log('Found image field:', submission.image);
@@ -110,26 +117,26 @@ export default function ActivityDetail() {
         return submission.image.url || submission.image.uri;
       }
     }
-    
+
     // Check for content field that might be an image URL
-    if (submission.content && typeof submission.content === 'string' && 
-        (submission.content.startsWith('http') || 
-         submission.content.match(/\.(jpg|jpeg|png|gif|bmp|webp|heic|heif)$/i))) {
+    if (submission.content && typeof submission.content === 'string' &&
+      (submission.content.startsWith('http') ||
+        submission.content.match(/\.(jpg|jpeg|png|gif|bmp|webp|heic|heif)$/i))) {
       console.log('Found image URL in content:', submission.content);
       return submission.content;
     }
-    
+
     // Check for answer field that might contain image (Quiz specific)
     if (submission.answer) {
       console.log('Checking answer field:', submission.answer);
-      if (typeof submission.answer === 'string' && 
-          (submission.answer.startsWith('http') || 
-           submission.answer.match(/\.(jpg|jpeg|png|gif|bmp|webp|heic|heif)$/i))) {
+      if (typeof submission.answer === 'string' &&
+        (submission.answer.startsWith('http') ||
+          submission.answer.match(/\.(jpg|jpeg|png|gif|bmp|webp|heic|heif)$/i))) {
         console.log('Found image URL in answer:', submission.answer);
         return submission.answer;
       }
     }
-    
+
     // Check for submission_data field (Quiz specific)
     if (submission.submission_data) {
       console.log('Checking submission_data:', submission.submission_data);
@@ -147,23 +154,23 @@ export default function ActivityDetail() {
         if (data.image.url || data.image.uri) return data.image.url || data.image.uri;
       }
     }
-    
+
     console.log('No file URL found in submission');
     return null;
   };
 
   const getFileNameFromUrl = async (url) => {
     if (!url) return 'Document';
-    
+
     // Check if we already have this filename cached
     if (fileNameCache[url]) {
       return fileNameCache[url];
     }
-    
+
     try {
       // Extract the stored filename from the URL
       const storedFileName = fileMetadataService.extractStoredFileName(url);
-      
+
       if (!storedFileName) {
         console.warn('Could not extract stored filename from URL');
         return 'Document';
@@ -171,9 +178,9 @@ export default function ActivityDetail() {
 
       // Fetch metadata from backend to get original filename
       const result = await fileMetadataService.getFileMetadata(storedFileName);
-      
+
       let fileName = 'Document';
-      
+
       if (result.success && result.metadata.original_name) {
         fileName = result.metadata.original_name;
         console.log('Retrieved original filename from metadata:', fileName);
@@ -198,20 +205,20 @@ export default function ActivityDetail() {
 
         fileName = fileName.replace(/\+/g, ' ');
       }
-      
+
       // Cache the filename for future use
       setFileNameCache(prev => ({
         ...prev,
         [url]: fileName
       }));
-      
+
       return fileName;
     } catch (error) {
       console.error('Error extracting filename:', error);
       return 'Document';
     }
   };
-  
+
   // Synchronous wrapper for immediate fallback - returns cached value or placeholder
   const getFileNameSync = (url) => {
     if (!url) return 'Document';
@@ -221,12 +228,12 @@ export default function ActivityDetail() {
   // Memoized prefetch effect to prevent constant re-renders
   const prefetchFileNamesCallback = React.useCallback(async () => {
     const urlsToPrefetch = [];
-    
+
     // Add activity file URL
     if (activity?.file_url && !fileNameCache[activity.file_url]) {
       urlsToPrefetch.push(activity.file_url);
     }
-    
+
     // Add submission file URLs
     if (submissions && submissions.length > 0) {
       submissions.forEach(sub => {
@@ -235,18 +242,18 @@ export default function ActivityDetail() {
         }
       });
     }
-    
+
     // Add student submission file URL
     if (studentSubmissionData?.file_url && !fileNameCache[studentSubmissionData.file_url]) {
       urlsToPrefetch.push(studentSubmissionData.file_url);
     }
-    
+
     // Prefetch all URLs in parallel
     if (urlsToPrefetch.length > 0) {
       try {
         await Promise.all(
-          urlsToPrefetch.map(url => 
-            getFileNameFromUrl(url).catch(error => 
+          urlsToPrefetch.map(url =>
+            getFileNameFromUrl(url).catch(error =>
               console.error('Error prefetching filename for:', url, error)
             )
           )
@@ -262,6 +269,96 @@ export default function ActivityDetail() {
     prefetchFileNamesCallback();
   }, [prefetchFileNamesCallback]);
 
+  const handleOpenOfflineScore = async () => {
+    try {
+      setOfflineScoreLoading(true);
+      setShowOfflineScoreModal(true);
+
+      // Use the existing reliable endpoint used by the Student List Tab
+      const allStudentsInSubject = await subjectService.getSubjectStudents(subjectId);
+      const approvedStudents = allStudentsInSubject
+        .filter(student => student.status === 'approved')
+        .map(student => ({
+          id: student.id,
+          name: student.name,
+          email: student.email
+        }));
+
+      setOfflineStudents(approvedStudents);
+      setOfflineMaxScore(String(activity?.max_score || 100));
+
+      // Pre-populate any existing scores into the offlineScores object
+      const initialScores = {};
+      if (submissions && submissions.length > 0) {
+        submissions.forEach(sub => {
+          if (sub.score !== undefined && sub.score !== null) {
+            initialScores[sub.student_id] = String(sub.score);
+          }
+        });
+      }
+      setOfflineScores(initialScores);
+    } catch (error) {
+      console.error('Failed to open offline scores:', error);
+      Alert.alert('Error', 'Failed to load offline students.');
+      setShowOfflineScoreModal(false);
+    } finally {
+      setOfflineScoreLoading(false);
+    }
+  };
+
+  const handleSaveOfflineScores = async () => {
+    try {
+      setSubmitting(true);
+
+      // Build the score payload format: [{student_id: string, score: number}]
+      const scoresPayload = Object.entries(offlineScores).reduce((acc, [studentId, scoreString]) => {
+        const scoreNum = parseInt(scoreString, 10);
+        if (!isNaN(scoreNum) && scoreNum >= 0 && scoreString.trim() !== '') {
+          acc.push({ student_id: studentId, score: scoreNum });
+        }
+        return acc;
+      }, []);
+
+      if (scoresPayload.length === 0) {
+        Alert.alert('Notice', 'No valid scores were entered.');
+        setSubmitting(false);
+        return;
+      }
+
+      // Check if max score changed, update if so
+      const numMaxScore = parseInt(offlineMaxScore, 10);
+      if (!isNaN(numMaxScore) && numMaxScore > 0 && numMaxScore !== activity?.max_score) {
+        try {
+          await contentService.updateActivity(activity.id, { maxScore: numMaxScore });
+          // Optionally update local activity state if needed:
+          // setActivity(prev => ({ ...prev, max_score: numMaxScore }));
+        } catch (updateError) {
+          console.error("Failed to update activity max score before saving grades.", updateError);
+          // Proceed anyway as submitOfflineScores might still handle it
+        }
+      }
+
+      await contentService.submitOfflineScores(activity.id, scoresPayload);
+      Alert.alert('Success', 'Offline scores saved successfully!');
+
+      // Close the modal and refresh grading data
+      setShowOfflineScoreModal(false);
+      setOfflineScores({});
+
+      // Refresh the local submissions to reflect graded changes
+      const updatedSubmissions = await contentService.getSubmissions(activity.id);
+      setSubmissions(updatedSubmissions);
+
+      // Tell SubjectDetail that a refresh is required for the aggregate views
+      router.setParams({ refreshGrading: Date.now().toString() });
+    } catch (error) {
+      console.error('Failed to save offline scores:', error);
+      Alert.alert('Error', 'Failed to save offline scores.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const getDocumentViewerUrl = (url) => {
     if (!url) return null;
     try {
@@ -275,62 +372,62 @@ export default function ActivityDetail() {
   // Function to block download requests and force inline viewing
   const blockDownloads = (request) => {
     if (!request || !request.url) return true;
-    
+
     const url = request.url.toLowerCase();
-    
+
     // Skip if this is a navigation to 'about:blank' or empty URL
     if (url === 'about:blank') return true;
-    
+
     // Check for download indicators in the URL
-    const isDownload = 
-      url.includes('download') || 
+    const isDownload =
+      url.includes('download') ||
       /[?&]download=1(?:&|$)/.test(url) ||
       /[?&]download=true(?:&|$)/.test(url) ||
       url.includes('force-download') ||
       url.includes('content-disposition=attachment') ||
       /\b(?:pdf|docx?|xlsx?|zip|rar|7z|exe|dmg|pkg)(?:[?#]|$)/i.test(url);
-    
+
     if (isDownload) {
       console.log('Blocking download attempt:', url);
-      
+
       // For Google Docs/Drive, force the viewer
       if (url.includes('docs.google.com') || url.includes('drive.google.com')) {
-        const viewerUrl = url.includes('?') 
-          ? `${url}&embedded=true&rm=minimal` 
+        const viewerUrl = url.includes('?')
+          ? `${url}&embedded=true&rm=minimal`
           : `${url}?embedded=true&rm=minimal`;
-        
+
         // Update the URL without causing a re-render
         if (url !== viewerUrl) {
           setFilePreviewUrl(viewerUrl);
         }
       }
-      
+
       return false;
     }
     return true;
   };
-  
+
   // Memoized function to get WebView source with forced inline viewing
   const getWebViewSource = React.useCallback((url) => {
     if (!url) return null;
-    
+
     console.log('Processing URL for WebView:', url);
-    
+
     // For PDF files and documents, use Google Docs viewer
-    if (url.toLowerCase().includes('.pdf') || 
-        url.toLowerCase().includes('.doc') || 
-        url.toLowerCase().includes('.docx') || 
-        url.toLowerCase().includes('.xls') || 
-        url.toLowerCase().includes('.xlsx') || 
-        url.toLowerCase().includes('.ppt') || 
-        url.toLowerCase().includes('.pptx')) {
-      
+    if (url.toLowerCase().includes('.pdf') ||
+      url.toLowerCase().includes('.doc') ||
+      url.toLowerCase().includes('.docx') ||
+      url.toLowerCase().includes('.xls') ||
+      url.toLowerCase().includes('.xlsx') ||
+      url.toLowerCase().includes('.ppt') ||
+      url.toLowerCase().includes('.pptx')) {
+
       // Use Google Docs viewer for all document types with better parameters
       const googleDocsUrl = `https://docs.google.com/gview?embedded=true&rm=minimal&dpi=72&url=${encodeURIComponent(url)}`;
       console.log('Using Google Docs viewer URL:', googleDocsUrl);
       return { uri: googleDocsUrl };
     }
-    
+
     // Add parameters to force inline viewing for Google Docs/Drive
     let processedUrl = url;
     if (url.includes('docs.google.com') || url.includes('drive.google.com')) {
@@ -339,17 +436,17 @@ export default function ActivityDetail() {
         .replace(/[?&]download=1(?:&|$)/, '$1')
         .replace(/[?&]download=true(?:&|$)/, '$1')
         .replace(/[?&]force-download(?:&|$)/, '$1');
-      
+
       // Add viewer parameters if not already present
       if (!processedUrl.includes('embedded=true')) {
-        processedUrl = processedUrl.includes('?') 
-          ? `${processedUrl}&embedded=true&rm=minimal` 
+        processedUrl = processedUrl.includes('?')
+          ? `${processedUrl}&embedded=true&rm=minimal`
           : `${processedUrl}?embedded=true&rm=minimal`;
       }
     }
-    
+
     console.log('Final WebView URL:', processedUrl);
-    return { 
+    return {
       uri: processedUrl,
       headers: {
         'Accept': 'text/html,application/xhtml+xml,application/xml',
@@ -397,18 +494,18 @@ export default function ActivityDetail() {
     try {
       // Always use the submission data we have first
       let fullSubmission = submission;
-      
+
       // Only fetch full submission details if we don't have the file URL
       if (!getSubmissionFileUrl(submission)) {
         console.log('Fetching full submission details...');
         fullSubmission = await contentService.getSubmissionById(submission.id);
         console.log('Loaded full submission details:', fullSubmission);
       }
-      
+
       setSelectedSubmission(fullSubmission || submission);
       const fileUrl = getSubmissionFileUrl(fullSubmission || submission);
       console.log('File URL for preview:', fileUrl);
-      
+
       if (fileUrl) {
         // Ensure the URL is properly formatted
         const formattedUrl = fileUrl.startsWith('http') ? fileUrl : `https:${fileUrl}`;
@@ -443,7 +540,7 @@ export default function ActivityDetail() {
     // Block any requests that look like file downloads
     const downloadExtensions = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.zip', '.rar', '.7z', '.exe', '.dmg', '.pkg'];
     const isDownload = downloadExtensions.some(ext => request.url.toLowerCase().includes(ext));
-    
+
     if (isDownload) {
       Alert.alert(
         'View Only',
@@ -454,8 +551,8 @@ export default function ActivityDetail() {
     }
 
     // Only allow navigation within the current domain
-    const isAllowed = request.url.startsWith('https://docs.google.com/') || 
-                     request.url.startsWith('https://drive.google.com/');
+    const isAllowed = request.url.startsWith('https://docs.google.com/') ||
+      request.url.startsWith('https://drive.google.com/');
     if (!isAllowed) {
       // Block external navigation to prevent downloads
       console.log('Blocking external navigation to:', request.url);
@@ -550,10 +647,10 @@ export default function ActivityDetail() {
           setFile(
             existingSubmission.file_url
               ? {
-                  uri: existingSubmission.file_url,
-                  name: getFileNameFromUrl(existingSubmission.file_url) || 'Submitted Document',
-                  type: 'application/octet-stream',
-                }
+                uri: existingSubmission.file_url,
+                name: getFileNameFromUrl(existingSubmission.file_url) || 'Submitted Document',
+                type: 'application/octet-stream',
+              }
               : null
           );
           setStudentSubmissionData(existingSubmission);
@@ -564,7 +661,7 @@ export default function ActivityDetail() {
       } else if (isTeacher) {
         const allSubmissions = await contentService.getSubmissions(activity.id);
         console.log('Quiz submissions loaded:', allSubmissions?.length || 0, 'submissions');
-        
+
         // Debug: Show first submission structure for Quiz activities
         if (activity.category === 'quiz' && allSubmissions?.length > 0) {
           console.log('=== QUIZ SUBMISSION DEBUG ===');
@@ -582,7 +679,7 @@ export default function ActivityDetail() {
           });
           console.log('=== END QUIZ DEBUG ===');
         }
-        
+
         setSubmissions(allSubmissions);
 
         if (allSubmissions.length > 0) {
@@ -608,12 +705,13 @@ export default function ActivityDetail() {
       if (studentIds.length > 0) {
         try {
           console.log('Fetching enrolled students for subject:', subjectId);
-          const enrolledStudents = await subjectService.getSubjectStudents(subjectId);
-          console.log('Enrolled students:', enrolledStudents);
+          // Use the offline students endpoint which we know works reliably and returns UserResponse
+          const allStudents = await contentService.getOfflineStudents(subjectId);
+          console.log('Enrolled students fetched successfully.');
 
-          enrolledStudents.forEach((student) => {
+          allStudents.forEach((student) => {
             const key = student?.student_id || student?.id;
-            if (key && (!student.status || student.status === 'approved')) {
+            if (key) {
               names[key] =
                 student.name ||
                 student.email ||
@@ -670,7 +768,7 @@ export default function ActivityDetail() {
       });
 
       await contentService.submitActivity(activity.id, submissionData);
-      
+
       // Update submission status
       const status = await contentService.getSubmissionStatus(activity.id);
       setSubmissionStatus(status);
@@ -678,7 +776,7 @@ export default function ActivityDetail() {
       const latestSubmission = await contentService.getOwnSubmission(activity.id);
       console.log('Latest submission fetched after submit:', latestSubmission);
       setStudentSubmissionData(latestSubmission);
-      
+
       // Show submitted popup and navigate back after a short delay
       setShowSubmittedPopup(true);
 
@@ -706,15 +804,15 @@ export default function ActivityDetail() {
   const handleGrade = async (submissionId, score) => {
     try {
       await contentService.gradeSubmission(submissionId, score);
-      
+
       // Update submissions list
       const updatedSubmissions = await contentService.getSubmissions(activity.id);
       setSubmissions(updatedSubmissions);
-      
+
       Alert.alert('Success', 'Grade assigned successfully!');
       setGradingMode(false);
       setGrading({});
-      
+
       // Immediately trigger refresh of grading system with current timestamp
       // This will be picked up by SubjectDetail's useEffect for refreshGrading
       router.setParams({ refreshGrading: Date.now().toString() });
@@ -795,7 +893,7 @@ export default function ActivityDetail() {
       } else {
         await contentService.submitActivity(activity.id, updatedData);
       }
-      
+
       // Update submission status
       const status = await contentService.getSubmissionStatus(activity.id);
       setSubmissionStatus(status);
@@ -805,15 +903,15 @@ export default function ActivityDetail() {
       if (latestSubmission?.file_url) {
         setFile({
           uri: latestSubmission.file_url,
-          name: getFileNameFromUrl(latestSubmission.file_url) || 'Submitted Document',
+          name: getFileNameSync(latestSubmission.file_url) || 'Submitted Document',
           type: 'application/octet-stream',
         });
       }
-      
+
       setIsEditingSubmission(false);
       setEditSubmissionText('');
       setEditSubmissionFile(null);
-      
+
       Alert.alert('Success', 'Your submission has been updated!');
     } catch (error) {
       console.error('Edit submission error:', error);
@@ -869,15 +967,15 @@ export default function ActivityDetail() {
       } else {
         await contentService.submitActivity(activity.id, updatedData);
       }
-      
+
       // Reload submissions
       const updatedSubmissions = await contentService.getSubmissions(activity.id);
       setSubmissions(updatedSubmissions);
-      
+
       setIsEditingTeacherSubmission(null);
       setEditTeacherText('');
       setEditTeacherFile(null);
-      
+
       Alert.alert('Success', 'Submission has been updated!');
     } catch (error) {
       console.error('Edit submission error:', error);
@@ -890,7 +988,7 @@ export default function ActivityDetail() {
   // Handle teacher editing the activity
   const startEditActivity = () => {
     setEditActivityTitle(activity.title || '');
-    setEditActivityDescription(activity.description || '');
+    setEditActivityDescription(activity.content || '');
     setEditActivityFile(null);
     setIsEditingActivity(true);
     setShowActivityEditMenu(false);
@@ -927,26 +1025,25 @@ export default function ActivityDetail() {
     try {
       const updatedActivity = {
         title: editActivityTitle.trim(),
-        description: editActivityDescription.trim(),
+        content: editActivityDescription.trim(),
         file: editActivityFile || null
       };
 
-      // Update activity - you may need to add an updateActivity method to contentService
-      // For now, we'll use a similar approach to submission
       console.log('Updating activity:', updatedActivity);
-      
+      await contentService.updateActivity(activity.id, updatedActivity);
+
       // Update the local activity state
       setActivity({
         ...activity,
         title: updatedActivity.title,
-        description: updatedActivity.description
+        content: updatedActivity.content
       });
-      
+
       setIsEditingActivity(false);
       setEditActivityTitle('');
       setEditActivityDescription('');
       setEditActivityFile(null);
-      
+
       Alert.alert('Success', 'Activity has been updated!');
     } catch (error) {
       console.error('Edit activity error:', error);
@@ -968,13 +1065,13 @@ export default function ActivityDetail() {
       try {
         const activityData = JSON.parse(activityString);
         setActivity(activityData);
-        
+
         // Extract subject_id from activity object if available and not already set
         if (activityData.subject_id && !routeSubjectId) {
           console.log('Extracted subject_id from activity:', activityData.subject_id);
           setSubjectId(activityData.subject_id);
         }
-        
+
         setLoading(false);
       } catch (error) {
         console.error('Error parsing activity data:', error);
@@ -997,7 +1094,7 @@ export default function ActivityDetail() {
         if (firstWithFile) {
           const fileUrl = getSubmissionFileUrl(firstWithFile);
           if (fileUrl) {
-            openFullScreenFile(fileUrl, getFileNameFromUrl(fileUrl) || 'Submission');
+            openFullScreenFile(fileUrl, getFileNameSync(fileUrl) || 'Submission');
           }
         }
       }
@@ -1011,7 +1108,7 @@ export default function ActivityDetail() {
 
   const getActivityType = () => {
     if (!activity) return '';
-    
+
     if (activity.category === 'major exam') return 'Written Exam';
     if (activity.category === 'lab exam') return 'Laboratory Exam';
     if (activity.category === 'laboratory') return 'Laboratory Activity';
@@ -1023,7 +1120,7 @@ export default function ActivityDetail() {
 
   const getActivityIcon = () => {
     if (!activity) return 'help-circle';
-    
+
     if (activity.category === 'major exam' || activity.category === 'lab exam') return 'school';
     if (activity.category === 'laboratory') return 'flask';
     if (activity.category === 'assignment') return 'create';
@@ -1046,13 +1143,13 @@ export default function ActivityDetail() {
 
   const getActivityColor = () => {
     if (!activity) return '#28a745';
-    
+
     if (activity.category === 'major exam' || activity.category === 'lab exam') return '#dc3545';
     if (activity.category === 'laboratory') return '#6f42c1';
     if (activity.category === 'assignment') return '#ffc107';
     if (activity.category === 'project') return '#20c997';
     if (activity.category === 'quiz') return '#17a2b8';
-    
+
     // Default color if no category matches
     return '#6c757d';
   };
@@ -1088,14 +1185,20 @@ export default function ActivityDetail() {
         )}
       </View>
 
-      <ScrollView style={styles.content}>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={[
+          styles.content,
+          { paddingBottom: Math.max(30, insets.bottom + 20) }
+        ]}
+      >
         <View style={[styles.card, { borderLeftColor: getActivityColor() }]}>
           <View style={styles.cardHeader}>
             <View style={[styles.iconContainer, { backgroundColor: getActivityColor() + '20' }]}>
-              <Ionicons 
-                name={getActivityIcon()} 
-                size={24} 
-                color={getActivityColor()} 
+              <Ionicons
+                name={getActivityIcon()}
+                size={24}
+                color={getActivityColor()}
               />
             </View>
             <View style={styles.cardHeaderText}>
@@ -1108,7 +1211,7 @@ export default function ActivityDetail() {
               )}
             </View>
             {isTeacher && (
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.menuButton}
                 onPress={() => setShowActivityEditMenu(true)}
               >
@@ -1136,7 +1239,7 @@ export default function ActivityDetail() {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Description</Text>
             <Text style={styles.descriptionText}>
-              {activity.description || 'No description provided.'}
+              {activity.content || 'No description provided.'}
             </Text>
           </View>
 
@@ -1154,11 +1257,11 @@ export default function ActivityDetail() {
               <Text style={styles.sectionTitle}>Attached File</Text>
               <TouchableOpacity
                 style={styles.fileButton}
-                onPress={() => openFullScreenFile(activity.file_url, getFileNameFromUrl(activity.file_url) || 'Activity File')}
+                onPress={() => openFullScreenFile(activity.file_url, getFileNameSync(activity.file_url) || 'Activity File')}
               >
                 <Ionicons name="document-text" size={20} color="#28a745" />
                 <Text style={styles.fileButtonText}>
-                  {getFileNameFromUrl(activity.file_url) || 'Activity File'}
+                  {getFileNameSync(activity.file_url) || 'Activity File'}
                 </Text>
                 <Ionicons name="open-outline" size={20} color="#28a745" />
               </TouchableOpacity>
@@ -1170,7 +1273,7 @@ export default function ActivityDetail() {
         {isStudent && (
           <View style={styles.submissionContainer}>
             <Text style={styles.sectionTitle}>Your Submission</Text>
-            
+
             {/* Show submission status if already submitted */}
             {submissionStatus && submissionStatus.submitted && (
               <>
@@ -1200,7 +1303,7 @@ export default function ActivityDetail() {
                         style={styles.viewSubmissionButton}
                         onPress={() => {
                           if (studentFileUrl) {
-                            openFullScreenFile(studentFileUrl, getFileNameFromUrl(studentFileUrl) || 'Your Submission');
+                            openFullScreenFile(studentFileUrl, getFileNameSync(studentFileUrl) || 'Your Submission');
                           } else {
                             Alert.alert('No File', 'This submission does not have a file to view.');
                           }
@@ -1211,19 +1314,21 @@ export default function ActivityDetail() {
                       </TouchableOpacity>
                     )}
 
-                    {/* Edit Button for Students */}
-                    <TouchableOpacity
-                      style={[styles.submitButton, { marginTop: 16, backgroundColor: '#007bff' }]}
-                      onPress={startEditSubmission}
-                    >
-                      <Ionicons name="create" size={18} color="#fff" />
-                      <Text style={styles.submitButtonText}>Edit Submission</Text>
-                    </TouchableOpacity>
+                    {/* Edit Button for Students - Only shown if not graded */}
+                    {!submissionStatus.graded && (
+                      <TouchableOpacity
+                        style={[styles.submitButton, { marginTop: 16, backgroundColor: '#007bff' }]}
+                        onPress={startEditSubmission}
+                      >
+                        <Ionicons name="create" size={18} color="#fff" />
+                        <Text style={styles.submitButtonText}>Edit Submission</Text>
+                      </TouchableOpacity>
+                    )}
                   </View>
                 )}
               </>
             )}
-            
+
             {/* Show submission form if not submitted */}
             {!submissionStatus?.submitted && (
               <>
@@ -1240,7 +1345,7 @@ export default function ActivityDetail() {
                 </View>
 
                 <Text style={[styles.inputLabel, { marginTop: 16 }]}>Or Upload a File</Text>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.uploadButton}
                   onPress={pickDocument}
                 >
@@ -1262,8 +1367,8 @@ export default function ActivityDetail() {
                   </View>
                 )}
 
-                <View style={{marginTop: 20}}>
-                  <TouchableOpacity 
+                <View style={{ marginTop: 20 }}>
+                  <TouchableOpacity
                     style={[
                       styles.submitButton,
                       (!submission.trim() && !file) && styles.submitButtonDisabled
@@ -1297,7 +1402,7 @@ export default function ActivityDetail() {
                 const studentName = studentNames[sub.student_id] || `Student ${sub.student_id.slice(-6)}`;
                 console.log(`Rendering submission for student ${sub.student_id}:`, studentName);
                 console.log('Current studentNames state:', studentNames);
-                
+
                 return (
                   <View key={sub.id} style={styles.submissionCard}>
                     <View style={styles.submissionHeader}>
@@ -1308,148 +1413,82 @@ export default function ActivityDetail() {
                         Submitted: {formatDate(sub.created_at)}
                       </Text>
                     </View>
-                  
-                  {sub.content && (
-                    <View style={styles.submissionContent}>
-                      <Text style={styles.contentLabel}>Response:</Text>
-                      <Text style={styles.contentText}>{sub.content}</Text>
-                    </View>
-                  )}
-                  
-                  {getSubmissionFileUrl(sub) && (
-                    <>
-                      {isImageUrl(getSubmissionFileUrl(sub)) ? (
-                        <TouchableOpacity 
-                          onPress={() => {
-                            openSubmissionModal(sub);
-                          }}
-                        >
-                          <Image
-                            source={{ uri: getSubmissionFileUrl(sub) }}
-                            style={styles.teacherImagePreview}
-                            resizeMode="cover"
-                          />
-                        </TouchableOpacity>
-                      ) : (
-                        <View style={styles.teacherWebViewContainer}>
-                            <WebView
-                              source={getWebViewSource(getSubmissionFileUrl(sub))}
-                              style={styles.teacherWebView}
-                              javaScriptEnabled={true}
-                              domStorageEnabled={true}
-                              allowFileAccess={false}
-                              allowFileAccessFromFileURLs={false}
-                              allowUniversalAccessFromFileURLs={false}
-                              allowsLinkPreview={false}
-                              allowsBackForwardNavigationGestures={false}
-                              allowsFullscreenVideo={false}
-                              allowsInlineMediaPlayback={true}
-                              mediaPlaybackRequiresUserAction={true}
-                              startInLoadingState={true}
-                              renderToHardwareTextureAndroid={true}
-                              thirdPartyCookiesEnabled={false}
-                              setSupportMultipleWindows={false}
-                              setBuiltInZoomControls={false}
-                              setDisplayZoomControls={false}
-                              setLoadWithOverviewMode={true}
-                              setUseWideViewPort={true}
-                              scrollEnabled={true}
-                              overScrollMode="never"
-                              onShouldStartLoadWithRequest={(request) => {
-                                // Skip navigation to 'about:blank' or empty URL
-                                if (!request.url || request.url === 'about:blank') return true;
-                                
-                                // Block download requests and force inline viewing
-                                const shouldBlock = !blockDownloads(request);
-                                if (shouldBlock) {
-                                  return false;
-                                }
-                                
-                                // Only allow navigation within the same domain
-                                try {
-                                  const currentUrl = new URL(filePreviewUrl || '');
-                                  const newUrl = new URL(request.url);
-                                  return currentUrl.hostname === newUrl.hostname;
-                                } catch (e) {
-                                  return true; // Allow if URL parsing fails
-                                }
-                              }}
-                            renderLoading={() => (
-                              <View style={styles.webViewLoader}>
-                                <ActivityIndicator size="large" color="#28a745" />
-                                <Text style={styles.loadingText}>Loading document...</Text>
-                              </View>
-                            )}
-                            onError={(syntheticEvent) => {
-                              const { nativeEvent } = syntheticEvent;
-                              // Only show error if not a navigation error (which can be common with WebView)
-                              if (!nativeEvent.description.includes('net::ERR_ABORTED')) {
-                                console.warn('WebView error:', nativeEvent);
-                              }
-                            }}
-                            onHttpError={(syntheticEvent) => {
-                              const { nativeEvent } = syntheticEvent;
-                              // Only log non-200 status codes
-                              if (nativeEvent.statusCode >= 400) {
-                                console.warn('WebView HTTP error:', nativeEvent.statusCode, nativeEvent.url);
-                              }
-                            }}
-                          />
-                        </View>
-                      )}
-                    </>
-                  )}
-                  
-                  <TouchableOpacity
-                    style={styles.viewSubmissionButton}
-                    onPress={() => {
-                      console.log('=== BUTTON CLICK DEBUG ===');
-                      console.log('Submission clicked:', sub);
-                      console.log('Submission ID:', sub.id);
-                      console.log('All submission keys:', Object.keys(sub));
-                      
-                      const fileUrl = getSubmissionFileUrl(sub);
-                      console.log('Final file URL result:', fileUrl);
-                      
-                      if (fileUrl) {
-                        console.log('Opening full-screen viewer with URL:', fileUrl);
-                        openFullScreenFile(fileUrl, getFileNameFromUrl(fileUrl) || 'Submission');
-                      } else {
-                        console.log('No file URL found, showing alert');
-                        Alert.alert('No File', 'This submission does not have a file to view.');
-                      }
-                      console.log('=== END BUTTON DEBUG ===');
-                    }}
-                  >
-                    <Ionicons name="document-text" size={18} color="#fff" />
-                    <Text style={styles.viewSubmissionButtonText}>View Full Submission</Text>
-                  </TouchableOpacity>
 
-                  <View style={styles.gradeSection}>
-                    {sub.score > 0 ? (
-                      <View style={styles.gradeDisplay}>
-                        <Text style={styles.gradeLabel}>Grade:</Text>
-                        <Text style={styles.gradeValue}>{sub.score} points</Text>
-                      </View>
-                    ) : (
-                      <View style={styles.gradeInput}>
-                        <TextInput
-                          style={styles.gradeTextInput}
-                          placeholder="Enter score"
-                          value={grading[sub.id] || ''}
-                          onChangeText={(text) => setGrading(prev => ({...prev, [sub.id]: text}))}
-                          keyboardType="numeric"
-                        />
-                        <TouchableOpacity
-                          style={styles.gradeButton}
-                          onPress={() => handleGrade(sub.id, parseInt(grading[sub.id]) || 0)}
-                        >
-                          <Text style={styles.gradeButtonText}>Grade</Text>
-                        </TouchableOpacity>
+                    {sub.content && (
+                      <View style={styles.submissionContent}>
+                        <Text style={styles.contentLabel}>Response:</Text>
+                        <Text style={styles.contentText}>{sub.content}</Text>
                       </View>
                     )}
+
+                    {getSubmissionFileUrl(sub) && (
+                      <>
+                        {isImageUrl(getSubmissionFileUrl(sub)) && (
+                          <TouchableOpacity
+                            onPress={() => {
+                              openSubmissionModal(sub);
+                            }}
+                          >
+                            <Image
+                              source={{ uri: getSubmissionFileUrl(sub) }}
+                              style={styles.teacherImagePreview}
+                              resizeMode="cover"
+                            />
+                          </TouchableOpacity>
+                        )}
+                      </>
+                    )}
+
+                    <TouchableOpacity
+                      style={styles.viewSubmissionButton}
+                      onPress={() => {
+                        console.log('=== BUTTON CLICK DEBUG ===');
+                        console.log('Submission clicked:', sub);
+                        console.log('Submission ID:', sub.id);
+                        console.log('All submission keys:', Object.keys(sub));
+
+                        const fileUrl = getSubmissionFileUrl(sub);
+                        console.log('Final file URL result:', fileUrl);
+
+                        if (fileUrl) {
+                          console.log('Opening full-screen viewer with URL:', fileUrl);
+                          openFullScreenFile(fileUrl, getFileNameSync(fileUrl) || 'Submission');
+                        } else {
+                          console.log('No file URL found, showing alert');
+                          Alert.alert('No File', 'This submission does not have a file to view.');
+                        }
+                        console.log('=== END BUTTON DEBUG ===');
+                      }}
+                    >
+                      <Ionicons name="document-text" size={18} color="#fff" />
+                      <Text style={styles.viewSubmissionButtonText}>View Full Submission</Text>
+                    </TouchableOpacity>
+
+                    <View style={styles.gradeSection}>
+                      {sub.score > 0 ? (
+                        <View style={styles.gradeDisplay}>
+                          <Text style={styles.gradeLabel}>Grade:</Text>
+                          <Text style={styles.gradeValue}>{sub.score} points</Text>
+                        </View>
+                      ) : (
+                        <View style={styles.gradeInput}>
+                          <TextInput
+                            style={styles.gradeTextInput}
+                            placeholder="Enter score"
+                            value={grading[sub.id] || ''}
+                            onChangeText={(text) => setGrading(prev => ({ ...prev, [sub.id]: text }))}
+                            keyboardType="numeric"
+                          />
+                          <TouchableOpacity
+                            style={styles.gradeButton}
+                            onPress={() => handleGrade(sub.id, parseInt(grading[sub.id]) || 0)}
+                          >
+                            <Text style={styles.gradeButtonText}>Grade</Text>
+                          </TouchableOpacity>
+                        </View>
+                      )}
+                    </View>
                   </View>
-                </View>
                 );
               })
             )}
@@ -1463,17 +1502,39 @@ export default function ActivityDetail() {
           animationType="fade"
           onRequestClose={() => setShowActivityEditMenu(false)}
         >
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.modalOverlay}
             onPress={() => setShowActivityEditMenu(false)}
           >
             <View style={styles.menuDropdown}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.menuItem}
                 onPress={startEditActivity}
               >
                 <Ionicons name="create" size={20} color="#007bff" />
                 <Text style={styles.menuItemText}>Edit Activity</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={() => {
+                  setShowActivityEditMenu(false);
+                  handleOpenOfflineScore();
+                }}
+              >
+                <Ionicons name="school-outline" size={20} color="#6f42c1" />
+                <Text style={styles.menuItemText}>Offline Score</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.menuItem, { borderBottomWidth: 0 }]}
+                onPress={() => {
+                  setShowActivityEditMenu(false);
+                  handleDeleteActivity();
+                }}
+              >
+                <Ionicons name="trash" size={20} color="#dc3545" />
+                <Text style={[styles.menuItemText, { color: '#dc3545' }]}>Delete Activity</Text>
               </TouchableOpacity>
             </View>
           </TouchableOpacity>
@@ -1520,7 +1581,7 @@ export default function ActivityDetail() {
                 </View>
 
                 <Text style={[styles.inputLabel, { marginTop: 16 }]}>Activity File</Text>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.uploadButton}
                   onPress={handleEditActivityPickFile}
                 >
@@ -1601,7 +1662,7 @@ export default function ActivityDetail() {
                 {studentFileUrl && !editSubmissionFile && (
                   <TouchableOpacity
                     style={[styles.submittedFileButton, { marginTop: 16, backgroundColor: '#f8f9fa' }]}
-                    onPress={() => openFullScreenFile(studentFileUrl, getFileNameFromUrl(studentFileUrl) || 'Current File')}
+                    onPress={() => openFullScreenFile(studentFileUrl, getFileNameSync(studentFileUrl) || 'Current File')}
                   >
                     <Ionicons name="document-text" size={20} color="#6c757d" />
                     <Text style={[styles.submittedFileButtonText, { color: '#6c757d' }]}>View Current File</Text>
@@ -1610,7 +1671,7 @@ export default function ActivityDetail() {
                 )}
 
                 <Text style={[styles.inputLabel, { marginTop: 16 }]}>Or Upload a Different File</Text>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.uploadButton}
                   onPress={handleEditSubmissionPickFile}
                 >
@@ -1687,7 +1748,7 @@ export default function ActivityDetail() {
                 </View>
 
                 <Text style={[styles.inputLabel, { marginTop: 16 }]}>Or Update the File</Text>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.uploadButton}
                   onPress={handleEditTeacherPickFile}
                 >
@@ -1713,7 +1774,7 @@ export default function ActivityDetail() {
               <View style={{ padding: 16, borderTopWidth: 1, borderTopColor: '#e9ecef', flexDirection: 'row', justifyContent: 'space-between' }}>
                 <TouchableOpacity
                   style={[styles.submitButton, { flex: 1, marginRight: 8, height: 48, justifyContent: 'center' }]}
-                  onPress={() => handleSaveEditedTeacherSubmission(isEditingTeacherSubmission)}
+                  onPress={handleSaveEditedTeacherSubmission}
                   disabled={submitting}
                 >
                   {submitting ? (
@@ -1728,6 +1789,98 @@ export default function ActivityDetail() {
                   disabled={submitting}
                 >
                   <Text style={styles.submitButtonText}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Offline Scoring Modal */}
+        <Modal
+          visible={showOfflineScoreModal}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setShowOfflineScoreModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={[styles.modalContent, { height: '85%' }]}>
+              <View style={styles.modalHeaderRow}>
+                <Text style={styles.modalTitle}>Offline Scoring</Text>
+                <TouchableOpacity onPress={() => setShowOfflineScoreModal(false)} style={styles.modalCloseButton}>
+                  <Ionicons name="close" size={22} color="#6c757d" />
+                </TouchableOpacity>
+              </View>
+
+              {offlineScoreLoading ? (
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                  <ActivityIndicator size="large" color="#28a745" />
+                  <Text style={{ marginTop: 10, color: '#666' }}>Loading students...</Text>
+                </View>
+              ) : (
+                <ScrollView contentContainerStyle={{ padding: 16 }}>
+                  <Text style={{ fontSize: 14, color: '#666', marginBottom: 15 }}>
+                    Enter scores for students who submitted offline. Leave blank if not submitted.
+                  </Text>
+
+                  {offlineStudents && offlineStudents.length > 0 ? (
+                    offlineStudents.map((student) => (
+                      <View key={student.id} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 15, borderBottomWidth: 1, borderBottomColor: '#f0f0f0', paddingBottom: 10 }}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontWeight: '500', fontSize: 16 }}>{student.name || student.email}</Text>
+                        </View>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', width: 130 }}>
+                          <TextInput
+                            style={{
+                              borderWidth: 1,
+                              borderColor: '#ced4da',
+                              borderRadius: 4,
+                              padding: 8,
+                              textAlign: 'center',
+                              width: 65
+                            }}
+                            placeholder="Score"
+                            keyboardType="numeric"
+                            value={offlineScores[student.id] || ''}
+                            onChangeText={(val) => setOfflineScores(prev => ({ ...prev, [student.id]: val }))}
+                          />
+                          <Text style={{ marginLeft: 6, marginRight: 6, fontSize: 16, color: '#6c757d', fontWeight: '500' }}>
+                            /
+                          </Text>
+                          <TextInput
+                            style={{
+                              borderWidth: 1,
+                              borderColor: '#ced4da',
+                              borderRadius: 4,
+                              padding: 8,
+                              textAlign: 'center',
+                              width: 60,
+                              color: '#6c757d'
+                            }}
+                            placeholder="Max"
+                            keyboardType="numeric"
+                            value={offlineMaxScore}
+                            onChangeText={setOfflineMaxScore}
+                          />
+                        </View>
+                      </View>
+                    ))
+                  ) : (
+                    <Text style={styles.noSubmissionsText}>No approved students found.</Text>
+                  )}
+                </ScrollView>
+              )}
+
+              <View style={{ padding: 16, borderTopWidth: 1, borderTopColor: '#e9ecef', flexDirection: 'row', paddingBottom: 24 }}>
+                <TouchableOpacity
+                  style={[styles.submitButton, { flex: 1, backgroundColor: '#28a745', minHeight: 48, justifyContent: 'center', marginTop: 0 }]}
+                  onPress={handleSaveOfflineScores}
+                  disabled={submitting || offlineScoreLoading}
+                >
+                  {submitting ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text style={styles.submitButtonText}>Save All Scores</Text>
+                  )}
                 </TouchableOpacity>
               </View>
             </View>
@@ -1812,7 +1965,7 @@ export default function ActivityDetail() {
                             // Block any requests that look like file downloads
                             const downloadExtensions = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.zip', '.rar', '.7z', '.exe', '.dmg', '.pkg'];
                             const isDownload = downloadExtensions.some(ext => request.url.toLowerCase().includes(ext));
-                            
+
                             if (isDownload) {
                               Alert.alert(
                                 'View Only',
@@ -1830,7 +1983,7 @@ export default function ActivityDetail() {
                         <View style={[styles.submittedFileButton, { marginTop: 16, backgroundColor: '#f8f9fa' }]}>
                           <Ionicons name="document-text" size={20} color="#6c757d" />
                           <Text style={[styles.submittedFileButtonText, { color: '#6c757d' }]}>
-                            {getFileNameFromUrl(submissionPreviewUrl) || 'Document'}
+                            {getFileNameSync(submissionPreviewUrl) || 'Document'}
                           </Text>
                           <Ionicons name="checkmark-circle" size={20} color="#28a745" />
                         </View>
@@ -1851,10 +2004,10 @@ export default function ActivityDetail() {
               )}
             </View>
           </View>
-        </Modal>
+        </Modal >
 
         {/* Generic file preview modal */}
-        <Modal
+        < Modal
           visible={showFilePreviewModal && !!filePreviewUrl}
           transparent
           animationType="fade"
@@ -1896,12 +2049,12 @@ export default function ActivityDetail() {
                       if (!nativeEvent.description.includes('net::ERR_ABORTED')) {
                         // Show error with fallback option
                         Alert.alert(
-                          'Error Loading Document', 
+                          'Error Loading Document',
                           'Failed to load the document using the secure viewer. Would you like to try opening it directly?',
                           [
                             { text: 'Cancel', style: 'cancel' },
-                            { 
-                              text: 'Try Direct View', 
+                            {
+                              text: 'Try Direct View',
                               onPress: () => {
                                 // Fallback: try direct URL without Google Docs viewer
                                 console.log('Trying direct view for:', filePreviewUrl);
@@ -1916,7 +2069,7 @@ export default function ActivityDetail() {
                       const { nativeEvent } = syntheticEvent;
                       console.error('WebView HTTP error:', nativeEvent.statusCode, nativeEvent.url);
                       Alert.alert(
-                        'Error', 
+                        'Error',
                         `Failed to load the document (HTTP ${nativeEvent.statusCode}). The file may not be accessible.`,
                         [{ text: 'OK' }]
                       );
@@ -1924,7 +2077,7 @@ export default function ActivityDetail() {
                     onShouldStartLoadWithRequest={(request) => {
                       // Skip navigation to 'about:blank' or empty URL
                       if (!request.url || request.url === 'about:blank') return true;
-                      
+
                       // Block download requests and force inline viewing
                       const shouldBlock = !blockDownloads(request);
                       return !shouldBlock;
@@ -1935,7 +2088,7 @@ export default function ActivityDetail() {
                     allowsBackForwardNavigationGestures={false}
                     allowsLinkPreview={false}
                   />
-                  
+
                   {/* Fallback info text */}
                   <View style={{ padding: 12, backgroundColor: '#f8f9fa', borderTopWidth: 1, borderTopColor: '#e9ecef' }}>
                     <Text style={{ fontSize: 12, color: '#6c757d', textAlign: 'center' }}>
@@ -1946,10 +2099,10 @@ export default function ActivityDetail() {
               )}
             </View>
           </View>
-        </Modal>
+        </Modal >
 
         {/* Full Screen File Modal - Similar to Lecture */}
-        <Modal
+        < Modal
           visible={showFullScreenFileModal}
           transparent={false}
           animationType="slide"
@@ -1958,7 +2111,7 @@ export default function ActivityDetail() {
           <View style={styles.fullScreenFileModalContainer}>
             {/* Header */}
             <View style={styles.fullScreenFileModalHeader}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.fullScreenFileCloseButton}
                 onPress={closeFullScreenFileModal}
               >
@@ -2003,9 +2156,9 @@ export default function ActivityDetail() {
                       // Block any requests that look like file downloads
                       const downloadExtensions = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.zip', '.rar', '.7z', '.exe', '.dmg', '.pkg'];
                       const isDownload = downloadExtensions.some(ext => request.url.toLowerCase().includes(ext)) ||
-                                       request.url.toLowerCase().includes('download') ||
-                                       request.url.toLowerCase().includes('force-download');
-                      
+                        request.url.toLowerCase().includes('download') ||
+                        request.url.toLowerCase().includes('force-download');
+
                       if (isDownload) {
                         Alert.alert(
                           'View Only',
@@ -2014,15 +2167,15 @@ export default function ActivityDetail() {
                         );
                         return false;
                       }
-                      
+
                       // Only allow navigation within Google Docs domain
-                      const isAllowed = request.url.startsWith('https://docs.google.com/') || 
-                                       request.url.startsWith('https://drive.google.com/');
+                      const isAllowed = request.url.startsWith('https://docs.google.com/') ||
+                        request.url.startsWith('https://drive.google.com/');
                       if (!isAllowed) {
                         console.log('Blocking external navigation to:', request.url);
                         return false;
                       }
-                      
+
                       return true;
                     }}
                     javaScriptEnabled={true}
@@ -2045,20 +2198,22 @@ export default function ActivityDetail() {
               )}
             </View>
           </View>
-        </Modal>
+        </Modal >
 
         {/* Submitted Popup */}
-        {showSubmittedPopup && (
-          <View style={styles.popupOverlay}>
-            <View style={styles.submittedPopup}>
-              <Ionicons name="checkmark-circle" size={60} color="#28a745" />
-              <Text style={styles.popupTitle}>Submitted!</Text>
-              <Text style={styles.popupMessage}>Your {getActivityType()} has been submitted successfully.</Text>
+        {
+          showSubmittedPopup && (
+            <View style={styles.popupOverlay}>
+              <View style={styles.submittedPopup}>
+                <Ionicons name="checkmark-circle" size={60} color="#28a745" />
+                <Text style={styles.popupTitle}>Submitted!</Text>
+                <Text style={styles.popupMessage}>Your {getActivityType()} has been submitted successfully.</Text>
+              </View>
             </View>
-          </View>
-        )}
+          )
+        }
       </ScrollView>
-    </View>
+    </View >
   );
 }
 
@@ -2102,7 +2257,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   content: {
-    flex: 1,
     padding: 16,
     paddingBottom: 30, // Add padding at the bottom for better scrolling
   },

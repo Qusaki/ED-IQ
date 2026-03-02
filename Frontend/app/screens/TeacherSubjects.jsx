@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, Modal, TextInput, StyleSheet, Pressable, Alert, Image, TouchableOpacity, ImageBackground } from 'react-native';
+import { View, Text, FlatList, Modal, TextInput, StyleSheet, Pressable, Alert, Image, TouchableOpacity, ImageBackground, Animated } from 'react-native';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import FABButton from '../../components/FABButton';
 import CustomTabBar from '../../components/CustomTabBar';
 import { useRBAC } from '../RBACComponents';
@@ -15,11 +16,23 @@ export default function TeacherSubjects() {
   const router = useRouter();
   const [subjects, setSubjects] = useState([]);
   const [creating, setCreating] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [name, setName] = useState('');
   const [createdCode, setCreatedCode] = useState(null);
   const [chatbotVisible, setChatbotVisible] = useState(false);
+  const tooltipAnim = React.useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.delay(5000), // Hide for 5 seconds
+        Animated.timing(tooltipAnim, { toValue: 1, duration: 400, useNativeDriver: true }), // Pop in
+        Animated.delay(5000), // Stay visible for 5 seconds
+        Animated.timing(tooltipAnim, { toValue: 0, duration: 400, useNativeDriver: true }), // Pop out
+        Animated.delay(100), // Small buffer
+      ])
+    ).start();
+
     load();
   }, []);
 
@@ -48,88 +61,122 @@ export default function TeacherSubjects() {
   };
 
   const renderItem = ({ item }) => (
-    <TouchableOpacity 
-      style={styles.subjectWrapper}
+    <TouchableOpacity
+      style={styles.cardTouchable}
+      activeOpacity={0.8}
       onPress={() => router.push({
         pathname: '/screens/SubjectDetail',
-        params: { 
-          subjectId: item.id, 
-          subjectName: item.name || 'Subject' 
+        params: {
+          subjectId: item.id,
+          subjectName: item.name || 'Subject'
         }
       })}
     >
-      <View style={styles.subjectRow}>
-        <View style={styles.subjectThumb} />
-        <View style={styles.subjectBar}>
-          <Text style={styles.subjectTitle}>{(item.name || 'Subject').toUpperCase()}</Text>
+      <View style={styles.bookCard}>
+        {/* Book Spine */}
+        <View style={styles.bookSpine} />
+
+        <View style={styles.bookContent}>
+          <View style={styles.bookHeader}>
+            <MaterialCommunityIcons name="book-education-outline" size={26} color="#ffffff" style={styles.bookIcon} />
+            <Text style={styles.subjectTitle} numberOfLines={2}>{(item.name || 'Subject').toUpperCase()}</Text>
+          </View>
+          {!!item.code && (
+            <View style={styles.codeContainer}>
+              <Text style={styles.subjectMeta}>Class Code: {item.code}</Text>
+            </View>
+          )}
+        </View>
+
+        <View style={styles.cardArrow}>
+          <Ionicons name="chevron-forward" size={18} color="#28a745" />
         </View>
       </View>
-      {!!item.code && <Text style={styles.subjectMeta}>Code: {item.code}</Text>}
     </TouchableOpacity>
   );
 
   return (
     <ImageBackground source={campusBackground} style={styles.backgroundImage} resizeMode="contain">
       <View style={styles.overlay} />
-    <View style={styles.container}>
-      <View style={styles.headerRow}>
-        <Text style={styles.headerBrand}>ED-IQ</Text>
-        <TouchableOpacity
-          onPress={() => setChatbotVisible(true)}
-          style={styles.logoButton}
-        >
-          <Image source={require('../../assets/img/ED-IQ_LOGO.png')} style={styles.headerMascot} resizeMode="contain" />
-        </TouchableOpacity>
-      </View>
-      <FlatList
-        data={subjects}
-        keyExtractor={(it) => it.id}
-        renderItem={renderItem}
-        contentContainerStyle={{ padding: 16, paddingTop: 8, paddingBottom: 200 }}
-        ListEmptyComponent={<Text style={styles.empty}>No subjects yet</Text>}
-      />
-
-      {isTeacher && (
-        <FABButton bottom={120} onPress={() => setCreating(true)} />
-      )}
-
-      <Modal visible={creating} transparent animationType="slide" onRequestClose={() => setCreating(false)}>
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modal}>
-            <Text style={styles.modalTitle}>Create Subject</Text>
-            <TextInput
-              placeholder="Subject name"
-              value={name}
-              onChangeText={setName}
-              style={styles.input}
-              autoFocus
+      <View style={styles.container}>
+        <View style={styles.headerRow}>
+          <Text style={styles.headerBrand}>ED-IQ</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Image
+              source={require('../../assets/img/ED-IQ_LOGO.png')}
+              style={styles.headerMascot}
+              resizeMode="contain"
             />
-            <View style={styles.row}>
-              <Pressable style={[styles.btn, styles.cancel, styles.btnLeft]} onPress={() => setCreating(false)}>
-                <Text style={styles.btnText}>Cancel</Text>
-              </Pressable>
-              <Pressable style={[styles.btn, styles.primary, styles.btnRight]} onPress={create}>
-                <Text style={styles.btnText}>Create</Text>
+            <Animated.View style={[
+              styles.tooltipContainer,
+              {
+                opacity: tooltipAnim,
+                transform: [
+                  { translateX: tooltipAnim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) },
+                  { scale: tooltipAnim.interpolate({ inputRange: [0, 1], outputRange: [0.3, 1] }) }
+                ]
+              }
+            ]}>
+              <View style={styles.tooltipBubble}>
+                <Text style={styles.tooltipText}>Need Help?</Text>
+              </View>
+              <View style={styles.tooltipTriangle} />
+            </Animated.View>
+            <TouchableOpacity
+              onPress={() => setChatbotVisible(true)}
+              style={[StyleSheet.absoluteFillObject, { zIndex: 10 }]}
+            />
+          </View>
+        </View>
+        <FlatList
+          data={subjects}
+          keyExtractor={(it) => it.id}
+          renderItem={renderItem}
+          contentContainerStyle={{ padding: 16, paddingTop: 8, paddingBottom: 200 }}
+          ListEmptyComponent={<Text style={styles.empty}>No subjects yet</Text>}
+        />
+
+        {isTeacher && (
+          <FABButton bottom={120} onPress={() => setCreating(true)} />
+        )}
+
+        <Modal visible={creating} transparent animationType="slide" onRequestClose={() => setCreating(false)}>
+          <View style={styles.modalBackdrop}>
+            <View style={styles.modal}>
+              <Text style={styles.modalTitle}>Create Subject</Text>
+              <TextInput
+                placeholder="Subject name"
+                value={name}
+                onChangeText={setName}
+                style={styles.input}
+                autoFocus
+              />
+              <View style={styles.row}>
+                <Pressable style={[styles.btn, styles.cancel, styles.btnLeft]} onPress={() => setCreating(false)}>
+                  <Text style={styles.btnText}>Cancel</Text>
+                </Pressable>
+                <Pressable style={[styles.btn, styles.primary, styles.btnRight]} onPress={create}>
+                  <Text style={styles.btnText}>Create</Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </Modal>
+
+        <Modal visible={!!createdCode} transparent animationType="fade" onRequestClose={() => setCreatedCode(null)}>
+          <View style={styles.modalBackdrop}>
+            <View style={styles.modal}>
+              <Text style={styles.modalTitle}>Share this code</Text>
+              <Text style={styles.bigCode}>{createdCode}</Text>
+              <Pressable style={[styles.btn, styles.primary]} onPress={() => setCreatedCode(null)}>
+                <Text style={styles.btnText}>OK</Text>
               </Pressable>
             </View>
           </View>
-        </View>
-      </Modal>
-
-      <Modal visible={!!createdCode} transparent animationType="fade" onRequestClose={() => setCreatedCode(null)}>
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modal}>
-            <Text style={styles.modalTitle}>Share this code</Text>
-            <Text style={styles.bigCode}>{createdCode}</Text>
-            <Pressable style={[styles.btn, styles.primary]} onPress={() => setCreatedCode(null)}>
-              <Text style={styles.btnText}>OK</Text>
-            </Pressable>
-          </View>
-        </View>
-      </Modal>
-      <ChatbotModal visible={chatbotVisible} onClose={() => setChatbotVisible(false)} />
-      <CustomTabBar />
-    </View>
+        </Modal>
+        <ChatbotModal visible={chatbotVisible} onClose={() => setChatbotVisible(false)} />
+        <CustomTabBar />
+      </View>
     </ImageBackground>
   );
 }
@@ -141,17 +188,121 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.1)',
   },
   container: { flex: 1, backgroundColor: 'rgba(255,255,255,0.9)' },
-  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingTop: 42, paddingBottom: 8, marginBottom: 16 },
-  headerBrand: { fontSize: 24, fontWeight: '900', color: '#28a745', letterSpacing: 1 },
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingTop: 56, paddingBottom: 8, marginBottom: 16 },
+  headerBrand: { fontSize: 24, fontWeight: 'bold', fontFamily: 'sans-serif', color: '#28a745', letterSpacing: 1 },
   logoButton: { padding: 8 },
   headerMascot: { width: 56, height: 56 },
-
-  subjectWrapper: { backgroundColor: '#e8f5e9', borderRadius: 10, padding: 10, marginBottom: 12, borderWidth: 1, borderColor: '#cde9ce' },
-  subjectRow: { flexDirection: 'row', alignItems: 'center' },
-  subjectThumb: { width: 56, height: 56, borderRadius: 28, backgroundColor: '#d6f0ff', marginRight: 12 },
-  subjectBar: { flex: 1, backgroundColor: '#0f7a67', borderRadius: 4, paddingVertical: 12, paddingHorizontal: 14 },
-  subjectTitle: { color: '#ffffff', fontWeight: '900', fontSize: 16, letterSpacing: 1 },
-  subjectMeta: { marginTop: 8, color: '#28a745', fontWeight: '600', paddingLeft: 4 },
+  tooltipContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 4,
+    position: 'absolute',
+    right: 56,
+  },
+  tooltipBubble: {
+    backgroundColor: '#28a745',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  tooltipText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  tooltipTriangle: {
+    width: 0,
+    height: 0,
+    borderTopWidth: 5,
+    borderBottomWidth: 5,
+    borderLeftWidth: 6,
+    borderStyle: 'solid',
+    backgroundColor: 'transparent',
+    borderTopColor: 'transparent',
+    borderBottomColor: 'transparent',
+    borderLeftColor: '#28a745',
+    marginLeft: -1,
+    zIndex: 2,
+  },
+  bookCard: {
+    backgroundColor: '#28a745', // Cover color
+    borderRadius: 8,
+    borderTopLeftRadius: 4,
+    borderBottomLeftRadius: 4,
+    marginBottom: 16,
+    flexDirection: 'row',
+    alignItems: 'stretch', // ensures spine fills height
+    justifyContent: 'space-between',
+    shadowColor: '#000',
+    shadowOffset: { width: 3, height: 5 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 6,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    borderColor: '#e8ecef', // Emulates white pages
+    marginHorizontal: 4, // Make room for shadows and border
+  },
+  bookSpine: {
+    width: 14,
+    backgroundColor: '#1e7e34', // Darker green for spine
+    borderTopLeftRadius: 4,
+    borderBottomLeftRadius: 4,
+    borderRightWidth: 1,
+    borderRightColor: 'rgba(0,0,0,0.15)',
+  },
+  bookContent: {
+    flex: 1,
+    padding: 16,
+    justifyContent: 'center',
+  },
+  bookHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  bookIcon: {
+    marginRight: 8,
+    opacity: 0.9,
+  },
+  subjectTitle: {
+    color: '#ffffff',
+    fontWeight: '800',
+    fontSize: 17,
+    letterSpacing: 0.5,
+    flex: 1,
+    textShadowColor: 'rgba(0, 0, 0, 0.1)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+  codeContainer: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
+  },
+  subjectMeta: {
+    color: '#ffffff',
+    fontWeight: '700',
+    fontSize: 12,
+    letterSpacing: 0.5,
+  },
+  cardArrow: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#ffffff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    alignSelf: 'center',
+    marginRight: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
 
   empty: { textAlign: 'center', marginTop: 40, color: '#6c757d' },
   modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'center', alignItems: 'center' },
@@ -169,5 +320,3 @@ const styles = StyleSheet.create({
   btnText: { color: '#fff', fontWeight: '600' },
   bigCode: { fontSize: 28, fontWeight: 'bold', textAlign: 'center', color: '#28a745', marginVertical: 10 },
 });
-
-

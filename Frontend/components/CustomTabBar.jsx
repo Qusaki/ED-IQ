@@ -2,10 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { View, TouchableOpacity, StyleSheet, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, usePathname, useFocusEffect } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import RBACManager from '../app/rbacManager';
 import { notificationService } from '../app/notificationService';
 
 export default function CustomTabBar({ unreadNotificationCount = 0 }) {
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const pathname = usePathname();
   const [internalUnread, setInternalUnread] = useState(0);
@@ -15,7 +17,7 @@ export default function CustomTabBar({ unreadNotificationCount = 0 }) {
     const load = async () => {
       try {
         const role = await RBACManager.getCurrentUserRole();
-        
+
         // For students, count individual notifications
         if (role !== 'teacher') {
           const backend = await notificationService.getBackendNotifications();
@@ -36,12 +38,12 @@ export default function CustomTabBar({ unreadNotificationCount = 0 }) {
               }
               grouped[subjectName].push(notif);
             });
-            
+
             // Count subjects that have unread notifications
-            const subjectsWithUnread = Object.keys(grouped).filter(subjectName => 
+            const subjectsWithUnread = Object.keys(grouped).filter(subjectName =>
               grouped[subjectName].some(n => n.is_read !== true && n.is_read !== 1)
             ).length;
-            
+
             if (mounted) setInternalUnread(subjectsWithUnread);
           } catch (e) {
             // Fallback: try backend notifications
@@ -55,7 +57,7 @@ export default function CustomTabBar({ unreadNotificationCount = 0 }) {
         if (mounted) setInternalUnread(0);
       }
     };
-    
+
     load();
     const id = setInterval(load, 15000);
     return () => { mounted = false; clearInterval(id); };
@@ -67,7 +69,7 @@ export default function CustomTabBar({ unreadNotificationCount = 0 }) {
       const refreshNotifications = async () => {
         try {
           const role = await RBACManager.getCurrentUserRole();
-          
+
           if (role !== 'teacher') {
             const backend = await notificationService.getBackendNotifications();
             let items = Array.isArray(backend) ? backend : [];
@@ -84,18 +86,18 @@ export default function CustomTabBar({ unreadNotificationCount = 0 }) {
               }
               grouped[subjectName].push(notif);
             });
-            
-            const subjectsWithUnread = Object.keys(grouped).filter(subjectName => 
+
+            const subjectsWithUnread = Object.keys(grouped).filter(subjectName =>
               grouped[subjectName].some(n => n.is_read !== true && n.is_read !== 1)
             ).length;
-            
+
             setInternalUnread(subjectsWithUnread);
           }
         } catch (e) {
           setInternalUnread(0);
         }
       };
-      
+
       refreshNotifications();
     }, [])
   );
@@ -121,7 +123,7 @@ export default function CustomTabBar({ unreadNotificationCount = 0 }) {
   const handleTabPress = (tabName) => {
     console.log('Tab pressed:', tabName);
     console.log('Current pathname:', pathname);
-    
+
     try {
       if (tabName === 'index') {
         router.navigate('/');
@@ -146,37 +148,54 @@ export default function CustomTabBar({ unreadNotificationCount = 0 }) {
     return pathname === `/${tabName}`;
   };
 
+  // Only render on main tab routes to prevent overlap on stack screens
+  const mainRoutes = ['/', '/index', '/notifications', '/profile'];
+  if (!mainRoutes.includes(pathname)) {
+    return null;
+  }
+
   return (
-    <View style={styles.tabBar}>
+    <View style={[styles.tabBar, {
+      paddingBottom: Math.max(15, insets.bottom),
+      height: 60 + Math.max(15, insets.bottom)
+    }]}>
       {tabs.map((tab) => {
         const active = isActive(tab.name);
         const onNotificationsTab = isActive('notifications');
         const displayCount = onNotificationsTab
           ? (Number.isFinite(unreadNotificationCount) ? unreadNotificationCount : 0)
           : internalUnread;
-        
+
         return (
           <TouchableOpacity
             key={tab.name}
             style={styles.tabItem}
             onPress={() => handleTabPress(tab.name)}
-            activeOpacity={1}
+            activeOpacity={0.8}
           >
-            <View style={[
-              styles.iconContainer,
-              active && styles.activeIconContainer
-            ]}>
+            <View style={styles.iconContainer}>
               <Ionicons
                 name={tab.icon}
-                size={24}
+                size={22}
                 color={active ? '#28a745' : '#6c757d'}
               />
               {tab.name === 'notifications' && displayCount > 0 && (
                 <View style={styles.notificationBadge}>
-                  <Text style={styles.badgeText}>{displayCount}</Text>
+                  <Text style={styles.badgeText}>
+                    {displayCount > 99 ? '99+' : displayCount}
+                  </Text>
                 </View>
               )}
             </View>
+            <Text
+              style={[
+                styles.tabLabel,
+                { color: active ? '#28a745' : '#6c757d' }
+              ]}
+              numberOfLines={1}
+            >
+              {tab.label === 'Home' ? 'Dashboard' : tab.label}
+            </Text>
           </TouchableOpacity>
         );
       })}
@@ -187,47 +206,58 @@ export default function CustomTabBar({ unreadNotificationCount = 0 }) {
 const styles = StyleSheet.create({
   tabBar: {
     flexDirection: 'row',
-    backgroundColor: '#f0f2f4',
-    borderTopWidth: 0,
-    elevation: 8,
-    height: 64,
+    backgroundColor: '#ffffff',
+    borderTopWidth: 1,
+    borderTopColor: '#e9ecef',
     position: 'absolute',
-    left: 16,
-    right: 16,
-    bottom: 32,
-    borderRadius: 14,
-    justifyContent: 'center',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'space-around',
     alignItems: 'center',
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: -2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
   },
   tabItem: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
     height: '100%',
+    justifyContent: 'flex-start',
+    paddingTop: 8,
+    alignItems: 'center',
   },
   iconContainer: {
-    padding: 8,
-    borderRadius: 24,
+    position: 'relative',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 6,
+    marginBottom: 2,
   },
-  activeIconContainer: {
-    backgroundColor: 'rgba(40, 167, 69, 0.1)',
+  tabLabel: {
+    fontSize: 10,
+    fontWeight: '500',
+    textAlign: 'center',
   },
   notificationBadge: {
     position: 'absolute',
     top: -4,
-    right: -4,
+    right: -8,
     backgroundColor: '#dc3545',
     borderRadius: 10,
-    width: 20,
-    height: 20,
+    minWidth: 18,
+    height: 18,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#fff',
+    paddingHorizontal: 4,
   },
   badgeText: {
     color: '#fff',
-    fontSize: 11,
+    fontSize: 9,
     fontWeight: 'bold',
   },
 });

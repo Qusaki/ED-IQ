@@ -1,12 +1,12 @@
 // auth.jsx ito
 import React, { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  TextInput, 
-  TouchableOpacity, 
-  StyleSheet, 
-  Alert, 
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
   SafeAreaView,
   Modal,
   FlatList,
@@ -26,8 +26,7 @@ const campusBackground = require('../assets/background/prmsu-logo.png');
 
 const roles = [
   { id: 'student', label: 'Student' },
-  { id: 'teacher', label: 'Teacher' },
-  { id: 'admin', label: 'Admin' }
+  { id: 'teacher', label: 'Teacher' }
 ];
 
 export default function AuthScreen({ onAuthSuccess }) {
@@ -105,8 +104,8 @@ export default function AuthScreen({ onAuthSuccess }) {
   };
 
   const renderRoleItem = ({ item }) => (
-    <TouchableOpacity 
-      style={styles.roleItem} 
+    <TouchableOpacity
+      style={styles.roleItem}
       onPress={() => selectRole(item)}
     >
       <Text style={styles.roleItemText}>{item.label}</Text>
@@ -117,17 +116,17 @@ export default function AuthScreen({ onAuthSuccess }) {
     <ImageBackground source={campusBackground} style={styles.backgroundImage} resizeMode="contain">
       <View style={styles.backgroundOverlay} />
       <SafeAreaView style={[styles.container, styles.authContainer]}>
-        <KeyboardAvoidingView 
+        <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.keyboardView}
         >
-          <ScrollView 
+          <ScrollView
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
           >
             <View style={styles.logoContainer}>
-              <Image 
+              <Image
                 source={Logo}
                 style={styles.logoImage}
                 resizeMode="contain"
@@ -144,35 +143,35 @@ export default function AuthScreen({ onAuthSuccess }) {
               </Text>
 
               {!isLogin && (
-                <TextInput 
-                  placeholder="Enter your name" 
-                  style={styles.input} 
-                  value={name} 
+                <TextInput
+                  placeholder="Enter your name"
+                  style={styles.input}
+                  value={name}
                   onChangeText={setName}
                   placeholderTextColor="#999"
                 />
               )}
 
-              <TextInput 
-                placeholder="Enter your email" 
-                style={styles.input} 
-                value={email} 
+              <TextInput
+                placeholder="Enter your email"
+                style={styles.input}
+                value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 placeholderTextColor="#999"
               />
-              
+
               <View style={styles.passwordContainer}>
-                <TextInput 
-                  placeholder="Enter your password" 
-                  style={styles.passwordInput} 
+                <TextInput
+                  placeholder="Enter your password"
+                  style={styles.passwordInput}
                   secureTextEntry={!showPassword}
-                  value={password} 
+                  value={password}
                   onChangeText={setPassword}
                   placeholderTextColor="#999"
                 />
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={[styles.eyeButton, showPassword && styles.flashlightOn]}
                   onPress={() => setShowPassword(!showPassword)}
                 >
@@ -193,8 +192,8 @@ export default function AuthScreen({ onAuthSuccess }) {
               </View>
 
               {!isLogin && (
-                <TouchableOpacity 
-                  style={styles.roleSelector} 
+                <TouchableOpacity
+                  style={styles.roleSelector}
                   onPress={() => setShowRolePicker(true)}
                 >
                   <Text style={[styles.roleSelectorText, !selectedRole && styles.placeholder]}>
@@ -210,8 +209,8 @@ export default function AuthScreen({ onAuthSuccess }) {
                 </TouchableOpacity>
               )}
 
-              <TouchableOpacity 
-                style={[styles.authButton, loading && styles.disabledButton]} 
+              <TouchableOpacity
+                style={[styles.authButton, loading && styles.disabledButton]}
                 onPress={handleAuth}
                 disabled={loading}
               >
@@ -220,8 +219,8 @@ export default function AuthScreen({ onAuthSuccess }) {
                 </Text>
               </TouchableOpacity>
 
-              <TouchableOpacity 
-                style={styles.switchContainer} 
+              <TouchableOpacity
+                style={styles.switchContainer}
                 onPress={() => setIsLogin(!isLogin)}
               >
                 <Text style={styles.switchText}>
@@ -245,7 +244,7 @@ export default function AuthScreen({ onAuthSuccess }) {
             <View style={styles.modalContent}>
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>Select Your Role</Text>
-                <TouchableOpacity 
+                <TouchableOpacity
                   onPress={() => setShowRolePicker(false)}
                   style={styles.closeButton}
                 >

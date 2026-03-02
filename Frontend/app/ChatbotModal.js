@@ -11,9 +11,52 @@ import {
   KeyboardAvoidingView,
   Platform,
   SafeAreaView,
+  Animated,
+  Image,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { chatbotService } from './chatbotService';
+
+const robotLogo = require('../assets/img/ED-IQ_LOGO.png');
+
+const TypingIndicator = () => {
+  const dot1 = useRef(new Animated.Value(0.3)).current;
+  const dot2 = useRef(new Animated.Value(0.3)).current;
+  const dot3 = useRef(new Animated.Value(0.3)).current;
+
+  useEffect(() => {
+    let isMounted = true;
+    const animate = () => {
+      Animated.sequence([
+        Animated.stagger(150, [
+          Animated.timing(dot1, { toValue: 1, duration: 300, useNativeDriver: true }),
+          Animated.timing(dot2, { toValue: 1, duration: 300, useNativeDriver: true }),
+          Animated.timing(dot3, { toValue: 1, duration: 300, useNativeDriver: true }),
+        ]),
+        Animated.stagger(150, [
+          Animated.timing(dot1, { toValue: 0.3, duration: 300, useNativeDriver: true }),
+          Animated.timing(dot2, { toValue: 0.3, duration: 300, useNativeDriver: true }),
+          Animated.timing(dot3, { toValue: 0.3, duration: 300, useNativeDriver: true }),
+        ])
+      ]).start(({ finished }) => {
+        if (finished && isMounted) animate();
+      });
+    };
+    animate();
+    return () => { isMounted = false; };
+  }, []);
+
+  return (
+    <View style={[styles.messageWrapper, styles.botMessageWrapper, { marginBottom: 12 }]}>
+      <Image source={robotLogo} style={styles.botAvatar} resizeMode="contain" />
+      <View style={[styles.messageBubble, styles.botMessage, { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 16 }]}>
+        <Animated.View style={[styles.dot, { opacity: dot1, transform: [{ translateY: dot1.interpolate({ inputRange: [0.3, 1], outputRange: [0, -3] }) }] }]} />
+        <Animated.View style={[styles.dot, { opacity: dot2, transform: [{ translateY: dot2.interpolate({ inputRange: [0.3, 1], outputRange: [0, -3] }) }] }]} />
+        <Animated.View style={[styles.dot, { opacity: dot3, transform: [{ translateY: dot3.interpolate({ inputRange: [0.3, 1], outputRange: [0, -3] }) }] }]} />
+      </View>
+    </View>
+  );
+};
 
 export default function ChatbotModal({ visible, onClose }) {
   const [messages, setMessages] = useState([
@@ -106,6 +149,9 @@ export default function ChatbotModal({ visible, onClose }) {
                   : styles.botMessageWrapper,
               ]}
             >
+              {message.sender === 'bot' && (
+                <Image source={robotLogo} style={styles.botAvatar} resizeMode="contain" />
+              )}
               <View
                 style={[
                   styles.messageBubble,
@@ -127,11 +173,7 @@ export default function ChatbotModal({ visible, onClose }) {
               </View>
             </View>
           ))}
-          {loading && (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#28a745" />
-            </View>
-          )}
+          {loading && <TypingIndicator />}
         </ScrollView>
 
         {/* Input Area - wrapped in KeyboardAvoidingView */}
@@ -197,12 +239,19 @@ const styles = StyleSheet.create({
   messageWrapper: {
     marginVertical: 4,
     flexDirection: 'row',
+    alignItems: 'flex-end',
   },
   userMessageWrapper: {
     justifyContent: 'flex-end',
   },
   botMessageWrapper: {
     justifyContent: 'flex-start',
+  },
+  botAvatar: {
+    width: 28,
+    height: 28,
+    marginRight: 8,
+    marginBottom: 4,
   },
   messageBubble: {
     maxWidth: '80%',
@@ -261,5 +310,12 @@ const styles = StyleSheet.create({
   },
   sendButtonDisabled: {
     backgroundColor: '#ccc',
+  },
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#6c757d',
+    marginHorizontal: 3,
   },
 });

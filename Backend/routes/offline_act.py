@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from models.activity import Activity
 from models.submission import Submission
 from models.subject import Subject, SubjectEnrollment
+from models.user import User
 from schemas.submission import (
     SubmissionResponse,
     SubmissionScore,
@@ -14,6 +15,7 @@ from schemas.submission import (
 )
 from schemas.user import UserResponse
 from sqlalchemy.orm import Session
+from utils.notify import notify_user
 
 router = APIRouter()
 
@@ -21,27 +23,34 @@ router = APIRouter()
 @router.get("/students/{subject_id}", response_model=List[UserResponse])
 def fetch_all_students(
     subject_id: str,
-    db: Session = Depends(get_current_user)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     subject = db.query(Subject).filter(Subject.id == subject_id).first()
 
     if not subject:
         raise HTTPException(status_code=404, detail="Subject not found")
 
-    students = db.query(SubjectEnrollment).filter(SubjectEnrollment.subject_id == subject.id, SubjectEnrollment.status == "approved").all()
+    students = db.query(User).join(
+        SubjectEnrollment, User.id == SubjectEnrollment.student_id
+    ).filter(
+        SubjectEnrollment.subject_id == subject.id,
+        SubjectEnrollment.status == "approved"
+    ).all()
 
     if not students:
-        raise HTTPException(statud_code=404, detail="no student found in this subject")
+        raise HTTPException(status_code=404, detail="No student found in this subject")
 
     return students
 
 
 # this is to score their offline work
 @router.post("/score/{activity_id}", response_model=List[SubmissionResponse])
-def grade_students_all_at_once(
+async def grade_students_all_at_once(
     activity_id: str,
     activity_grade: List[SubmissionScore],
-    db: Session = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     activity = db.query(Activity).filter(Activity.id == activity_id).first()
 
@@ -88,6 +97,14 @@ def grade_students_all_at_once(
 
     for grade in new_grades:
         db.refresh(grade)
+        
+        # Notify the student about their offline score
+        await notify_user(
+            user_id=grade.student_id,
+            title="Offline Submission Scored",
+            message=f"Your offline submission for '{activity.title}' has been scored: {grade.score}/{activity.max_score}",
+            db=db
+        )
 
     return new_grades
 
