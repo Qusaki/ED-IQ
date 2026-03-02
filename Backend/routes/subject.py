@@ -122,8 +122,8 @@ async def join_subject(
     # Notify the teacher about the enrollment request
     await notify_user(
         user_id=subject.owner_id,
-        title="New Enrollment Request",
-        message=f"{current_user.name} wants to enroll in your subject '{subject.name}'.",
+        title=f"{subject.name} - Request",
+        message=f"{current_user.name} wants to enroll",
         db=db,
     )
 

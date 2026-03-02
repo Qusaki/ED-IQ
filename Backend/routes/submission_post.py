@@ -95,8 +95,8 @@ async def create_submission(
         subject_id=activity.subject_id,
         activity_id=activity_id,
         student_id=current_user.id,
-        title="New Submission",
-        message=f"A student submitted an answer to {activity_type}: {activity.title}",
+        title=f"{subject.name} - New Submission",
+        message=f"{current_user.name} submitted an answer to {activity_type}: \"{activity.title}\"",
         db=db
     )
 

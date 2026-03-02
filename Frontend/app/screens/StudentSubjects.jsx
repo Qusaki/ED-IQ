@@ -6,7 +6,7 @@ import CustomTabBar from '../../components/CustomTabBar';
 import { useRBAC } from '../RBACComponents';
 import { subjectService } from '../subjectService';
 import { RBACManager, ROLES } from '../rbacManager';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import ChatbotModal from '../ChatbotModal';
 
 const campusBackground = require('../../assets/background/prmsu-logo.png');
@@ -30,8 +30,22 @@ export default function StudentSubjects() {
         Animated.delay(100), // Small buffer
       ])
     ).start();
+  }, []);
 
-    load();
+  useFocusEffect(
+    React.useCallback(() => {
+      load();
+    }, [])
+  );
+
+  // Background polling for real-time feel (every 3 seconds)
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      // Silent load without triggering any loading states
+      load();
+    }, 3000); // 3 seconds for near real-time
+
+    return () => clearInterval(intervalId);
   }, []);
 
   const load = async () => {

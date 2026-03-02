@@ -22,29 +22,25 @@ export default function CustomTabBar({ unreadNotificationCount = 0 }) {
         if (role !== 'teacher') {
           const backend = await notificationService.getBackendNotifications();
           let items = Array.isArray(backend) ? backend : [];
-          items = items.filter((n) => n?.title === 'New Lecture' || n?.title === 'New Activity');
+          items = items.filter((n) =>
+            n?.title === 'New Lecture' ||
+            n?.title === 'New Activity' ||
+            n?.title === 'Submission Scored' ||
+            n?.title === 'Offline Submission Scored'
+          );
           const unread = items.filter((n) => n && n.is_read !== true && n.is_read !== 1);
           if (mounted) setInternalUnread(unread.length);
         } else {
           // For teachers, we need to get the same notifications as the notifications screen
           try {
             const merged = await notificationService.getGeneralNotificationsForTeacher();
-            // Group by subject and count subjects with unread notifications
-            const grouped = {};
-            (merged || []).forEach((notif) => {
-              const subjectName = notif.subject_name || notif.subjectName || 'General';
-              if (!grouped[subjectName]) {
-                grouped[subjectName] = [];
-              }
-              grouped[subjectName].push(notif);
+            const globalReadIds = notificationService.getGlobalReadNotifications();
+            const unread = (merged || []).filter(n => {
+              if (n.is_read === true || n.is_read === 1) return false;
+              if (globalReadIds.has(n.id)) return false;
+              return true;
             });
-
-            // Count subjects that have unread notifications
-            const subjectsWithUnread = Object.keys(grouped).filter(subjectName =>
-              grouped[subjectName].some(n => n.is_read !== true && n.is_read !== 1)
-            ).length;
-
-            if (mounted) setInternalUnread(subjectsWithUnread);
+            if (mounted) setInternalUnread(unread.length);
           } catch (e) {
             // Fallback: try backend notifications
             const backend = await notificationService.getBackendNotifications();
@@ -73,25 +69,23 @@ export default function CustomTabBar({ unreadNotificationCount = 0 }) {
           if (role !== 'teacher') {
             const backend = await notificationService.getBackendNotifications();
             let items = Array.isArray(backend) ? backend : [];
-            items = items.filter((n) => n?.title === 'New Lecture' || n?.title === 'New Activity');
+            items = items.filter((n) =>
+              n?.title === 'New Lecture' ||
+              n?.title === 'New Activity' ||
+              n?.title === 'Submission Scored' ||
+              n?.title === 'Offline Submission Scored'
+            );
             const unread = items.filter((n) => n && n.is_read !== true && n.is_read !== 1);
             setInternalUnread(unread.length);
           } else {
             const merged = await notificationService.getGeneralNotificationsForTeacher();
-            const grouped = {};
-            (merged || []).forEach((notif) => {
-              const subjectName = notif.subject_name || notif.subjectName || 'General';
-              if (!grouped[subjectName]) {
-                grouped[subjectName] = [];
-              }
-              grouped[subjectName].push(notif);
+            const globalReadIds = notificationService.getGlobalReadNotifications();
+            const unread = (merged || []).filter(n => {
+              if (n.is_read === true || n.is_read === 1) return false;
+              if (globalReadIds.has(n.id)) return false;
+              return true;
             });
-
-            const subjectsWithUnread = Object.keys(grouped).filter(subjectName =>
-              grouped[subjectName].some(n => n.is_read !== true && n.is_read !== 1)
-            ).length;
-
-            setInternalUnread(subjectsWithUnread);
+            setInternalUnread(unread.length);
           }
         } catch (e) {
           setInternalUnread(0);

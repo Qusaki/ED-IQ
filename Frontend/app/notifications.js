@@ -96,7 +96,7 @@ export default function NotificationsScreen() {
         subject_id: subjectId,
         is_read: n.is_read, // Keep the read state from backend
       };
-    }).filter(n => n.subject_id || n.title.includes('Graded')); // allow graded even if subjectId missing to prevent complete loss
+    });
 
     // 5) Sort newest first
     simplified.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
@@ -113,12 +113,11 @@ export default function NotificationsScreen() {
     const globalReadIds = notificationService.getGlobalReadNotifications();
     setReadNotifications(globalReadIds);
 
-    const filtered = (merged || []).filter(n => n.subject_id);
-    setGeneralNotifications(filtered);
+    setGeneralNotifications(merged || []);
   }, []);
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  const load = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const currentRole = await RBACManager.getCurrentUserRole();
       setRole(currentRole);
@@ -142,9 +141,6 @@ export default function NotificationsScreen() {
         const allReadIds = new Set([...backendReadIds, ...generatedReadIds, ...insideReadIds]);
         notificationService.setGlobalReadNotifications(allReadIds);
         setReadNotifications(allReadIds);
-
-        // Wait a moment for state to update
-        await new Promise(resolve => setTimeout(resolve, 100));
       }
 
       // Now load notifications after read state is set
@@ -154,14 +150,22 @@ export default function NotificationsScreen() {
         await loadForStudent();
       }
     } catch (err) {
-      console.warn('Failed to load notifications', err);
+      if (!silent) console.warn('Failed to load notifications', err);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [loadForStudent, loadForTeacher]);
 
+  // Background polling for real-time feel (every 3 seconds)
   useEffect(() => {
-    load();
+    load(); // initial load
+
+    const intervalId = setInterval(() => {
+      // Silent load without triggering any loading states
+      load(true);
+    }, 3000); // 3 seconds for near real-time
+
+    return () => clearInterval(intervalId);
   }, [load]);
 
   // Refresh notifications when screen comes into focus
@@ -169,7 +173,7 @@ export default function NotificationsScreen() {
     useCallback(() => {
       const refreshNotifications = async () => {
         try {
-          await load();
+          await load(true); // Silent load on focus
         } catch (error) {
           console.warn('Failed to refresh notifications on focus:', error);
         }
@@ -281,76 +285,10 @@ export default function NotificationsScreen() {
       </TouchableOpacity>
     );
   };
-
-  // Group notifications by subject for teachers
-  const groupNotificationsBySubject = () => {
-    const grouped = {};
-    (generalNotifications || []).forEach((notif) => {
-      const subjectName = notif.subject_name || 'General';
-      if (!grouped[subjectName]) {
-        grouped[subjectName] = [];
-      }
-      grouped[subjectName].push(notif);
-    });
-    return grouped;
-  };
-
-  const renderTeacherNotifications = () => {
-    const grouped = groupNotificationsBySubject();
-    const subjects = Object.keys(grouped);
-
-    if (subjects.length === 0) {
-      return <Text style={styles.emptyText}>No notifications</Text>;
-    }
-
-    return (
-      <View>
-        {subjects.map((subjectName) => {
-          const subjectNotifications = grouped[subjectName];
-          const unreadCount = subjectNotifications.filter(n => !readNotifications.has(n.id)).length;
-          console.log(`Subject "${subjectName}":`, {
-            total: subjectNotifications.length,
-            unread: unreadCount,
-            readIds: Array.from(readNotifications.values()),
-            notificationIds: subjectNotifications.map(n => n.id)
-          });
-          return (
-            <TouchableOpacity
-              key={subjectName}
-              style={styles.subjectIndicator}
-              onPress={async () => {
-                console.log(`Clicking subject "${subjectName}" with ${unreadCount} unread notifications`);
-                // Navigate to the subject without marking as read
-                // Inside notifications will be marked as read only when explicitly clicked
-                const subjectNotif = grouped[subjectName][0];
-                if (subjectNotif && subjectNotif.subject_id) {
-                  router.push({
-                    pathname: '/screens/SubjectDetail',
-                    params: {
-                      subjectId: subjectNotif.subject_id,
-                    },
-                  });
-                }
-              }}
-            >
-              <Text style={styles.subjectIndicatorName}>{subjectName}</Text>
-              {unreadCount > 0 && (
-                <View style={styles.notificationBadge}>
-                  <Text style={styles.notificationBadgeText}>+{unreadCount}</Text>
-                </View>
-              )}
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-    );
-  };
-
   return (
     <View style={styles.container}>
       <View style={styles.content}>
         <Text style={styles.title}>NOTIFICATIONS</Text>
-
 
         <View style={styles.tabBar}>
           <TouchableOpacity
@@ -358,37 +296,29 @@ export default function NotificationsScreen() {
             style={[styles.tabButton, tab === 'general' && styles.tabActive]}
           >
             <Text style={[styles.tabText, tab === 'general' && styles.tabTextActive]}>
-              General {role === 'teacher' && `(${generalNotifications.filter(n => !readNotifications.has(n.id)).length})`}
+              General {`(${generalNotifications.filter(n => !readNotifications.has(n.id) && n.is_read !== true && n.is_read !== 1).length})`}
             </Text>
           </TouchableOpacity>
         </View>
 
-        {loading ? (
-          <ActivityIndicator size="large" color="#32cd32" style={{ marginTop: 40 }} />
-        ) : (
-          <ScrollView
-            style={styles.notificationsList}
-            showsVerticalScrollIndicator={false}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
+        <ScrollView
+          style={styles.notificationsList}
+          showsVerticalScrollIndicator={false}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
 
-            {tab === 'general' && (
-              <View>
-                {role === 'teacher' ? (
-                  renderTeacherNotifications()
-                ) : (
-                  (generalNotifications || []).length === 0 ? (
-                    <Text style={styles.emptyText}>No notifications</Text>
-                  ) : (
-                    (generalNotifications || []).map((n) => renderNotification(n))
-                  )
-                )}
-              </View>
-            )}
-          </ScrollView>
-        )}
-      </View>
+          {tab === 'general' && (
+            <View>
+              {(generalNotifications || []).length === 0 ? (
+                <Text style={styles.emptyText}>No notifications</Text>
+              ) : (
+                (generalNotifications || []).map((n) => renderNotification(n))
+              )}
+            </View>
+          )}
+        </ScrollView>
+      </View >
       <CustomTabBar unreadNotificationCount={unreadCount} />
-    </View>
+    </View >
   );
 }
 

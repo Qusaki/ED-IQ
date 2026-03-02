@@ -162,8 +162,9 @@ export const notificationService = {
       const activities = await contentService.getActivities(subjectId);
       console.log('Found activities:', activities?.length || 0, 'for subject');
 
-      // For each activity, get submissions and create notifications
-      for (const activity of activities || []) {
+      // For each activity, get submissions in parallel
+      const activityPromises = (activities || []).map(async (activity) => {
+        let actNotifications = [];
         try {
           const submissions = await contentService.getSubmissions(activity.id);
           console.log('Processing activity:', activity.title, 'category:', activity.category);
@@ -173,24 +174,16 @@ export const notificationService = {
             if (new Date(submission.created_at) > sevenDaysAgo) {
               // Determine activity type for the message
               let activityType = 'Activity';
-              if (activity.category === 'quiz') {
-                activityType = 'Quiz';
-              } else if (activity.category === 'assignment') {
-                activityType = 'Assignment';
-              } else if (activity.category === 'laboratory') {
-                activityType = 'Laboratory';
-              } else if (activity.category === 'major exam') {
-                activityType = 'Exam';
-              } else if (activity.category === 'lab exam') {
-                activityType = 'Laboratory Exam';
-              } else if (activity.category === 'project') {
-                activityType = 'Project';
-              }
+              if (activity.category === 'quiz') activityType = 'Quiz';
+              else if (activity.category === 'assignment') activityType = 'Assignment';
+              else if (activity.category === 'laboratory') activityType = 'Laboratory';
+              else if (activity.category === 'major exam') activityType = 'Exam';
+              else if (activity.category === 'lab exam') activityType = 'Laboratory Exam';
+              else if (activity.category === 'project') activityType = 'Project';
 
               const message = `A Student Submitted a Answer to ${activityType}`;
-              console.log('Creating notification with message:', message);
 
-              notifications.push({
+              actNotifications.push({
                 id: `gen-sub-${submission.id}`, // Use same ID format as general notifications
                 type: 'submission',
                 activity_id: activity.id,
@@ -202,14 +195,18 @@ export const notificationService = {
                 message: message,
                 source: 'generated', // Add source for proper filtering
               });
-            } else {
-              console.log('Skipping old submission from:', submission.created_at);
             }
           });
         } catch (e) {
           console.warn(`Failed to load submissions for activity ${activity.id}:`, e);
         }
-      }
+        return actNotifications;
+      });
+
+      const allActivityNotifications = await Promise.all(activityPromises);
+      allActivityNotifications.forEach(actNotifs => {
+        notifications.push(...actNotifs);
+      });
 
       // Sort newest first
       notifications.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
@@ -236,86 +233,86 @@ export const notificationService = {
         console.log('Teacher subjects:', subjects?.length || 0, 'items');
         const toProcess = (subjects || []).slice(0, limitSubjects);
 
-        for (const subj of toProcess) {
-          console.log('Processing subject:', subj.name);
-          // Recent enrollments
+        const subjectPromises = toProcess.map(async (subj) => {
+          console.log('Processing subject in parallel:', subj.name);
+          let subjGenerated = [];
+
           try {
-            const students = await subjectService.getSubjectStudents(subj.id);
+            // Fetch students and activities in parallel
+            const [students, activities] = await Promise.all([
+              subjectService.getSubjectStudents(subj.id).catch(() => []),
+              contentService.getActivities(subj.id).catch(() => [])
+            ]);
+
+            // Process enrollments
             const pending = (students || []).filter((s) => s.status === 'pending' || s.status === 'PENDING');
-            console.log('Pending enrollments for', subj.name, ':', pending.length);
             pending.forEach((p) => {
-              // Only include enrollments from last 7 days
               const sevenDaysAgo = getDaysAgoDate(7);
               if (new Date(p.created_at) > sevenDaysAgo) {
-                generated.push({
+                subjGenerated.push({
                   id: `gen-enroll-${subj.id}-${p.id}`,
                   type: 'enrollment_request',
                   subject_id: subj.id,
                   subject_name: subj.name,
-                  title: 'Enrollment Request',
-                  message: `${p.name || p.email} requested to join ${subj.name}`,
+                  title: `${subj.name} - Request`,
+                  message: `${p.name || p.email} wants to enroll`,
                   created_at: p.created_at || new Date().toISOString(),
                   source: 'generated',
-                  is_read: false, // Always show as unread until handled
+                  is_read: false,
                 });
               }
             });
-          } catch (e) {
-            console.log('No enrollments for', subj.name, ':', e.message);
-          }
 
-          // Recent submissions: check last activity submissions
-          try {
-            const activities = await contentService.getActivities(subj.id);
-            console.log('Activities for', subj.name, ':', activities?.length || 0, 'items');
+            // Process activities and submissions in parallel
             const actSample = (activities || []).slice(0, 5);
-            for (const act of actSample) {
-              try {
-                const subs = await contentService.getSubmissions(act.id);
-                console.log('Submissions for', act.title, ':', subs?.length || 0, 'items');
-                (subs || []).forEach((s) => {
-                  // Only include submissions from last 7 days
-                  const sevenDaysAgo = getDaysAgoDate(7);
-                  if (new Date(s.created_at) > sevenDaysAgo) {
-                    // Determine activity type for the message
-                    let activityType = 'Activity';
-                    if (act.category === 'quiz') {
-                      activityType = 'Quiz';
-                    } else if (act.category === 'assignment') {
-                      activityType = 'Assignment';
-                    } else if (act.category === 'laboratory') {
-                      activityType = 'Laboratory';
-                    } else if (act.category === 'major exam') {
-                      activityType = 'Exam';
-                    } else if (act.category === 'lab exam') {
-                      activityType = 'Laboratory Exam';
-                    } else if (act.category === 'project') {
-                      activityType = 'Project';
-                    }
+            const submissionPromises = actSample.map(async (act) => {
+              const subs = await contentService.getSubmissions(act.id).catch(() => []);
+              const actSubsGenerated = [];
+              (subs || []).forEach((s) => {
+                const sevenDaysAgo = getDaysAgoDate(7);
+                if (new Date(s.created_at) > sevenDaysAgo) {
+                  let activityType = 'Activity';
+                  if (act.category === 'quiz') activityType = 'Quiz';
+                  else if (act.category === 'assignment') activityType = 'Assignment';
+                  else if (act.category === 'laboratory') activityType = 'Laboratory';
+                  else if (act.category === 'major exam') activityType = 'Exam';
+                  else if (act.category === 'lab exam') activityType = 'Laboratory Exam';
+                  else if (act.category === 'project') activityType = 'Project';
 
-                    generated.push({
-                      id: `gen-sub-${s.id}`,
-                      type: 'submission',
-                      subject_id: subj.id,
-                      subject_name: subj.name,
-                      activity_id: act.id,
-                      activity_title: act.title,
-                      title: 'New Submission',
-                      message: `A Student Submitted a Answer to ${activityType}`,
-                      created_at: s.created_at,
-                      source: 'generated',
-                      is_read: false, // Always show as unread until reviewed
-                    });
-                  }
-                });
-              } catch (e) {
-                console.log('No submissions for', act.title, ':', e.message);
-              }
-            }
+                  actSubsGenerated.push({
+                    id: `gen-sub-${s.id}`,
+                    type: 'submission',
+                    subject_id: subj.id,
+                    subject_name: subj.name,
+                    activity_id: act.id,
+                    activity_title: act.title,
+                    title: `${subj.name} - New Submission`,
+                    message: `${s.student_name || 'A student'} submitted an answer to ${activityType}: "${act.title}"`,
+                    created_at: s.created_at,
+                    source: 'generated',
+                    is_read: false,
+                  });
+                }
+              });
+              return actSubsGenerated;
+            });
+
+            const allActSubs = await Promise.all(submissionPromises);
+            allActSubs.forEach(acts => {
+              subjGenerated.push(...acts);
+            });
+
           } catch (e) {
-            console.log('No activities for', subj.name, ':', e.message);
+            console.log('Error processing subject', subj.name, ':', e.message);
           }
-        }
+
+          return subjGenerated;
+        });
+
+        const allGeneratedArrays = await Promise.all(subjectPromises);
+        allGeneratedArrays.forEach(arr => {
+          generated.push(...arr);
+        });
       } catch (e) {
         console.warn('Unable to load teacher subjects, skipping generated notifications', e.message || e);
       }
@@ -330,10 +327,25 @@ export const notificationService = {
         message: b.message,
         created_at: b.created_at,
         is_read: b.is_read,
+        subject_id: b.subject_id || null,
+        subject_name: b.subject_name || null,
         source: 'backend',
       }));
 
-      const merged = [...mappedBackend, ...generated];
+      // Deduplicate: remove backend enrollment notifications if we already
+      // have a generated enrollment notification for the same subject
+      const generatedSubjectIds = new Set(
+        generated.filter(n => n.type === 'enrollment_request').map(n => n.subject_id)
+      );
+      const dedupedBackend = mappedBackend.filter(b => {
+        // Keep backend notification if it's NOT an enrollment duplicate
+        if (b.title && b.title.toLowerCase().includes('enroll') && b.subject_id && generatedSubjectIds.has(b.subject_id)) {
+          return false; // Skip duplicate
+        }
+        return true;
+      });
+
+      const merged = [...dedupedBackend, ...generated];
       // Filter out generated notifications that have been marked as read using global state
       const filtered = merged.filter(n => {
         if (!globalReadNotifications) {
@@ -343,8 +355,6 @@ export const notificationService = {
         return n.source !== 'generated' || !globalReadNotifications.has(n.id);
       });
       console.log('Final filtered notifications:', filtered.length, 'items');
-      console.log('Global read notifications count:', globalReadNotifications ? globalReadNotifications.size : 'undefined');
-      console.log('Generated notifications being filtered:', globalReadNotifications ? generated.filter(n => globalReadNotifications.has(n.id)).length : 'undefined');
       filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
       return filtered;
     } catch (err) {

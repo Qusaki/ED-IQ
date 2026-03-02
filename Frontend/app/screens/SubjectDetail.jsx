@@ -255,6 +255,27 @@ export default function SubjectDetail() {
     }, [subjectId, isStudent, isTeacher, loadInsideNotifications, loadStudentGrades, selectedTab])
   );
 
+  // Background polling for real-time feel (every 3 seconds)
+  useEffect(() => {
+    if (!subjectId) return;
+
+    // Initial silent load to start polling immediately without interrupting existing UI
+    const intervalId = setInterval(() => {
+      // Silent load without triggering any loading states
+      loadData(true, true);
+
+      if (isTeacher) {
+        refreshInsideNotifications(true);
+        if (selectedTab === 'grading') loadStudentGrades(true);
+      } else if (isStudent && studentTab === 'favorites') {
+        // We'll add silent to loadStudentPerformance shortly
+        loadStudentPerformance(true);
+      }
+    }, 3000); // 3 seconds for near real-time
+
+    return () => clearInterval(intervalId);
+  }, [subjectId, isTeacher, isStudent, selectedTab, studentTab]);
+
   const handleDirectCreate = (type) => {
     setDirectCreateType(type);
     setContentType(type);
@@ -276,7 +297,7 @@ export default function SubjectDetail() {
     setDueDate(new Date(Date.now() + 24 * 60 * 60 * 1000));
   };
 
-  const loadData = async (preserveExisting = false) => {
+  const loadData = async (preserveExisting = false, silent = false) => {
     if (!subjectId) return;
 
     try {
@@ -313,7 +334,7 @@ export default function SubjectDetail() {
         setEnrolledStudents(enrolled);
         setPendingStudents(pending);
       } catch (error) {
-        console.error('Error loading students:', error);
+        if (!silent) console.error('Error loading students:', error);
       }
     }
   };
@@ -340,29 +361,29 @@ export default function SubjectDetail() {
     setSubmissionStatuses(statuses);
   };
 
-  const loadInsideNotifications = useCallback(async () => {
+  const loadInsideNotifications = useCallback(async (silent = false) => {
     if (!subjectId) {
       setInsideNotifications([]);
       return;
     }
 
-    console.log('Loading inside notifications for subject:', subjectId);
-    setInsideNotificationsLoading(true);
+    if (!silent) console.log('Loading inside notifications for subject:', subjectId);
+    if (!silent) setInsideNotificationsLoading(true);
     try {
       const items = await notificationService.getSubjectNotifications(subjectId);
-      console.log('Loaded inside notifications:', items?.length || 0, 'items');
+      if (!silent) console.log('Loaded inside notifications:', items?.length || 0, 'items');
       setInsideNotifications(items || []);
     } catch (error) {
-      console.warn('Failed to load subject notifications:', error);
+      if (!silent) console.warn('Failed to load subject notifications:', error);
     } finally {
-      setInsideNotificationsLoading(false);
+      if (!silent) setInsideNotificationsLoading(false);
     }
   }, [subjectId]);
 
-  const refreshInsideNotifications = useCallback(async () => {
-    setNotifRefreshing(true);
-    await loadInsideNotifications();
-    setNotifRefreshing(false);
+  const refreshInsideNotifications = useCallback(async (silent = false) => {
+    if (!silent) setNotifRefreshing(true);
+    await loadInsideNotifications(silent);
+    if (!silent) setNotifRefreshing(false);
   }, [loadInsideNotifications]);
 
   // Weighted grade computation - replicates backend gradecomputation.py
@@ -1153,24 +1174,6 @@ export default function SubjectDetail() {
         <Text style={styles.headerTitle}>
           {isTeacher ? (selectedTab === 'notifications' ? 'GRADING SYSTEM' : selectedTab === 'students' ? 'STUDENTS LIST' : (contentFilter === 'activity' || contentFilter === 'lecture') ? 'ASSESSMENT TASK' : 'STUDENTS LIST') : studentTab === 'lessons' ? 'LESSONS' : studentTab === 'activities' ? 'ACTIVITIES' : 'PERFORMANCE'}
         </Text>
-        {isTeacher && (
-          <TouchableOpacity
-            style={styles.refreshButton}
-            onPress={() => {
-              // Toggle notifications modal
-              setShowNotificationsModal(true);
-            }}
-          >
-            <Ionicons name="notifications" size={24} color="#28a745" />
-            {getUnreadNotificationCount() > 0 && (
-              <View style={styles.notificationBadge}>
-                <Text style={styles.badgeText}>
-                  {getUnreadNotificationCount()}
-                </Text>
-              </View>
-            )}
-          </TouchableOpacity>
-        )}
       </View>
 
       {/* Students Tab */}
