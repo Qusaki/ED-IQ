@@ -35,6 +35,7 @@ def student_handbook(message):
         config=types.GenerateContentConfig(
             system_instruction=SYSTEM_PROMPT,
             max_output_tokens=500,
+            temperature=0.7,
         ),
     )
 

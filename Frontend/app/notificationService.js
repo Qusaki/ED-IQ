@@ -288,8 +288,10 @@ export const notificationService = {
 
       // Get teacher subjects (if endpoint available)
       let generated = [];
+      let teacherSubjects = [];
       try {
         const subjects = await subjectService.listMySubjects();
+        teacherSubjects = subjects;
         const toProcess = (subjects || []).slice(0, limitSubjects);
 
         const subjectPromises = toProcess.map(async (subj) => {
@@ -306,7 +308,8 @@ export const notificationService = {
             const pending = (students || []).filter((s) => s.status === 'pending' || s.status === 'PENDING');
             pending.forEach((p) => {
               const sevenDaysAgo = getDaysAgoDate(7);
-              if (new Date(p.created_at) > sevenDaysAgo) {
+              const requestDate = p.created_at ? new Date(p.created_at) : new Date();
+              if (requestDate > sevenDaysAgo) {
                 subjGenerated.push({
                   id: `gen-enroll-${subj.id}-${p.id}`,
                   type: 'enrollment_request',
@@ -377,18 +380,40 @@ export const notificationService = {
 
       console.log('Generated notifications:', generated.length, 'items');
 
+      // Helper map to quickly find subject by name for inference
+      const subjectNameMap = {};
+      (teacherSubjects || []).forEach(s => {
+        subjectNameMap[s.name] = s.id;
+      });
+
       // Merge lists, backend first, then generated; convert backend items to consistent shape
-      const mappedBackend = (backend || []).map((b) => ({
-        id: b.id,
-        type: 'backend',
-        title: b.title,
-        message: b.message,
-        created_at: b.created_at,
-        is_read: b.is_read,
-        subject_id: b.subject_id || null,
-        subject_name: b.subject_name || null,
-        source: 'backend',
-      }));
+      const mappedBackend = (backend || []).map((b) => {
+        let inferredSubjectId = b.subject_id || null;
+        let inferredSubjectName = b.subject_name || null;
+        let mappedType = 'backend';
+
+        // Infer subject details for backend enrollment request notifications
+        if (b.title && b.title.endsWith(' - Request')) {
+          mappedType = 'enrollment_request';
+          const possibleSubjectName = b.title.replace(' - Request', '');
+          if (!inferredSubjectId && subjectNameMap[possibleSubjectName]) {
+            inferredSubjectId = subjectNameMap[possibleSubjectName];
+            inferredSubjectName = possibleSubjectName;
+          }
+        }
+
+        return {
+          id: b.id,
+          type: mappedType,
+          title: b.title,
+          message: b.message,
+          created_at: b.created_at,
+          is_read: b.is_read,
+          subject_id: inferredSubjectId,
+          subject_name: inferredSubjectName,
+          source: 'backend',
+        };
+      });
 
       // Deduplicate: remove backend enrollment notifications if we already
       // have a generated enrollment notification for the same subject
@@ -397,6 +422,9 @@ export const notificationService = {
       );
       const dedupedBackend = mappedBackend.filter(b => {
         // Keep backend notification if it's NOT an enrollment duplicate
+        if (b.type === 'enrollment_request' && b.subject_id && generatedSubjectIds.has(b.subject_id)) {
+          return false; // Skip duplicate
+        }
         if (b.title && b.title.toLowerCase().includes('enroll') && b.subject_id && generatedSubjectIds.has(b.subject_id)) {
           return false; // Skip duplicate
         }
