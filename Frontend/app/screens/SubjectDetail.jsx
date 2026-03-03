@@ -478,7 +478,7 @@ export default function SubjectDetail() {
       midtermGrade = computeTermGrade(midtermActivities);
     }
 
-    let finalGrade = 100; // Backend default when no final activities
+    let finalGrade = null; // Backend default when no final activities
     if (finalActivities.length > 0) {
       finalGrade = computeTermGrade(finalActivities);
     }
@@ -486,6 +486,11 @@ export default function SubjectDetail() {
     // If no midterm activities exist either, return 0 instead of averaging with 100
     if (midtermActivities.length === 0 && finalActivities.length === 0) {
       return 0;
+    }
+
+    // If no final activities, semestral grade is just midterm grade
+    if (finalGrade === null) {
+      return midtermGrade;
     }
 
     return (midtermGrade + finalGrade) / 2;
