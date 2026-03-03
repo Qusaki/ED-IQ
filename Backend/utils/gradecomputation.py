@@ -261,9 +261,9 @@ def compute_semestral_grade(
     midterm = compute_midterm_grade(student_id, subject_id, db)
     try:
         final = compute_final_grade(student_id, subject_id, db)
+        semestral_grade = (midterm + final) / 2
     except HTTPException:
-        final = 100
-
-    semestral_grade = (midterm + final) / 2
+        # If there are no final activities, the semestral grade should just be the midterm grade
+        semestral_grade = midterm
 
     return semestral_grade

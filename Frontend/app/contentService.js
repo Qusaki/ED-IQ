@@ -632,7 +632,7 @@ export const contentService = {
   async getStudentGrade(subjectId) {
     try {
       console.log('Fetching student grade for subject:', subjectId);
-      const res = await apiClient.get(`/grade/current/${subjectId}`);
+      const res = await apiClient.get(`/computegrade/current/${subjectId}`);
       console.log('Student grade response:', res.data);
       return res.data || null;
     } catch (error) {
@@ -659,7 +659,7 @@ export const contentService = {
   async getStudentGradeAsTeacher(studentId, subjectId) {
     try {
       console.log(`Fetching grade for student ${studentId} in subject ${subjectId}`);
-      const res = await apiClient.get(`/grade/${studentId}/${subjectId}`);
+      const res = await apiClient.get(`/computegrade/${studentId}/${subjectId}`);
       console.log(`Grade API response for ${studentId}:`, res.data);
       return res.data?.score ?? 0;
     } catch (error) {

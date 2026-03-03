@@ -183,7 +183,8 @@ export default function SubjectDetail() {
   const insets = useSafeAreaInsets();
   const { isTeacher, isStudent } = useRBAC();
   const router = useRouter();
-  const { subjectId, subjectName, refreshGrading, initialTab } = useLocalSearchParams();
+  const { subjectId: rawSubjectId, subjectName, refreshGrading, initialTab } = useLocalSearchParams();
+  const subjectId = Array.isArray(rawSubjectId) ? rawSubjectId[0] : rawSubjectId;
 
   const [content, setContent] = useState([]);
   const [enrolledStudents, setEnrolledStudents] = useState([]);
@@ -204,6 +205,7 @@ export default function SubjectDetail() {
   const [insideNotifications, setInsideNotifications] = useState([]);
   const [insideNotificationsLoading, setInsideNotificationsLoading] = useState(false);
   const [notifRefreshing, setNotifRefreshing] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   // Import and use shared read notifications state from main notifications
   const [readNotifications, setReadNotifications] = useState(new Set());
   const [showNotificationsModal, setShowNotificationsModal] = useState(false);
@@ -214,6 +216,7 @@ export default function SubjectDetail() {
   const [studentPerformance, setStudentPerformance] = useState([]);
   const [currentGrade, setCurrentGrade] = useState(null);
   const [performanceLoading, setPerformanceLoading] = useState(false);
+  const [studentsLoading, setStudentsLoading] = useState(false);
 
   // Content creation form
   const [contentType, setContentType] = useState('lecture'); // 'lecture', 'activity', 'quiz', 'exam'
@@ -237,12 +240,23 @@ export default function SubjectDetail() {
 
   useEffect(() => {
     loadData();
-    if (isTeacher && initialTab) {
-      setSelectedTab(initialTab);
-    } else if (isStudent && initialTab) {
-      setStudentTab(initialTab);
+  }, [subjectId, isTeacher, isStudent]);
+
+  // Separate effect to handle initial tab setting - this ensures it runs after initial render
+  useEffect(() => {
+    if (initialTab) {
+      if (isTeacher && initialTab === 'students') {
+        console.log('[DEBUG] Setting selectedTab to "students" from initialTab');
+        setSelectedTab('students');
+      } else if (isTeacher && initialTab === 'notifications') {
+        console.log('[DEBUG] Setting selectedTab to "notifications" from initialTab');
+        setSelectedTab('notifications');
+      } else if (isStudent) {
+        console.log('[DEBUG] Setting studentTab to', initialTab, 'from initialTab');
+        setStudentTab(initialTab);
+      }
     }
-  }, [subjectId, initialTab, isTeacher, isStudent]);
+  }, [initialTab, isTeacher, isStudent]);
 
   // Load inside notifications immediately when component mounts (for teachers)
   useEffect(() => {
@@ -250,6 +264,16 @@ export default function SubjectDetail() {
       loadInsideNotifications();
     }
   }, [isTeacher, subjectId, loadInsideNotifications]);
+
+  // Debug: Log state changes when selectedTab or students change
+  useEffect(() => {
+    console.log('[DEBUG] SubjectDetail render state:', {
+      selectedTab,
+      pendingStudents: pendingStudents.length,
+      enrolledStudents: enrolledStudents.length,
+      initialTab,
+    });
+  }, [selectedTab, pendingStudents.length, enrolledStudents.length, initialTab]);
 
   useFocusEffect(
     useCallback(() => {
@@ -349,16 +373,35 @@ export default function SubjectDetail() {
     if (isTeacher) {
       try {
         // Load students
+        if (!silent) setStudentsLoading(true);
+        console.log('[DEBUG] Fetching students for subjectId:', subjectId);
         const students = await subjectService.getSubjectStudents(subjectId);
-        const enrolled = students.filter(student => student.status === 'approved');
-        const pending = students.filter(student => student.status === 'pending');
+        console.log('[DEBUG] Students received:', students?.length || 0);
 
+        const enrolled = (students || []).filter(student =>
+          student.status?.toLowerCase() === 'approved' ||
+          student.status?.toLowerCase() === 'active'
+        );
+        const pending = (students || []).filter(student =>
+          student.status?.toLowerCase() === 'pending'
+        );
+
+        console.log('[DEBUG] Filtered: Enrolled=', enrolled.length, 'Pending=', pending.length);
         setEnrolledStudents(enrolled);
         setPendingStudents(pending);
       } catch (error) {
         if (!silent) console.error('Error loading students:', error);
+      } finally {
+        if (!silent) setStudentsLoading(false);
       }
     }
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadData(false, false);
+    if (isTeacher && selectedTab === 'notifications') await loadStudentGrades();
+    setRefreshing(false);
   };
 
   // Load submission statuses for activities and exams
@@ -478,7 +521,7 @@ export default function SubjectDetail() {
       midtermGrade = computeTermGrade(midtermActivities);
     }
 
-    let finalGrade = 100; // Backend default when no final activities
+    let finalGrade = null; // Backend default when no final activities
     if (finalActivities.length > 0) {
       finalGrade = computeTermGrade(finalActivities);
     }
@@ -488,21 +531,26 @@ export default function SubjectDetail() {
       return 0;
     }
 
+    // If no final activities, semestral grade is just midterm grade
+    if (finalGrade === null) {
+      return midtermGrade;
+    }
+
     return (midtermGrade + finalGrade) / 2;
   };
 
   // Load students for grading system - replicates backend weighted formula
-  const loadStudentGrades = useCallback(async () => {
+  const loadStudentGrades = useCallback(async (silent = false) => {
     if (!subjectId) {
       setStudentGrades([]);
       return;
     }
 
-    console.log('=== LOADING GRADING SYSTEM ===');
+    if (!silent) console.log('=== LOADING GRADING SYSTEM ===');
     try {
       // Get all enrolled students
       const enrolledStudents = await subjectService.getSubjectStudents(subjectId);
-      console.log('Found enrolled students:', enrolledStudents.length);
+      if (!silent) console.log('Found enrolled students:', enrolledStudents.length);
 
       // Get all activities for this subject
       const allContent = await contentService.getSubjectContent(subjectId);
@@ -553,15 +601,17 @@ export default function SubjectDetail() {
   }, [subjectId]);
 
   // Load student performance data for Favorites tab
-  const loadStudentPerformance = useCallback(async () => {
+  const loadStudentPerformance = useCallback(async (silent = false) => {
     if (!subjectId || !isStudent) {
       setStudentPerformance([]);
       setCurrentGrade(null);
       return;
     }
 
-    console.log('Loading student performance for subject:', subjectId);
-    setPerformanceLoading(true);
+    if (!silent) {
+      console.log('Loading student performance for subject:', subjectId);
+      setPerformanceLoading(true);
+    }
     try {
       // Load performance breakdown
       const performance = await contentService.getStudentPerformance(subjectId);
@@ -722,11 +772,10 @@ export default function SubjectDetail() {
 
     // Navigate to the activity/exam if it's a submission notification
     if (notification.type === 'submission' && notification.activity_id) {
+      // ... existing submission logic ...
       try {
-        // Find the activity in the existing content array
         const activityDetails = content.find(item => item.id === notification.activity_id);
         if (activityDetails) {
-          // Navigate to activity detail screen
           router.push({
             pathname: '/screens/ActivityDetail',
             params: {
@@ -736,7 +785,6 @@ export default function SubjectDetail() {
             }
           });
         } else {
-          // If not found in current content, reload content and try again
           await loadData();
           const updatedContent = await contentService.getSubjectContent(subjectId);
           const foundActivity = updatedContent.find(item => item.id === notification.activity_id);
@@ -757,6 +805,13 @@ export default function SubjectDetail() {
         console.error('Error navigating to activity:', error);
         Alert.alert('Error', 'Could not open the activity details');
       }
+    } else if (notification.type === 'enrollment_request') {
+      // Switch to students tab
+      console.log('[DEBUG] Internal notification: Switching to students tab');
+      setSelectedTab('students');
+      setShowNotificationsModal(false);
+      // Reload students data to be sure
+      loadData();
     }
   };
 
@@ -1200,36 +1255,50 @@ export default function SubjectDetail() {
 
       {/* Students Tab */}
       {selectedTab === 'students' && isTeacher && (
-        <ScrollView style={styles.contentArea}>
-          <View style={styles.sectionContainer}>
-            <Text style={styles.sectionTitle}>WANT TO ENROLL</Text>
-            <View style={styles.sectionContent}>
-              <FlatList
-                data={pendingStudents}
-                keyExtractor={(item) => item.id.toString()}
-                renderItem={renderPendingStudent}
-                scrollEnabled={false}
-                ListEmptyComponent={
-                  <Text style={styles.emptyText}>No pending enrollments</Text>
-                }
-              />
+        <ScrollView
+          style={styles.contentArea}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#28a745']} />
+          }
+        >
+          {studentsLoading ? (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 100 }}>
+              <ActivityIndicator size="large" color="#28a745" />
+              <Text style={{ marginTop: 12, color: '#6c757d', fontSize: 16 }}>Loading student list...</Text>
             </View>
-          </View>
+          ) : (
+            <>
+              <View style={styles.sectionContainer}>
+                <Text style={styles.sectionTitle}>WANT TO ENROLL</Text>
+                <View style={styles.sectionContent}>
+                  <FlatList
+                    data={pendingStudents}
+                    keyExtractor={(item) => item.id.toString()}
+                    renderItem={renderPendingStudent}
+                    scrollEnabled={false}
+                    ListEmptyComponent={
+                      <Text style={styles.emptyText}>No pending enrollments</Text>
+                    }
+                  />
+                </View>
+              </View>
 
-          <View style={styles.sectionContainer}>
-            <Text style={styles.sectionTitle}>ENROLLED</Text>
-            <View style={styles.sectionContent}>
-              <FlatList
-                data={enrolledStudents}
-                keyExtractor={(item) => item.id.toString()}
-                renderItem={renderEnrolledStudent}
-                scrollEnabled={false}
-                ListEmptyComponent={
-                  <Text style={styles.emptyText}>No enrolled students</Text>
-                }
-              />
-            </View>
-          </View>
+              <View style={styles.sectionContainer}>
+                <Text style={styles.sectionTitle}>ENROLLED</Text>
+                <View style={styles.sectionContent}>
+                  <FlatList
+                    data={enrolledStudents}
+                    keyExtractor={(item) => item.id.toString()}
+                    renderItem={renderEnrolledStudent}
+                    scrollEnabled={false}
+                    ListEmptyComponent={
+                      <Text style={styles.emptyText}>No enrolled students</Text>
+                    }
+                  />
+                </View>
+              </View>
+            </>
+          )}
         </ScrollView>
       )}
 

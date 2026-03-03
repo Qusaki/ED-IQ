@@ -10,4 +10,5 @@ class Notification(Base):
     title = Column(VARCHAR(100), nullable=False)
     message = Column(VARCHAR(255), nullable=False)
     is_read = Column(Boolean, nullable=False, default=False)
+    subject_id = Column(Text, ForeignKey("subject.id", ondelete="CASCADE"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)

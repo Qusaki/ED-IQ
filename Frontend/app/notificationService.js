@@ -94,13 +94,15 @@ export const notificationService = {
     }
 
     try {
-      await apiClient.put(`/notification/${id}/read`);
-      // Also persist for backend notifications to be sure
+      // Execute backend call but don't strictly block local persistence if it fails
+      apiClient.put(`/notification/${id}/read`).catch(e => {
+        console.warn('Backend markAsRead for', id, 'failed silently:', e.message);
+      });
+      // Always persist locally for consistency
       this.persistReadNotifications();
       return true;
     } catch (err) {
       console.warn('Failed to mark notification as read:', id, err?.response?.data || err.message);
-      // Still persist locally even if backend fail (redundancy)
       this.persistReadNotifications();
       return false;
     }
@@ -263,6 +265,28 @@ export const notificationService = {
       allActivityNotifications.forEach(actNotifs => {
         notifications.push(...actNotifs);
       });
+
+      // Fetch pending enrollments for this subject
+      try {
+        const students = await subjectService.getSubjectStudents(subjectId);
+        const pending = (students || []).filter(s => s.status?.toLowerCase() === 'pending');
+
+        pending.forEach(p => {
+          notifications.push({
+            id: `gen-enroll-${subjectId}-${p.id}`,
+            type: 'enrollment_request',
+            subject_id: subjectId,
+            student_id: p.id,
+            student_name: p.name || p.email,
+            created_at: p.created_at || new Date().toISOString(),
+            title: 'Enrollment Request',
+            message: `${p.name || p.email} wants to enroll in this subject`,
+            source: 'generated'
+          });
+        });
+      } catch (e) {
+        console.warn('Failed to load pending students for internal notifications:', e);
+      }
 
       // Sort newest first
       notifications.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));

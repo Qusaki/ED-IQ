@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
+  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
@@ -47,6 +48,9 @@ export default function NotificationsScreen() {
         return true;
       }
       if ((n?.title === 'Submission Scored' || n?.title === 'Offline Submission Scored') && typeof n?.message === 'string') {
+        return true;
+      }
+      if ((n?.title === 'Enrollment Accepted' || n?.title === 'Enrollment Rejected') && typeof n?.message === 'string') {
         return true;
       }
       return false;
@@ -187,13 +191,23 @@ export default function NotificationsScreen() {
       await load();
     };
     init();
-
-    const intervalId = setInterval(() => {
-      load(true);
-    }, 10000);
-
-    return () => clearInterval(intervalId);
   }, [load]);
+
+  // Use focus effect to manage polling only when screen is focused
+  useFocusEffect(
+    useCallback(() => {
+      // Start polling
+      console.log('Starting notification polling (focused)');
+      const intervalId = setInterval(() => {
+        load(true);
+      }, 10000);
+
+      return () => {
+        console.log('Stopping notification polling (unfocused)');
+        clearInterval(intervalId);
+      };
+    }, [load])
+  );
 
   // Refresh notifications when screen comes into focus
   useFocusEffect(
@@ -266,10 +280,18 @@ export default function NotificationsScreen() {
 
   const handleNotificationPress = async (notification) => {
     const currentRole = await RBACManager.getCurrentUserRole();
+    console.log('[NOTIFICATION CLICK] Notification details:', {
+      id: notification.id,
+      type: notification.type,
+      title: notification.title,
+      subject_id: notification.subject_id,
+      activity_id: notification.activity_id,
+      role: currentRole
+    });
 
-    // Mark as read if not already read (Now for both teachers and students)
+    // Mark as read in background
     if (!readNotifications.has(notification.id)) {
-      await notificationService.markAsRead(notification.id);
+      notificationService.markAsRead(notification.id); // No await
       markAsRead(notification.id);
     }
 
@@ -282,6 +304,8 @@ export default function NotificationsScreen() {
     const isSubmission =
       (currentRole === 'teacher' && notification.type === 'submission') ||
       (currentRole === 'teacher' && notification.title?.toLowerCase()?.includes('submission'));
+
+    console.log('[NOTIFICATION CLICK] Detected types:', { isEnrollmentRequest, isSubmission });
 
     // Deep linking for teacher notifications
     if (currentRole === 'teacher') {
@@ -311,13 +335,23 @@ export default function NotificationsScreen() {
         return;
       } else if (isEnrollmentRequest) {
         // Route to Subject detail but straight to students tab
-        router.push({
-          pathname: '/screens/SubjectDetail',
-          params: {
-            subjectId: notification.subject_id,
-            initialTab: 'students',
-          },
+        console.log('[NOTIFICATION CLICK] Routing to enrollment students tab', {
+          subjectId: notification.subject_id,
+          hasSubjectId: !!notification.subject_id
         });
+
+        if (notification.subject_id) {
+          router.push({
+            pathname: '/screens/SubjectDetail',
+            params: {
+              subjectId: notification.subject_id,
+              initialTab: 'students',
+            },
+          });
+        } else {
+          console.warn('[NOTIFICATION CLICK] Missing subject_id for enrollment request notification!', notification);
+          Alert.alert('Error', 'Unable to navigate to enrollment requests: Subject ID missing');
+        }
         return;
       }
     }
