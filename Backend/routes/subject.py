@@ -125,6 +125,7 @@ async def join_subject(
         title=f"{subject.name} - Request",
         message=f"{current_user.name} wants to enroll",
         db=db,
+        subject_id=subject.id,
     )
 
     return subject

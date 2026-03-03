@@ -74,12 +74,13 @@ async def notify_teacher(subject_id: str, activity_id: str, student_id: str, tit
         },
     )
 
-async def notify_user(user_id: str, title: str, message: str, db):
+async def notify_user(user_id: str, title: str, message: str, db, subject_id: str = None):
     notif = Notification(
         id=str(uuid4()),
         user_id=user_id,
         title=title,
         message=message,
+        subject_id=subject_id,
     )
     db.add(notif)
     db.commit()
@@ -93,5 +94,6 @@ async def notify_user(user_id: str, title: str, message: str, db):
             "message": message,
             "created_at": str(notif.created_at),
             "id": notif.id,
+            "subject_id": subject_id,
         },
     )

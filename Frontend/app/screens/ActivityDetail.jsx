@@ -1384,11 +1384,18 @@ export default function ActivityDetail() {
             )}
 
             {/* Show submission form if not submitted and before due date */}
-            {!submissionStatus?.submitted && activity.due_date && new Date() > new Date(activity.due_date) ? (
+            {submissionStatus === null ? (
+              <View style={{ marginTop: 20, alignItems: 'center', padding: 20 }}>
+                <ActivityIndicator size="small" color="#28a745" />
+                <Text style={{ marginTop: 10, color: '#6c757d', fontSize: 14 }}>
+                  Checking submission status...
+                </Text>
+              </View>
+            ) : !submissionStatus?.submitted && activity.due_date && new Date() > new Date(activity.due_date) ? (
               <View style={{ marginTop: 20, alignItems: 'center', padding: 15, backgroundColor: '#ffebee', borderRadius: 8 }}>
                 <Ionicons name="time" size={24} color="#dc3545" style={{ marginBottom: 5 }} />
                 <Text style={{ color: '#dc3545', fontWeight: 'bold', textAlign: 'center' }}>
-                  The Submission for this activity is end of due date
+                  The submission period for this activity has ended.
                 </Text>
               </View>
             ) : !submissionStatus?.submitted && (
