@@ -1,7 +1,7 @@
 import enum
 
 from models.base import Base
-from sqlalchemy import TEXT, VARCHAR, Column, ForeignKey, UniqueConstraint
+from sqlalchemy import TEXT, VARCHAR, Column, DateTime, ForeignKey, UniqueConstraint, func
 
 
 class Subject(Base):
@@ -33,3 +33,6 @@ class SubjectEnrollment(Base):
         TEXT, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
     status = Column(VARCHAR(20), nullable=False, default=EnrollmentStatus.PENDING.value)
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )

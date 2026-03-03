@@ -50,6 +50,9 @@ export default function NotificationsScreen() {
       if ((n?.title === 'Submission Scored' || n?.title === 'Offline Submission Scored') && typeof n?.message === 'string') {
         return true;
       }
+      if ((n?.title === 'Enrollment Accepted' || n?.title === 'Enrollment Rejected') && typeof n?.message === 'string') {
+        return true;
+      }
       return false;
     });
 
@@ -336,7 +339,7 @@ export default function NotificationsScreen() {
           subjectId: notification.subject_id,
           hasSubjectId: !!notification.subject_id
         });
-        
+
         if (notification.subject_id) {
           router.push({
             pathname: '/screens/SubjectDetail',

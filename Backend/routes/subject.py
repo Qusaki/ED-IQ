@@ -107,9 +107,19 @@ async def join_subject(
         )
         .first()
     )
+    existing = (
+        db.query(SubjectEnrollment)
+        .filter(
+            SubjectEnrollment.subject_id == subject.id,
+            SubjectEnrollment.student_id == current_user.id,
+        )
+        .first()
+    )
     if existing:
-        return subject  # Already enrolled
+        print(f"[DEBUG] Student already enrolled in {subject.name}")
+        return subject
 
+    print(f"[DEBUG] Creating enrollment for subject {subject.id} student {current_user.id}")
     enrollment = SubjectEnrollment(
         id=str(uuid4()),
         subject_id=subject.id,
@@ -117,16 +127,28 @@ async def join_subject(
         status=EnrollmentStatus.PENDING.value,
     )
     db.add(enrollment)
-    db.commit()
+    try:
+        db.commit()
+        print(f"[DEBUG] Enrollment committed successfully")
+    except Exception as commit_err:
+        print(f"[ERROR] Database commit failed for enrollment: {str(commit_err)}")
+        raise
 
     # Notify the teacher about the enrollment request
-    await notify_user(
-        user_id=subject.owner_id,
-        title=f"{subject.name} - Request",
-        message=f"{current_user.name} wants to enroll",
-        db=db,
-        subject_id=subject.id,
-    )
+    try:
+        print(f"[DEBUG] Creating enrollment notification for {subject.name} to teacher {subject.owner_id}")
+        await notify_user(
+            user_id=subject.owner_id,
+            title=f"{subject.name} - Request",
+            message=f"{current_user.name} wants to enroll",
+            db=db,
+            subject_id=subject.id,
+        )
+        print(f"[DEBUG] Enrollment notification created successfully")
+    except Exception as e:
+        print(f"[ERROR] Failed to send enrollment notification (non-fatal for join): {str(e)}")
+        import traceback
+        traceback.print_exc()
 
     return subject
 
@@ -162,6 +184,7 @@ def get_subject_students(
                     email=student.email,
                     status=e.status,
                     profile_picture=student.profile_picture,
+                    created_at=e.created_at,
                 )
             )
     return out

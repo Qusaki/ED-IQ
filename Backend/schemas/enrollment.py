@@ -1,3 +1,4 @@
+from datetime import datetime
 from enum import Enum
 from typing import Optional
 
@@ -37,6 +38,7 @@ class StudentInSubject(BaseModel):
     email: Optional[str] = None
     status: str
     profile_picture: Optional[str] = None
+    created_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True

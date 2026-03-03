@@ -75,25 +75,34 @@ async def notify_teacher(subject_id: str, activity_id: str, student_id: str, tit
     )
 
 async def notify_user(user_id: str, title: str, message: str, db, subject_id: str = None):
-    notif = Notification(
-        id=str(uuid4()),
-        user_id=user_id,
-        title=title,
-        message=message,
-        subject_id=subject_id,
-    )
-    db.add(notif)
-    db.commit()
-    db.refresh(notif)
+    try:
+        print(f"[NOTIFY_USER] Creating notification for user {user_id}: {title}")
+        notif = Notification(
+            id=str(uuid4()),
+            user_id=user_id,
+            title=title,
+            message=message,
+            subject_id=subject_id,
+        )
+        db.add(notif)
+        db.commit()
+        db.refresh(notif)
+        print(f"[NOTIFY_USER] Notification created in DB with ID: {notif.id}, subject_id: {subject_id}")
 
-    await manager.send_personal(
-        user_id,
-        {
-            "type": "notification",
-            "title": title,
-            "message": message,
-            "created_at": str(notif.created_at),
-            "id": notif.id,
-            "subject_id": subject_id,
-        },
-    )
+        print(f"[NOTIFY_USER] Sending via WebSocket to user {user_id}")
+        await manager.send_personal(
+            user_id,
+            {
+                "type": "notification",
+                "title": title,
+                "message": message,
+                "created_at": str(notif.created_at),
+                "id": notif.id,
+                "subject_id": subject_id,
+            },
+        )
+        print(f"[NOTIFY_USER] WebSocket notification sent successfully")
+    except Exception as e:
+        print(f"[NOTIFY_USER ERROR] Failed to notify user {user_id}: {str(e)}")
+        import traceback
+        traceback.print_exc()
