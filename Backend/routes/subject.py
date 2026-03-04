@@ -345,6 +345,15 @@ def delete_subject(
             status_code=403, detail="only owner of the subejct can delete"
         )
 
+    # Create a copy or a response model dictionary before deleting the subject
+    subject_dict = {
+        "id": subject.id,
+        "name": subject.name,
+        "code": subject.code,
+        "owner_id": subject.owner_id
+    }
+    
     db.delete(subject)
     db.commit()
-    return subject
+    
+    return subject_dict
