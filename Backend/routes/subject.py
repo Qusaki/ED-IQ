@@ -69,14 +69,18 @@ def list_subjects(
         return out
 
     # Student view: list enrolled subjects
-    enrollments = (
-        db.query(SubjectEnrollment)
-        .filter(
-            SubjectEnrollment.student_id == current_user.id,
-            SubjectEnrollment.status == EnrollmentStatus.APPROVED.value,
+    try:
+        enrollments = (
+            db.query(SubjectEnrollment)
+            .filter(
+                SubjectEnrollment.student_id == current_user.id,
+                SubjectEnrollment.status == EnrollmentStatus.APPROVED.value,
+            )
+            .all()
         )
-        .all()
-    )
+    except Exception as e:
+        print(f"[ERROR] Failed to query subject enrollments: {str(e)}")
+        return []
     subject_ids = [e.subject_id for e in enrollments]
 
     # Return empty list if no enrollments
