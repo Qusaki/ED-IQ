@@ -10,9 +10,9 @@ export const contentService = {
       return res.data || [];
     } catch (error) {
       console.log('Lectures fetch error - status:', error.response?.status, 'detail:', error.response?.data?.detail);
-      // Handle 403 and 404 gracefully
-      if (error.response?.status === 403 || error.response?.status === 404) {
-        console.log('No lectures available or no access (status:', error.response?.status, ')');
+      // Handle null token, 401, 403, and 404 gracefully
+      if (error.response?.status === 401 || error.response?.status === 403 || error.response?.status === 404) {
+        console.log('No lectures available or no access/logged out (status:', error.response?.status, ')');
         return [];
       }
       return [];
@@ -38,9 +38,9 @@ export const contentService = {
       console.log('Activities response:', res.data);
       return res.data || [];
     } catch (error) {
-      // Handle 403 and 404 gracefully
-      if (error.response?.status === 403 || error.response?.status === 404) {
-        console.log('No activities available or no access (status:', error.response?.status, ')');
+      // Handle 401, 403 and 404 gracefully
+      if (error.response?.status === 401 || error.response?.status === 403 || error.response?.status === 404) {
+        console.log('No activities available or no access/logged out (status:', error.response?.status, ')');
         return [];
       }
       console.error('Error fetching activities:', error);
@@ -480,8 +480,8 @@ export const contentService = {
       const res = await apiClient.get(`/submissions/${activityId}`);
       return res.data;
     } catch (error) {
-      if (error.response?.status === 404) {
-        return []; // Return empty array instead of throwing error if no submissions
+      if (error.response?.status === 404 || error.response?.status === 401) {
+        return []; // Return empty array instead of throwing error if no submissions or logged out
       }
       console.error('Error getting submissions:', error);
       throw error;

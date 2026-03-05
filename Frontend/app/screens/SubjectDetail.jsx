@@ -1249,7 +1249,7 @@ export default function SubjectDetail() {
           <Ionicons name="arrow-back" size={24} color="#28a745" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>
-          {isTeacher ? (selectedTab === 'notifications' ? 'GRADING SYSTEM' : selectedTab === 'students' ? 'STUDENTS LIST' : (contentFilter === 'activity' || contentFilter === 'lecture') ? 'ASSESSMENT TASK' : 'STUDENTS LIST') : studentTab === 'lessons' ? 'LESSONS' : studentTab === 'activities' ? 'ACTIVITIES' : 'PERFORMANCE'}
+          {isTeacher ? (selectedTab === 'notifications' ? 'GRADING SYSTEM' : selectedTab === 'students' ? 'STUDENTS LIST' : 'ASSESSMENT TASK') : studentTab === 'lessons' ? 'LESSONS' : studentTab === 'activities' ? 'ACTIVITIES' : 'PERFORMANCE'}
         </Text>
       </View>
 

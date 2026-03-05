@@ -242,7 +242,7 @@ export const notificationService = {
               const message = `A Student Submitted a Answer to ${activityType}`;
 
               actNotifications.push({
-                id: `gen-sub-${submission.id}`, // Use same ID format as general notifications
+                id: `gen-sub-${activity.id}-${submission.id}`, // Guaranteed unique across all subjects/activities
                 type: 'submission',
                 activity_id: activity.id,
                 activity_title: activity.title,
@@ -365,7 +365,7 @@ export const notificationService = {
                   else if (act.category === 'project') activityType = 'Project';
 
                   actSubsGenerated.push({
-                    id: `gen-sub-${s.id}`,
+                    id: `gen-sub-${subj.id}-${act.id}-${s.id}`, // Guaranteed unique
                     type: 'submission',
                     subject_id: subj.id,
                     subject_name: subj.name,

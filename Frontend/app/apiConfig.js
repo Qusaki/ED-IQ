@@ -48,8 +48,8 @@ export const setupAxiosInterceptors = () => {
     async (error) => {
       // Better error logging - skip logging for expected 404 errors
       if (error.response) {
-        // Only log non-404 errors to reduce console noise for handled errors
-        if (error.response.status !== 404) {
+        // Only log non-404 and non-401 errors to reduce console noise for handled errors
+        if (error.response.status !== 404 && error.response.status !== 401) {
           console.error('API Response error:', error.response.status, error.response.data);
         }
       } else if (error.request) {
@@ -77,9 +77,16 @@ export const setupAxiosInterceptors = () => {
 
       if (error.response?.status === 401) {
         // Token expired or invalid
-        console.log('Token expired, clearing session');
-        await TokenManager.clearAll();
-        Alert.alert('Session Expired', 'Please login again.');
+        console.log('401 Unauthorized encountered');
+
+        // Only show alert if we actually had a valid token that expired, 
+        // preventing alerts during or immediately after user-initiated logout
+        const currentToken = await TokenManager.getToken();
+        if (currentToken) {
+          console.log('Token expired, clearing session');
+          await TokenManager.clearAll();
+          Alert.alert('Session Expired', 'Please login again.');
+        }
       } else if (error.response?.status === 403) {
         // Handle backend bug: wrong or/and logic in lecture_post.py line 56
         console.log('Access forbidden - backend logic issue, treating as empty content');
