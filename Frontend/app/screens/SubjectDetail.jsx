@@ -1699,14 +1699,16 @@ export default function SubjectDetail() {
               autoFocus
             />
 
-            <TextInput
-              placeholder="Description (optional)"
-              value={description}
-              onChangeText={setDescription}
-              style={[styles.input, styles.textArea]}
-              multiline
-              numberOfLines={3}
-            />
+            {contentType !== 'lecture' && (
+              <TextInput
+                placeholder="Description (optional)"
+                value={description}
+                onChangeText={setDescription}
+                style={[styles.input, styles.textArea]}
+                multiline
+                numberOfLines={3}
+              />
+            )}
 
             {/* Max Score for Activities, Quizzes, Labs, Assignments, Projects, and Exams */}
             {(contentType === 'activity' || contentType === 'quiz' || contentType === 'exam' || contentType === 'lab' || contentType === 'assignment' || contentType === 'project') && (

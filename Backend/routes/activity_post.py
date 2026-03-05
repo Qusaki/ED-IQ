@@ -65,7 +65,7 @@ async def create_activity(
     db.refresh(activity)
 
     # real-time push + save in DB
-    await notify_students(subject_id, "New Activity", f"{title} has been posted.", db)
+    await notify_students(subject_id, "New Activity", f"{title} has been posted.", db, activity_id=activity.id)
 
     return activity
 
@@ -230,7 +230,7 @@ async def update_activity(
     db.refresh(activity)
 
     # real-time push + save in DB
-    await notify_students(activity.subject_id, "Activity Updated", f"{activity.title} has been updated.", db)
+    await notify_students(activity.subject_id, "Activity Updated", f"{activity.title} has been updated.", db, activity_id=activity.id)
 
     return activity
 

@@ -7,7 +7,7 @@ from models.user import User
 from utils.websocket_manager import manager
 
 
-async def notify_students(subject_id: str, title: str, message: str, db):
+async def notify_students(subject_id: str, title: str, message: str, db, activity_id: str = None, lecture_id: str = None):
     enrolled = (
         db.query(SubjectEnrollment)
         .filter(
@@ -23,21 +23,26 @@ async def notify_students(subject_id: str, title: str, message: str, db):
             user_id=e.student_id,
             title=title,
             message=message,
+            subject_id=subject_id,
         )
         db.add(notif)
         db.commit()
         db.refresh(notif)
 
-        await manager.send_personal(
-            e.student_id,
-            {
-                "type": "notification",
-                "title": title,
-                "message": message,
-                "created_at": str(notif.created_at),
-                "id": notif.id,
-            },
-        )
+        payload = {
+            "type": "notification",
+            "title": title,
+            "message": message,
+            "created_at": str(notif.created_at),
+            "id": notif.id,
+            "subject_id": subject_id,
+        }
+        if activity_id:
+            payload["activity_id"] = activity_id
+        if lecture_id:
+            payload["lecture_id"] = lecture_id
+
+        await manager.send_personal(e.student_id, payload)
 
 
 async def notify_teacher(subject_id: str, activity_id: str, student_id: str, title: str, message: str, db):
@@ -72,10 +77,12 @@ async def notify_teacher(subject_id: str, activity_id: str, student_id: str, tit
             "message": message,
             "created_at": str(notif.created_at),
             "id": notif.id,
+            "subject_id": subject_id,
+            "activity_id": activity_id,
         },
     )
 
-async def notify_user(user_id: str, title: str, message: str, db, subject_id: str = None):
+async def notify_user(user_id: str, title: str, message: str, db, subject_id: str = None, activity_id: str = None, lecture_id: str = None):
     try:
         print(f"[NOTIFY_USER] Creating notification for user {user_id}: {title}")
         notif = Notification(
@@ -91,17 +98,20 @@ async def notify_user(user_id: str, title: str, message: str, db, subject_id: st
         print(f"[NOTIFY_USER] Notification created in DB with ID: {notif.id}, subject_id: {subject_id}")
 
         print(f"[NOTIFY_USER] Sending via WebSocket to user {user_id}")
-        await manager.send_personal(
-            user_id,
-            {
-                "type": "notification",
-                "title": title,
-                "message": message,
-                "created_at": str(notif.created_at),
-                "id": notif.id,
-                "subject_id": subject_id,
-            },
-        )
+        payload = {
+            "type": "notification",
+            "title": title,
+            "message": message,
+            "created_at": str(notif.created_at),
+            "id": notif.id,
+            "subject_id": subject_id,
+        }
+        if activity_id:
+            payload["activity_id"] = activity_id
+        if lecture_id:
+            payload["lecture_id"] = lecture_id
+
+        await manager.send_personal(user_id, payload)
         print(f"[NOTIFY_USER] WebSocket notification sent successfully")
     except Exception as e:
         print(f"[NOTIFY_USER ERROR] Failed to notify user {user_id}: {str(e)}")

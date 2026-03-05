@@ -58,7 +58,7 @@ async def create_lecture(
     db.refresh(lecture)
 
     # real-time push + save in DB
-    await notify_students(subject_id, "New Lecture", f"{title} has been posted.", db)
+    await notify_students(subject_id, "New Lecture", f"{title} has been posted.", db, lecture_id=lecture.id)
 
     return lecture
 
@@ -201,7 +201,7 @@ async def update_lecture(
     db.refresh(lecture)
 
     # real-time push + save in DB
-    await notify_students(lecture.subject_id, "Lecture Updated", f"{lecture.title} has been updated.", db)
+    await notify_students(lecture.subject_id, "Lecture Updated", f"{lecture.title} has been updated.", db, lecture_id=lecture.id)
 
     return lecture
 
