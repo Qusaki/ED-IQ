@@ -99,7 +99,20 @@ async def get_lectures_by_subject(
 
     if not lectures:
         raise HTTPException(status_code=404, detail="no lectures found in this subject")
-    return lectures
+        
+    return [
+        {
+            "id": lecture.id,
+            "title": lecture.title,
+            "content": lecture.content,
+            "file_url": lecture.file_url,
+            "teacher_id": lecture.teacher_id,
+            "subject_id": lecture.subject_id,
+            "created_at": lecture.created_at,
+            "updated_at": lecture.updated_at
+        }
+        for lecture in lectures
+    ]
 
 
 # for open specific post
@@ -134,7 +147,16 @@ async def open_lecture(
             status_code=403, detail="You do not have access to this subject's Lectures"
         )
 
-    return lecture
+    return {
+        "id": lecture.id,
+        "title": lecture.title,
+        "content": lecture.content,
+        "file_url": lecture.file_url,
+        "teacher_id": lecture.teacher_id,
+        "subject_id": lecture.subject_id,
+        "created_at": lecture.created_at,
+        "updated_at": lecture.updated_at
+    }
 
 
 # edit post in lecture

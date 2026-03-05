@@ -3,6 +3,11 @@ import sys
 
 # Add Backend to path
 sys.path.append(os.path.abspath("."))
+os.environ["JWT_SECRET"] = "test"
+os.environ["JWT_ALGORITHM"] = "HS256"
+os.environ["WEBHOOK_SECRET"] = "test"
+os.environ["SUPABASE_URL"] = "http://test"
+os.environ["SUPABASE_KEY"] = "test"
 
 from fastapi.testclient import TestClient
 from main import app

@@ -108,7 +108,24 @@ async def get_activity_by_subject(
         raise HTTPException(
             status_code=404, detail="no activities found in this subject"
         )
-    return activities
+        
+    return [
+        {
+            "id": act.id,
+            "title": act.title,
+            "content": act.content,
+            "file_url": act.file_url,
+            "category": act.category,
+            "term": act.term,
+            "due_date": act.due_date,
+            "max_score": act.max_score,
+            "teacher_id": act.teacher_id,
+            "subject_id": act.subject_id,
+            "created_at": act.created_at,
+            "updated_at": act.updated_at
+        }
+        for act in activities
+    ]
 
 
 # for open specific activity
@@ -143,7 +160,20 @@ async def open_activity(
             status_code=403, detail="You do not have access to this subject's Activity"
         )
 
-    return activity
+    return {
+        "id": activity.id,
+        "title": activity.title,
+        "content": activity.content,
+        "file_url": activity.file_url,
+        "category": activity.category,
+        "term": activity.term,
+        "due_date": activity.due_date,
+        "max_score": activity.max_score,
+        "teacher_id": activity.teacher_id,
+        "subject_id": activity.subject_id,
+        "created_at": activity.created_at,
+        "updated_at": activity.updated_at
+    }
 
 
 # edit post in activity
