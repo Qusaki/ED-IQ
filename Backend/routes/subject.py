@@ -157,21 +157,6 @@ async def join_subject(
         print(f"[ERROR] Database commit failed for enrollment: {str(commit_err)}")
         raise
 
-    # Notify the teacher about the enrollment request
-    try:
-        print(f"[DEBUG] Creating enrollment notification for {subject.name} to teacher {subject.owner_id}")
-        await notify_user(
-            user_id=subject.owner_id,
-            title=f"{subject.name} - Request",
-            message=f"{current_user.name} wants to enroll",
-            db=db,
-            subject_id=subject.id,
-        )
-        print(f"[DEBUG] Enrollment notification created successfully")
-    except Exception as e:
-        print(f"[ERROR] Failed to send enrollment notification (non-fatal for join): {str(e)}")
-        import traceback
-        traceback.print_exc()
 
     # get owner to include teacher_name
     owner = db.query(User).filter(User.id == subject.owner_id).first()
