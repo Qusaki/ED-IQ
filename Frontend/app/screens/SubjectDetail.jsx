@@ -2112,26 +2112,38 @@ export default function SubjectDetail() {
                   </View>
                 )}
                 onShouldStartLoadWithRequest={(request) => {
-                  // Block any requests that look like file downloads
-                  const downloadExtensions = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.zip', '.rar', '.7z', '.exe', '.dmg', '.pkg'];
-                  const isDownload = downloadExtensions.some(ext => request.url.toLowerCase().includes(ext)) ||
-                    request.url.toLowerCase().includes('download') ||
-                    request.url.toLowerCase().includes('force-download');
+                  // Only block explicit download requests (user click to download)
+                  // Allow Google Docs viewer to load all necessary resources
+                  const url = request.url.toLowerCase();
+                  
+                  // Block only explicit download parameters and user-initiated downloads
+                  const isExplicitDownload = 
+                    url.includes('?download=true') ||
+                    url.includes('&download=true') ||
+                    url.includes('?download=1') ||
+                    url.includes('&download=1') ||
+                    url.includes('force-download') ||
+                    url.includes('Content-Disposition=attachment') ||
+                    /[?&]dl=1(?:&|$)/.test(url);
 
-                  if (isDownload) {
-                    Alert.alert(
-                      'View Only',
-                      'Files can only be viewed within the app for security reasons.',
-                      [{ text: 'OK' }]
-                    );
+                  if (isExplicitDownload) {
+                    console.log('Blocked explicit download attempt:', request.url);
                     return false;
                   }
 
-                  // Only allow navigation within Google Docs domain
-                  const isAllowed = request.url.startsWith('https://docs.google.com/') ||
-                    request.url.startsWith('https://drive.google.com/');
-                  if (!isAllowed) {
-                    console.log('Blocking external navigation to:', request.url);
+                  // Allow all Google Docs and Drive requests (necessary for viewer)
+                  const isGoogleDomain = request.url.startsWith('https://docs.google.com/') ||
+                    request.url.startsWith('https://drive.google.com/') ||
+                    request.url.startsWith('https://lh.googleusercontent.com') ||
+                    request.url.includes('google.com');
+                  
+                  // Allow the initial Supabase file URL and other safe origins
+                  const isAllowedOrigin = isGoogleDomain ||
+                    request.url.startsWith('https://') ||
+                    request.url.startsWith('data:');
+
+                  if (!isAllowedOrigin) {
+                    console.log('Blocking non-HTTPS request:', request.url);
                     return false;
                   }
 
