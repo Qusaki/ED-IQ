@@ -47,7 +47,13 @@ def create_subject(
     db.add(subject)
     db.commit()
     db.refresh(subject)
-    return subject
+    return {
+        "id": subject.id,
+        "name": subject.name,
+        "code": subject.code,
+        "owner_id": subject.owner_id,
+        "teacher_name": current_user.name,
+    }
 
 
 @router.get("", response_model=List[SubjectResponse])
@@ -167,7 +173,15 @@ async def join_subject(
         import traceback
         traceback.print_exc()
 
-    return subject
+    # get owner to include teacher_name
+    owner = db.query(User).filter(User.id == subject.owner_id).first()
+    return {
+        "id": subject.id,
+        "name": subject.name,
+        "code": subject.code,
+        "owner_id": subject.owner_id,
+        "teacher_name": owner.name if owner else None,
+    }
 
 
 @router.get("/{subject_id}/students", response_model=List[StudentInSubject])
@@ -335,14 +349,26 @@ def update_subject(
         subject.name = name.strip()
         db.commit()
         db.refresh(subject)
-        return subject
+        return {
+            "id": subject.id,
+            "name": subject.name,
+            "code": subject.code,
+            "owner_id": subject.owner_id,
+            "teacher_name": current_user.name,
+        }
     else:
         raise HTTPException(status_code=400, detail="Name is required")
 
     db.commit()
     db.refresh(subject)
 
-    return subject
+    return {
+        "id": subject.id,
+        "name": subject.name,
+        "code": subject.code,
+        "owner_id": subject.owner_id,
+        "teacher_name": current_user.name,
+    }
 
 
 # to delete the subject
