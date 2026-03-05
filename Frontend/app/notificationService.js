@@ -244,6 +244,7 @@ export const notificationService = {
               actNotifications.push({
                 id: `gen-sub-${activity.id}-${submission.id}`, // Guaranteed unique across all subjects/activities
                 type: 'submission',
+                subject_id: subjectId,
                 activity_id: activity.id,
                 activity_title: activity.title,
                 student_id: submission.student_id,
@@ -322,16 +323,12 @@ export const notificationService = {
           let subjGenerated = [];
 
           try {
-            // Re-use the existing well-tested logic for inside notifications
-            // This prevents duplicate submission notifications from being generated
             const insideNotifs = await this.getSubjectNotifications(subj.id);
 
-            // Format inside notifications for the general tab
-            // CRITICAL: Filter out 'submission' type generated notifications here
-            // because the backend already sends real notifications for submissions.
-            // This prevents the "A student submitted..." vs "Student Name submitted..." duplication.
+            // Keep 'submission' type generated notifications here temporarily!
+            // We need them to build the `generatedSubmissionsMap` so we can infer `activity_id`
+            // for backend notifications. We will filter them out at the very end.
             subjGenerated = insideNotifs
-              .filter(n => n.type !== 'submission')
               .map(n => {
                 if (n.type === 'enrollment_request') {
                   return {
@@ -372,11 +369,10 @@ export const notificationService = {
       const generatedSubmissionsMap = {};
       generated.filter(n => n.type === 'submission').forEach(gen => {
         // use combination of subject_id and the activity title extracted from the message as a key
-        // We know the pattern: "Name submitted an answer to Category: "Title""
-        const match = gen.message.match(/to .+?: "(.*?)"/);
-        if (match && match[1]) {
-          const title = match[1];
-          generatedSubmissionsMap[`${gen.subject_id}-${title}`] = {
+        // We know the pattern from generic generated notifications might be different, 
+        // let's just use the activity_title directly since it's already there in generated notifications!
+        if (gen.subject_id && gen.activity_title) {
+          generatedSubmissionsMap[`${gen.subject_id}-${gen.activity_title}`] = {
             activity_id: gen.activity_id,
             activity_title: gen.activity_title
           };
@@ -411,10 +407,14 @@ export const notificationService = {
           }
 
           // Extract the activity title from the backend message string
-          const match = b.message.match(/to .+?: "(.*?)"/);
+          // Backend format: "Name submitted an answer to Type: "Title""
+          const match = b.message.match(/"([^"]+)"/);
+
           if (match && match[1] && inferredSubjectId) {
             const extractedTitle = match[1];
-            const enrichedData = generatedSubmissionsMap[`${inferredSubjectId}-${extractedTitle}`];
+            const lookupKey = `${inferredSubjectId}-${extractedTitle}`;
+            const enrichedData = generatedSubmissionsMap[lookupKey];
+
             if (enrichedData) {
               inferredActivityId = enrichedData.activity_id;
               inferredActivityTitle = enrichedData.activity_title;
@@ -453,7 +453,10 @@ export const notificationService = {
         return true;
       });
 
-      const merged = [...dedupedBackend, ...generated];
+      // Filter out 'submission' type generated notifications here at the very end 
+      // so they don't produce visual duplicates alongside the backend's real submission notifications.
+      const filteredGenerated = generated.filter(n => n.type !== 'submission');
+      const merged = [...dedupedBackend, ...filteredGenerated];
       // Filter out generated notifications that have been marked as read using global state
       const filtered = merged.filter(n => {
         if (!globalReadNotifications) {

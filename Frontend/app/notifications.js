@@ -358,6 +358,7 @@ export default function NotificationsScreen() {
 
     // Deep linking for student notifications
     if (currentRole !== 'teacher') {
+      console.log('[NOTIFICATION CLICK - STUDENT] Checking IDs:', { activity_id: notification.activity_id, lecture_id: notification.lecture_id });
       if (notification.activity_id) {
         let actType = 'Activity';
         if (notification.title) {
