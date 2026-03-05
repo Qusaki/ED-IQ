@@ -2024,9 +2024,11 @@ export default function ActivityDetail() {
                           style={styles.modalWebView}
                           javaScriptEnabled={true}
                           domStorageEnabled={true}
-                          allowFileAccess={false}
-                          allowFileAccessFromFileURLs={false}
-                          allowUniversalAccessFromFileURLs={false}
+                          allowFileAccess={true}
+                          allowFileAccessFromFileURLs={true}
+                          allowUniversalAccessFromFileURLs={true}
+                          cachingEnabled={true}
+                          originWhitelist={['*']}
                           startInLoadingState={true}
                           renderLoading={() => (
                             <View style={styles.webViewLoader}>
@@ -2240,15 +2242,34 @@ export default function ActivityDetail() {
                 ) : (
                   <WebView
                     source={{
-                      uri: `https://docs.google.com/gview?embedded=true&rm=minimal&url=${encodeURIComponent(fullScreenFileUrl)}`
+                      uri: `https://docs.google.com/gview?embedded=true&rm=minimal&dpi=72&url=${encodeURIComponent(fullScreenFileUrl)}`
                     }}
                     style={styles.fullScreenFileViewer}
-                    onLoadStart={() => setPdfLoading(true)}
-                    onLoadEnd={() => setPdfLoading(false)}
-                    onError={(error) => {
-                      console.error('File Error:', error);
+                    onLoadStart={() => {
+                      console.log('PDF loading started for:', fullScreenFileUrl);
+                      setPdfLoading(true);
+                    }}
+                    onLoadEnd={() => {
+                      console.log('PDF loading completed');
                       setPdfLoading(false);
-                      Alert.alert('Error', 'Failed to load file. Please try again.');
+                    }}
+                    onError={(error) => {
+                      console.error('File Loading Error:', {
+                        error: error,
+                        url: fullScreenFileUrl,
+                        timestamp: new Date().toISOString()
+                      });
+                      setPdfLoading(false);
+                      Alert.alert('Error Loading File', 'Failed to load the file. This may be due to file access restrictions or the file format not being supported.');
+                    }}
+                    onHttpError={(syntheticEvent) => {
+                      const { nativeEvent } = syntheticEvent;
+                      console.error('File HTTP Error:', {
+                        statusCode: nativeEvent.statusCode,
+                        url: nativeEvent.url,
+                        timestamp: new Date().toISOString()
+                      });
+                      Alert.alert('Access Error', `Failed to access the file (HTTP ${nativeEvent.statusCode}). The file may not be available or you don't have permission to view it.`);
                     }}
                     startInLoadingState={true}
                     renderLoading={() => (
@@ -2297,9 +2318,11 @@ export default function ActivityDetail() {
                     }}
                     javaScriptEnabled={true}
                     domStorageEnabled={true}
-                    allowFileAccess={false}
-                    allowFileAccessFromFileURLs={false}
-                    allowUniversalAccessFromFileURLs={false}
+                    allowFileAccess={true}
+                    allowFileAccessFromFileURLs={true}
+                    allowUniversalAccessFromFileURLs={true}
+                    cachingEnabled={true}
+                    originWhitelist={['*']}
                     allowsInlineMediaPlayback={true}
                     mediaPlaybackRequiresUserAction={true}
                     allowsFullscreenVideo={false}
