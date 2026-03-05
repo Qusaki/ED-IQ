@@ -239,7 +239,7 @@ export const notificationService = {
               else if (activity.category === 'lab exam') activityType = 'Laboratory Exam';
               else if (activity.category === 'project') activityType = 'Project';
 
-              const message = `A Student Submitted a Answer to ${activityType}`;
+              const message = `${submission.student_name || 'A student'} submitted an answer to ${activityType}: "${activity.title}"`;
 
               actNotifications.push({
                 id: `gen-sub-${activity.id}-${submission.id}`, // Guaranteed unique across all subjects/activities
@@ -322,70 +322,27 @@ export const notificationService = {
           let subjGenerated = [];
 
           try {
-            // Fetch students and activities in parallel
-            const [students, activities] = await Promise.all([
-              subjectService.getSubjectStudents(subj.id).catch(() => []),
-              contentService.getActivities(subj.id).catch(() => [])
-            ]);
+            // Re-use the existing well-tested logic for inside notifications
+            // This prevents duplicate submission notifications from being generated
+            const insideNotifs = await this.getSubjectNotifications(subj.id);
 
-            // Process enrollments
-            const pending = (students || []).filter((s) => s.status === 'pending' || s.status === 'PENDING');
-            pending.forEach((p) => {
-              const sevenDaysAgo = getDaysAgoDate(7);
-              const requestDate = p.created_at ? new Date(p.created_at) : new Date();
-              if (requestDate > sevenDaysAgo) {
-                subjGenerated.push({
-                  id: `gen-enroll-${subj.id}-${p.id}`,
-                  type: 'enrollment_request',
-                  subject_id: subj.id,
-                  subject_name: subj.name,
-                  title: `${subj.name} - Request`,
-                  message: `${p.name || p.email} wants to enroll`,
-                  created_at: p.created_at || new Date().toISOString(),
-                  source: 'generated',
-                  is_read: false,
-                });
-              }
-            });
-
-            // Process activities and submissions in parallel
-            const actSample = (activities || []).slice(0, 5);
-            const submissionPromises = actSample.map(async (act) => {
-              const subs = await contentService.getSubmissions(act.id).catch(() => []);
-              const actSubsGenerated = [];
-              (subs || []).forEach((s) => {
-                const sevenDaysAgo = getDaysAgoDate(7);
-                if (new Date(s.created_at) > sevenDaysAgo) {
-                  let activityType = 'Activity';
-                  if (act.category === 'quiz') activityType = 'Quiz';
-                  else if (act.category === 'assignment') activityType = 'Assignment';
-                  else if (act.category === 'laboratory') activityType = 'Laboratory';
-                  else if (act.category === 'major exam') activityType = 'Exam';
-                  else if (act.category === 'lab exam') activityType = 'Laboratory Exam';
-                  else if (act.category === 'project') activityType = 'Project';
-
-                  actSubsGenerated.push({
-                    id: `gen-sub-${subj.id}-${act.id}-${s.id}`, // Guaranteed unique
-                    type: 'submission',
-                    subject_id: subj.id,
+            // Format inside notifications for the general tab
+            // CRITICAL: Filter out 'submission' type generated notifications here
+            // because the backend already sends real notifications for submissions.
+            // This prevents the "A student submitted..." vs "Student Name submitted..." duplication.
+            subjGenerated = insideNotifs
+              .filter(n => n.type !== 'submission')
+              .map(n => {
+                if (n.type === 'enrollment_request') {
+                  return {
+                    ...n,
                     subject_name: subj.name,
-                    activity_id: act.id,
-                    activity_title: act.title,
-                    title: `${subj.name} - New Submission`,
-                    message: `${s.student_name || 'A student'} submitted an answer to ${activityType}: "${act.title}"`,
-                    created_at: s.created_at,
-                    source: 'generated',
-                    is_read: false,
-                  });
+                    title: `${subj.name} - Request`,
+                    is_read: false
+                  };
                 }
+                return n;
               });
-              return actSubsGenerated;
-            });
-
-            const allActSubs = await Promise.all(submissionPromises);
-            allActSubs.forEach(acts => {
-              subjGenerated.push(...acts);
-            });
 
           } catch (e) {
             console.log('Error processing subject', subj.name, ':', e.message);
@@ -410,11 +367,29 @@ export const notificationService = {
         subjectNameMap[s.name] = s.id;
       });
 
+      // Create a quick lookup map from the generated submission notifications we just built
+      // This will let us attach 'activity_id' to backend notifications out of thin air
+      const generatedSubmissionsMap = {};
+      generated.filter(n => n.type === 'submission').forEach(gen => {
+        // use combination of subject_id and the activity title extracted from the message as a key
+        // We know the pattern: "Name submitted an answer to Category: "Title""
+        const match = gen.message.match(/to .+?: "(.*?)"/);
+        if (match && match[1]) {
+          const title = match[1];
+          generatedSubmissionsMap[`${gen.subject_id}-${title}`] = {
+            activity_id: gen.activity_id,
+            activity_title: gen.activity_title
+          };
+        }
+      });
+
       // Merge lists, backend first, then generated; convert backend items to consistent shape
       const mappedBackend = (backend || []).map((b) => {
         let inferredSubjectId = b.subject_id || null;
         let inferredSubjectName = b.subject_name || null;
         let mappedType = 'backend';
+        let inferredActivityId = null;
+        let inferredActivityTitle = null;
 
         // Infer subject details for backend enrollment request notifications
         if (b.title && b.title.endsWith(' - Request')) {
@@ -423,6 +398,27 @@ export const notificationService = {
           if (!inferredSubjectId && subjectNameMap[possibleSubjectName]) {
             inferredSubjectId = subjectNameMap[possibleSubjectName];
             inferredSubjectName = possibleSubjectName;
+          }
+        }
+
+        // Infer activity details for backend submission notifications
+        if (b.title && b.title.endsWith(' - New Submission')) {
+          mappedType = 'submission';
+          const possibleSubjectName = b.title.replace(' - New Submission', '');
+          if (!inferredSubjectId && subjectNameMap[possibleSubjectName]) {
+            inferredSubjectId = subjectNameMap[possibleSubjectName];
+            inferredSubjectName = possibleSubjectName;
+          }
+
+          // Extract the activity title from the backend message string
+          const match = b.message.match(/to .+?: "(.*?)"/);
+          if (match && match[1] && inferredSubjectId) {
+            const extractedTitle = match[1];
+            const enrichedData = generatedSubmissionsMap[`${inferredSubjectId}-${extractedTitle}`];
+            if (enrichedData) {
+              inferredActivityId = enrichedData.activity_id;
+              inferredActivityTitle = enrichedData.activity_title;
+            }
           }
         }
 
@@ -435,6 +431,8 @@ export const notificationService = {
           is_read: b.is_read,
           subject_id: inferredSubjectId,
           subject_name: inferredSubjectName,
+          activity_id: inferredActivityId,
+          activity_title: inferredActivityTitle,
           source: 'backend',
         };
       });

@@ -57,6 +57,7 @@ async def notify_teacher(subject_id: str, activity_id: str, student_id: str, tit
         user_id=subject.owner_id,
         title=title,
         message=message,
+        subject_id=subject_id,
     )
     db.add(notif)
     db.commit()
