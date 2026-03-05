@@ -1,5 +1,6 @@
 from enum import Enum
 from typing import List, Optional
+from datetime import datetime
 
 from pydantic import BaseModel
 
@@ -41,6 +42,8 @@ class StudentInSubject(BaseModel):
     name: Optional[str] = None
     email: Optional[str] = None
     status: str
+    profile_picture: Optional[str] = None
+    created_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True

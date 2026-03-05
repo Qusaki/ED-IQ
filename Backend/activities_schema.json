@@ -1,0 +1,14 @@
+{
+    "id": "TEXT",
+    "title": "VARCHAR(200)",
+    "content": "TEXT",
+    "file_url": "TEXT",
+    "teacher_id": "TEXT",
+    "subject_id": "TEXT",
+    "created_at": "TIMESTAMP",
+    "updated_at": "TIMESTAMP",
+    "max_score": "INTEGER",
+    "category": "VARCHAR(50)",
+    "term": "VARCHAR(50)",
+    "due_date": "TIMESTAMP"
+}
