@@ -19,7 +19,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import { useRBAC } from '../RBACComponents';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
@@ -2079,7 +2079,7 @@ export default function SubjectDetail() {
         animationType="slide"
         onRequestClose={() => setSelectedLecture(null)}
       >
-        <View style={styles.pdfModalContainer}>
+        <SafeAreaView style={styles.pdfModalContainer}>
           {/* Header */}
           <View style={styles.pdfModalHeader}>
             <TouchableOpacity
@@ -2193,7 +2193,7 @@ export default function SubjectDetail() {
               </View>
             )}
           </View>
-        </View>
+        </SafeAreaView>
       </Modal>
 
       {/* Notifications Modal */}

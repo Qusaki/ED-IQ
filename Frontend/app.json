@@ -21,7 +21,11 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ],
+      "package": "com.jhapniel.ed_iq_app_Frontend"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -31,6 +35,12 @@
       "expo-image-picker",
       "expo-document-picker",
       "@react-native-community/datetimepicker"
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "3d58cbbc-f9c9-48c2-8f84-c61e16db6251"
+      }
+    }
   }
 }

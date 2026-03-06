@@ -10,10 +10,10 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView,
   Animated,
   Image,
 } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { chatbotService } from './chatbotService';
 
@@ -59,6 +59,7 @@ const TypingIndicator = () => {
 };
 
 export default function ChatbotModal({ visible, onClose }) {
+  const insets = useSafeAreaInsets();
   const [messages, setMessages] = useState([
     {
       id: 1,
@@ -181,7 +182,7 @@ export default function ChatbotModal({ visible, onClose }) {
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
         >
-          <View style={styles.inputContainer}>
+          <View style={[styles.inputContainer, { paddingBottom: Math.max(12, insets.bottom) }]}>
             <TextInput
               style={styles.input}
               placeholder="Ask me anything about school policies..."

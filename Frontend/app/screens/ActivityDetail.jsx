@@ -19,7 +19,7 @@ import { subjectService } from '../subjectService';
 import { useRBAC } from '../RBACComponents';
 import { fileMetadataService } from '../fileMetadataService';
 import * as DocumentPicker from 'expo-document-picker';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 
 export default function ActivityDetail() {
   const insets = useSafeAreaInsets();
@@ -2215,9 +2215,9 @@ export default function ActivityDetail() {
           animationType="slide"
           onRequestClose={closeFullScreenFileModal}
         >
-          <View style={styles.fullScreenFileModalContainer}>
+          <SafeAreaView style={styles.fullScreenFileModalContainer}>
             {/* Header */}
-            <View style={[styles.fullScreenFileModalHeader, { paddingTop: Math.max(16, insets.top) }]}>
+            <View style={styles.fullScreenFileModalHeader}>
               <TouchableOpacity
                 style={styles.fullScreenFileCloseButton}
                 onPress={closeFullScreenFileModal}
@@ -2337,7 +2337,7 @@ export default function ActivityDetail() {
                 </View>
               )}
             </View>
-          </View>
+          </SafeAreaView>
         </Modal >
 
         {/* Submitted Popup */}
