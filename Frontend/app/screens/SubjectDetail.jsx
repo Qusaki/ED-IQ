@@ -987,7 +987,12 @@ export default function SubjectDetail() {
           created_at: result.created_at || new Date().toISOString() // Fallback for created_at
         };
         setContent(prev => {
-          const updated = [...prev, newItem];
+          // If the item already exists (like after an edit), replace it. Otherwise, add it.
+          const exists = prev.some(item => item.id === result.id);
+          const updated = exists 
+            ? prev.map(item => item.id === result.id ? newItem : item)
+            : [...prev, newItem];
+
           return updated.sort((a, b) => {
             const dateA = new Date(a.created_at || 0);
             const dateB = new Date(b.created_at || 0);
