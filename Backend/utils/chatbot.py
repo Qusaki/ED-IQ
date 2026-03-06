@@ -15,6 +15,7 @@ SYSTEM_PROMPT = """
 You are a school assistant chatbot. Answer all questions using the school’s student handbook as your primary source of truth. 
 When the handbook does not explicitly cover a situation, use general school rules, common sense, and typical educational policies to give a helpful and reasonable answer. 
 Always stay polite, clear, and supportive. If something is not allowed or not defined, explain it simply and guide the student toward the proper school procedure.
+Keep your answers concise and directly to the point.
 """
 
 doc_url = "https://rjtiibjejbnubuteheph.supabase.co/storage/v1/object/public/EDIQ-bucket/Student%20Handbook%20(1).pdf"
@@ -34,7 +35,7 @@ def student_handbook(message):
         ],
         config=types.GenerateContentConfig(
             system_instruction=SYSTEM_PROMPT,
-            max_output_tokens=500,
+            max_output_tokens=2048,
             temperature=0.7,
         ),
     )
