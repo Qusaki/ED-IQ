@@ -2,7 +2,7 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
-import { View, Text, DeviceEventEmitter } from 'react-native';
+import { View, Text, DeviceEventEmitter, ActivityIndicator, StyleSheet } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import { authService } from '../components/_authService';
 import AuthScreen from './auth';
@@ -10,10 +10,26 @@ import { setupAxiosInterceptors } from './apiConfig';
 import { useRBAC } from './RBACComponents';
 import SelectionScreen from './SelectionScreen';
 import SplashAnimation from './SplashAnimation';
+import { LoadingProvider, useLoading } from '../components/LoadingContext';
 
 SplashScreen.preventAutoHideAsync().catch(() => { });
 
-export default function RootLayout() {
+function GlobalLoadingOverlay() {
+  const { isGlobalLoading } = useLoading();
+
+  if (!isGlobalLoading) return null;
+
+  return (
+    <View style={styles.loadingOverlay}>
+      <View style={styles.loadingBox}>
+        <ActivityIndicator size="large" color="#FF7700" />
+        <Text style={styles.loadingText}>Processing...</Text>
+      </View>
+    </View>
+  );
+}
+
+function RootLayoutContent() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [splashFinished, setSplashFinished] = useState(false);
@@ -68,7 +84,8 @@ export default function RootLayout() {
   if (loading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <Text>Loading...</Text>
+        <ActivityIndicator size="large" color="#FF7700" />
+        <Text style={{ marginTop: 10 }}>ED-IQ is taking a moment...</Text>
       </View>
     );
   }
@@ -76,6 +93,7 @@ export default function RootLayout() {
   return (
     <>
       <StatusBar barStyle="dark-content" />
+      <GlobalLoadingOverlay />
       {!isAuthenticated ? (
         currentFlowStep === 'selection' ? (
           <SelectionScreen onSelectRole={handleRoleSelect} />
@@ -103,3 +121,38 @@ export default function RootLayout() {
     </>
   );
 }
+
+export default function RootLayout() {
+  return (
+    <LoadingProvider>
+      <RootLayoutContent />
+    </LoadingProvider>
+  );
+}
+
+const styles = StyleSheet.create({
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    zIndex: 9999,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingBox: {
+    padding: 30,
+    backgroundColor: '#fff',
+    borderRadius: 15,
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 15,
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+  }
+});

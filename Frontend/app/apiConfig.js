@@ -1,6 +1,6 @@
 // Ito ay sa apiConfig.js
 import axios from 'axios';
-import { Alert } from 'react-native';
+import { Alert, DeviceEventEmitter } from 'react-native';
 import { TokenManager } from '../components/_TokenManager';
 
 // Backend base URL
@@ -21,6 +21,7 @@ export const setupAxiosInterceptors = () => {
   // Request interceptor to add token
   apiClient.interceptors.request.use(
     async (config) => {
+      DeviceEventEmitter.emit('apiLoadingStart');
       try {
         const token = await TokenManager.getToken();
         if (token) {
@@ -42,10 +43,12 @@ export const setupAxiosInterceptors = () => {
   // Response interceptor to handle token expiration
   apiClient.interceptors.response.use(
     (response) => {
+      DeviceEventEmitter.emit('apiLoadingStop');
       console.log('API Response successful:', response.config?.url);
       return response;
     },
     async (error) => {
+      DeviceEventEmitter.emit('apiLoadingStop');
       // Better error logging - skip logging for expected 404 errors
       if (error.response) {
         // Only log non-404 and non-401 errors to reduce console noise for handled errors
