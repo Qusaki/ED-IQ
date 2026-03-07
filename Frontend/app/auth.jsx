@@ -52,7 +52,7 @@ export default function AuthScreen({ onAuthSuccess, selectedRole: initialRole, o
 
   const handleAuth = async () => {
     if (!email || !password || (!isLogin && (!name || (isStudent && !studentId)))) {
-      Alert.alert('Error', 'Please fill in all required fields');
+      console.log('Validation Error: Please fill in all required fields');
       return;
     }
 
@@ -61,30 +61,29 @@ export default function AuthScreen({ onAuthSuccess, selectedRole: initialRole, o
       if (isLogin) {
         const result = await authService.login(email, password);
         if (result.success) {
-          Alert.alert('Login Success', `Welcome back ${result.user.name}!`);
+          console.log('Login Success:', result.user.name);
           if (onAuthSuccess) onAuthSuccess();
         } else {
-          Alert.alert('Login Error', result.error);
+          console.error('Login Error:', result.error);
         }
       } else {
         const signupResult = await authService.signup(name, email, password, selectedRole, studentId);
         if (signupResult.success) {
           const loginResult = await authService.login(email, password);
           if (loginResult.success) {
-            Alert.alert('Success!', `Welcome to ED-IQ, ${loginResult.user.name}! Your account has been created and you are now logged in.`);
+            console.log('Signup and Login Success:', loginResult.user.name);
             if (onAuthSuccess) onAuthSuccess();
           } else {
-            Alert.alert('Signup Success, Login Failed', 'Account created but automatic login failed. Please log in manually.');
+            console.error('Signup Success, Login Failed:', loginResult.error);
             setIsLogin(true);
             clearForm();
           }
         } else {
-          Alert.alert('Signup Error', signupResult.error);
+          console.error('Signup Error:', signupResult.error);
         }
       }
     } catch (error) {
-      console.error('Auth error:', error);
-      Alert.alert('Error', 'Something went wrong. Please try again.');
+      console.error('Auth error (Global):', error);
     } finally {
       setLoading(false);
     }
