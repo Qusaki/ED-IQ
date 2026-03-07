@@ -373,7 +373,19 @@ export const styles = StyleSheet.create({
   flashlightTextOn: {
     color: '#ff8c00',
     fontWeight: 'bold',
-  }
+  },
+  topNav: {
+    paddingHorizontal: 10,
+    height: 50,
+    justifyContent: 'center',
+  },
+  backButton: {
+    position: 'absolute',
+    top: 40,
+    left: 10,
+    zIndex: 10,
+    padding: 15,
+  },
 });
 
 export default styles;

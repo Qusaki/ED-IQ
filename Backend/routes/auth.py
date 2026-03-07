@@ -42,6 +42,7 @@ def signup_user(user: UserCreate, db: Session = Depends(get_db)) -> UserResponse
         email=user.email,
         name=user.name,
         role=user.role,
+        student_id=user.student_id,
         password=hashed_pw,
         profile_picture="https://rjtiibjejbnubuteheph.supabase.co/storage/v1/object/public/EDIQ-bucket/default_profile_pictures/default_profile.jpg",
     )

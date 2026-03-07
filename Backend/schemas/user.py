@@ -7,6 +7,7 @@ class UserBase(BaseModel):
     name: str
     email: EmailStr
     role: str
+    student_id: Optional[str] = None
 
 
 class UserCreate(UserBase):
@@ -30,6 +31,7 @@ class UserSelfUpdate(BaseModel):
 class UserResponse(UserBase):
     id: str
     profile_picture: str
+    student_id: Optional[str] = None
 
     class Config:
         from_attributes = True

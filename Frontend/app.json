@@ -1,7 +1,7 @@
 {
   "expo": {
     "scheme": "ediqappfrontend",
-    "name": "ED-IQ PROJECT",
+    "name": "ED-IQ",
     "slug": "ed_iq_app_Frontend",
     "version": "1.0.0",
     "orientation": "portrait",

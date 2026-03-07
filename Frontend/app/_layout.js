@@ -8,6 +8,7 @@ import { authService } from '../components/_authService';
 import AuthScreen from './auth';
 import { setupAxiosInterceptors } from './apiConfig';
 import { useRBAC } from './RBACComponents';
+import SelectionScreen from './SelectionScreen';
 import SplashAnimation from './SplashAnimation';
 
 SplashScreen.preventAutoHideAsync().catch(() => { });
@@ -16,6 +17,8 @@ export default function RootLayout() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [splashFinished, setSplashFinished] = useState(false);
+  const [currentFlowStep, setCurrentFlowStep] = useState('selection'); // 'selection' or 'auth'
+  const [selectedRole, setSelectedRole] = useState(null);
   const { isTeacher, isStudent } = useRBAC();
 
   useEffect(() => {
@@ -24,6 +27,8 @@ export default function RootLayout() {
 
     const logoutListener = DeviceEventEmitter.addListener('appLogout', () => {
       setIsAuthenticated(false);
+      setCurrentFlowStep('selection');
+      setSelectedRole(null);
     });
 
     return () => {
@@ -46,6 +51,16 @@ export default function RootLayout() {
     }
   };
 
+  const handleRoleSelect = (role) => {
+    setSelectedRole(role);
+    setCurrentFlowStep('auth');
+  };
+
+  const handleBackToSelection = () => {
+    setCurrentFlowStep('selection');
+    setSelectedRole(null);
+  };
+
   if (!splashFinished) {
     return <SplashAnimation onFinish={() => setSplashFinished(true)} />;
   }
@@ -62,7 +77,15 @@ export default function RootLayout() {
     <>
       <StatusBar barStyle="dark-content" />
       {!isAuthenticated ? (
-        <AuthScreen onAuthSuccess={() => setIsAuthenticated(true)} />
+        currentFlowStep === 'selection' ? (
+          <SelectionScreen onSelectRole={handleRoleSelect} />
+        ) : (
+          <AuthScreen
+            onAuthSuccess={() => setIsAuthenticated(true)}
+            selectedRole={selectedRole}
+            onBack={handleBackToSelection}
+          />
+        )
       ) : (
         <Stack
           screenOptions={{

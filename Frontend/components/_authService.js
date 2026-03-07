@@ -112,7 +112,8 @@ export const authService = {
         name,
         email,
         password,
-        role
+        role,
+        student_id: role === 'student' ? studentId : null
       });
 
       console.log('Signup response:', response.data);

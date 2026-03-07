@@ -9,6 +9,7 @@ class User(Base):
     name = Column(VARCHAR(50), nullable=False)
     email = Column(VARCHAR(50), unique=True, nullable=False, index=True)
     role = Column(VARCHAR(20), nullable=False)  # e.g., "student" or "teacher"
+    student_id = Column(VARCHAR(20), nullable=True)  # Only for students
     password = Column(
         LargeBinary, nullable=False
     )  # Store hashed password as binary data

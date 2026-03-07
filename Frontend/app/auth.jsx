@@ -16,6 +16,8 @@ import {
   Platform,
   ImageBackground
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+
 
 import { useRouter } from 'expo-router';
 import { setupAxiosInterceptors } from './apiConfig';
@@ -29,16 +31,19 @@ const roles = [
   { id: 'teacher', label: 'Teacher' }
 ];
 
-export default function AuthScreen({ onAuthSuccess }) {
+export default function AuthScreen({ onAuthSuccess, selectedRole: initialRole, onBack }) {
   const router = useRouter();
   const [isLogin, setIsLogin] = useState(true);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [selectedRole, setSelectedRole] = useState('');
-  const [showRolePicker, setShowRolePicker] = useState(false);
+  const [studentId, setStudentId] = useState('');
+  const [selectedRole] = useState(initialRole || 'student');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  const isStudent = selectedRole === 'student';
+  const themeColor = isStudent ? '#FF7700' : '#070975';
 
   // Initialize on component mount
   useEffect(() => {
@@ -46,7 +51,7 @@ export default function AuthScreen({ onAuthSuccess }) {
   }, []);
 
   const handleAuth = async () => {
-    if (!email || !password || (!isLogin && (!name || !selectedRole))) {
+    if (!email || !password || (!isLogin && (!name || (isStudent && !studentId)))) {
       Alert.alert('Error', 'Please fill in all required fields');
       return;
     }
@@ -57,20 +62,16 @@ export default function AuthScreen({ onAuthSuccess }) {
         const result = await authService.login(email, password);
         if (result.success) {
           Alert.alert('Login Success', `Welcome back ${result.user.name}!`);
-          // Call the success callback to update the layout immediately
           if (onAuthSuccess) onAuthSuccess();
         } else {
           Alert.alert('Login Error', result.error);
         }
       } else {
-        // Handle signup - create account and automatically log in
-        const signupResult = await authService.signup(name, email, password, selectedRole);
+        const signupResult = await authService.signup(name, email, password, selectedRole, studentId);
         if (signupResult.success) {
-          // Automatically log in after successful signup
           const loginResult = await authService.login(email, password);
           if (loginResult.success) {
             Alert.alert('Success!', `Welcome to ED-IQ, ${loginResult.user.name}! Your account has been created and you are now logged in.`);
-            // Call the success callback to update the layout immediately
             if (onAuthSuccess) onAuthSuccess();
           } else {
             Alert.alert('Signup Success, Login Failed', 'Account created but automatic login failed. Please log in manually.');
@@ -93,24 +94,10 @@ export default function AuthScreen({ onAuthSuccess }) {
     setName('');
     setEmail('');
     setPassword('');
-    setSelectedRole('');
+    setStudentId('');
     setIsLogin(true);
     setShowPassword(false);
   };
-
-  const selectRole = (role) => {
-    setSelectedRole(role.id);
-    setShowRolePicker(false);
-  };
-
-  const renderRoleItem = ({ item }) => (
-    <TouchableOpacity
-      style={styles.roleItem}
-      onPress={() => selectRole(item)}
-    >
-      <Text style={styles.roleItemText}>{item.label}</Text>
-    </TouchableOpacity>
-  );
 
   return (
     <ImageBackground source={campusBackground} style={styles.backgroundImage} resizeMode="contain">
@@ -120,6 +107,10 @@ export default function AuthScreen({ onAuthSuccess }) {
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.keyboardView}
         >
+          <TouchableOpacity onPress={onBack} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={28} color="#6c757d" />
+          </TouchableOpacity>
+
           <ScrollView
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
@@ -135,11 +126,12 @@ export default function AuthScreen({ onAuthSuccess }) {
             </View>
 
             <View style={styles.card}>
-              <Text style={styles.title}>
+              <Text style={[styles.title, { color: themeColor }]}>
                 {isLogin ? 'Welcome Back' : 'Create Account'}
               </Text>
               <Text style={styles.subtitle}>
-                {isLogin ? 'Sign in to your account' : 'Sign up to get started'}
+                {isStudent ? 'Student ' : 'Teacher '}
+                {isLogin ? 'Sign In' : 'Sign Up'}
               </Text>
 
               {!isLogin && (
@@ -148,6 +140,16 @@ export default function AuthScreen({ onAuthSuccess }) {
                   style={styles.input}
                   value={name}
                   onChangeText={setName}
+                  placeholderTextColor="#999"
+                />
+              )}
+
+              {isStudent && !isLogin && (
+                <TextInput
+                  placeholder="Enter your Student ID"
+                  style={styles.input}
+                  value={studentId}
+                  onChangeText={setStudentId}
                   placeholderTextColor="#999"
                 />
               )}
@@ -191,18 +193,6 @@ export default function AuthScreen({ onAuthSuccess }) {
                 </TouchableOpacity>
               </View>
 
-              {!isLogin && (
-                <TouchableOpacity
-                  style={styles.roleSelector}
-                  onPress={() => setShowRolePicker(true)}
-                >
-                  <Text style={[styles.roleSelectorText, !selectedRole && styles.placeholder]}>
-                    {selectedRole ? roles.find(r => r.id === selectedRole)?.label : 'Enter your role'}
-                  </Text>
-                  <Text style={styles.dropdownArrow}>▼</Text>
-                </TouchableOpacity>
-              )}
-
               {isLogin && (
                 <TouchableOpacity style={styles.forgotPassword}>
                   <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
@@ -210,7 +200,7 @@ export default function AuthScreen({ onAuthSuccess }) {
               )}
 
               <TouchableOpacity
-                style={[styles.authButton, loading && styles.disabledButton]}
+                style={[styles.authButton, { backgroundColor: themeColor }, loading && styles.disabledButton]}
                 onPress={handleAuth}
                 disabled={loading}
               >
@@ -225,7 +215,7 @@ export default function AuthScreen({ onAuthSuccess }) {
               >
                 <Text style={styles.switchText}>
                   {isLogin ? "Don't have an account? " : "Already have an account? "}
-                  <Text style={styles.switchLink}>
+                  <Text style={[styles.switchLink, { color: themeColor }]}>
                     {isLogin ? "Sign Up" : "Sign In"}
                   </Text>
                 </Text>
@@ -233,32 +223,6 @@ export default function AuthScreen({ onAuthSuccess }) {
             </View>
           </ScrollView>
         </KeyboardAvoidingView>
-
-        <Modal
-          visible={showRolePicker}
-          transparent={true}
-          animationType="slide"
-          onRequestClose={() => setShowRolePicker(false)}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Select Your Role</Text>
-                <TouchableOpacity
-                  onPress={() => setShowRolePicker(false)}
-                  style={styles.closeButton}
-                >
-                  <Text style={styles.closeButtonText}>✕</Text>
-                </TouchableOpacity>
-              </View>
-              <FlatList
-                data={roles}
-                renderItem={renderRoleItem}
-                keyExtractor={(item) => item.id}
-              />
-            </View>
-          </View>
-        </Modal>
       </SafeAreaView>
     </ImageBackground>
   );
