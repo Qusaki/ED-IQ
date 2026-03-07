@@ -19,6 +19,19 @@ import { chatbotService } from './chatbotService';
 
 const robotLogo = require('../assets/img/ED-IQ_LOGO.png');
 
+// Strip markdown formatting for clean display
+const cleanMarkdown = (text) => {
+  if (!text) return '';
+  return text
+    .replace(/\*\*(.+?)\*\*/g, '$1')          // **bold** -> bold
+    .replace(/\*(.+?)\*/g, '$1')              // *italic* -> italic
+    .replace(/^#{1,6}\s+/gm, '')              // ## Heading -> Heading
+    .replace(/^[\*\-]\s+/gm, '\u2022 ')       // * item or - item -> bullet
+    .replace(/\s*\(\d+(\.\d+)*\)/g, '')       // (2.1), (1.3.2) etc -> removed
+    .replace(/\s+\n/g, '\n')                  // trailing spaces
+    .trim();
+};
+
 const TypingIndicator = () => {
   const dot1 = useRef(new Animated.Value(0.3)).current;
   const dot2 = useRef(new Animated.Value(0.3)).current;
@@ -169,7 +182,7 @@ export default function ChatbotModal({ visible, onClose }) {
                       : styles.botMessageText,
                   ]}
                 >
-                  {message.text}
+                  {message.sender === 'bot' ? cleanMarkdown(message.text) : message.text}
                 </Text>
               </View>
             </View>
