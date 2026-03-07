@@ -82,7 +82,7 @@ export const authService = {
     }
   },
 
-  async signup(name, email, password, role) {
+  async signup(name, email, password, role, studentId) {
     try {
       console.log('Attempting signup for:', email, 'with role:', role);
 
@@ -102,7 +102,8 @@ export const authService = {
           id: 'mock-user-' + Date.now(),
           name: name,
           email: email,
-          role: role
+          role: role,
+          student_id: role === 'student' ? studentId : null
         };
         console.log('Mock signup successful');
         return { success: true, data: mockUser };

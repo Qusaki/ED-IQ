@@ -278,6 +278,16 @@ export default function ProfileScreen() {
               )}
             </View>
 
+            {/* Student ID Field (for students only) */}
+            {user?.role === 'student' && (
+              <View style={styles.fieldCard}>
+                <Text style={styles.fieldLabel}>Student ID</Text>
+                <View style={styles.fieldValueRow}>
+                  <Text style={styles.fieldValue}>{user?.student_id || '—'}</Text>
+                </View>
+              </View>
+            )}
+
             {/* Email Field (read-only display) */}
             <View style={styles.fieldCard}>
               <Text style={styles.fieldLabel}>Email</Text>
