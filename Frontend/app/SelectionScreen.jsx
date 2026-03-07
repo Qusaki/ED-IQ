@@ -70,6 +70,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         paddingHorizontal: 20,
+        paddingBottom: 80, // Added padding to bottom to push centered content higher
     },
     header: {
         alignItems: 'center',
@@ -100,7 +101,7 @@ const styles = StyleSheet.create({
         width: '100%',
         paddingHorizontal: 10,
         gap: 20,
-        marginTop: 30, // Reduced margin to keep it tight near the welcome text
+        marginTop: 60, // Increased margin to create more space from welcome text
     },
     button: {
         width: '100%',
