@@ -30,6 +30,7 @@ export default function ActivityDetail() {
   const [subjectId, setSubjectId] = useState(routeSubjectId);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [gradingInProgressId, setGradingInProgressId] = useState(null);
   const [submission, setSubmission] = useState('');
   const [file, setFile] = useState(null);
   const [submissionStatus, setSubmissionStatus] = useState(null);
@@ -540,9 +541,9 @@ export default function ActivityDetail() {
     // Only block explicit download requests (user click to download)
     // Allow Google Docs viewer to load all necessary resources
     const url = request.url.toLowerCase();
-    
+
     // Block only explicit download parameters and user-initiated downloads
-    const isExplicitDownload = 
+    const isExplicitDownload =
       url.includes('?download=true') ||
       url.includes('&download=true') ||
       url.includes('?download=1') ||
@@ -561,7 +562,7 @@ export default function ActivityDetail() {
       request.url.startsWith('https://drive.google.com/') ||
       request.url.startsWith('https://lh.googleusercontent.com') ||
       request.url.includes('google.com');
-    
+
     // Allow the initial Supabase file URL and other safe origins
     const isAllowedOrigin = isGoogleDomain ||
       request.url.startsWith('https://') ||
@@ -817,6 +818,7 @@ export default function ActivityDetail() {
   // Handle grading
   const handleGrade = async (submissionId, score) => {
     try {
+      setGradingInProgressId(submissionId);
       await contentService.gradeSubmission(submissionId, score);
 
       // Update submissions list
@@ -833,6 +835,8 @@ export default function ActivityDetail() {
     } catch (error) {
       console.error('Grading error:', error);
       Alert.alert('Error', 'Failed to assign grade. Please try again.');
+    } finally {
+      setGradingInProgressId(null);
     }
   };
 
@@ -1562,10 +1566,15 @@ export default function ActivityDetail() {
                             keyboardType="numeric"
                           />
                           <TouchableOpacity
-                            style={styles.gradeButton}
+                            style={[styles.gradeButton, gradingInProgressId === sub.id && { opacity: 0.7 }]}
                             onPress={() => handleGrade(sub.id, parseInt(grading[sub.id]) || 0)}
+                            disabled={gradingInProgressId === sub.id}
                           >
-                            <Text style={styles.gradeButtonText}>Grade</Text>
+                            {gradingInProgressId === sub.id ? (
+                              <ActivityIndicator size="small" color="#fff" />
+                            ) : (
+                              <Text style={styles.gradeButtonText}>Grade</Text>
+                            )}
                           </TouchableOpacity>
                         </View>
                       )}
@@ -1776,24 +1785,24 @@ export default function ActivityDetail() {
                 )}
               </ScrollView>
 
-              <View style={{ padding: 16, borderTopWidth: 1, borderTopColor: '#e9ecef', flexDirection: 'row', justifyContent: 'space-between' }}>
+              <View style={{ padding: 16, borderTopWidth: 1, borderTopColor: '#e9ecef', flexDirection: 'row', justifyContent: 'space-between', gap: 8 }}>
                 <TouchableOpacity
-                  style={[styles.submitButton, { flex: 1, marginRight: 8, height: 48, justifyContent: 'center' }]}
+                  style={[styles.submitButton, { flex: 1, minHeight: 48, justifyContent: 'center', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 8 }]}
                   onPress={handleSaveEditedSubmission}
                   disabled={submitting}
                 >
                   {submitting ? (
                     <ActivityIndicator color="#fff" />
                   ) : (
-                    <Text style={styles.submitButtonText}>Save Changes</Text>
+                    <Text style={[styles.submitButtonText, { textAlign: 'center' }]}>Save</Text>
                   )}
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.submitButton, { backgroundColor: '#6c757d', flex: 1, marginLeft: 8, height: 48, justifyContent: 'center' }]}
+                  style={[styles.submitButton, { backgroundColor: '#6c757d', flex: 1, minHeight: 48, justifyContent: 'center', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 8 }]}
                   onPress={cancelEditSubmission}
                   disabled={submitting}
                 >
-                  <Text style={styles.submitButtonText}>Cancel</Text>
+                  <Text style={[styles.submitButtonText, { textAlign: 'center' }]}>Cancel</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -2049,9 +2058,9 @@ export default function ActivityDetail() {
                             // Only block explicit download requests (user click to download)
                             // Allow Google Docs viewer to load all necessary resources
                             const url = request.url.toLowerCase();
-                            
+
                             // Block only explicit download parameters and user-initiated downloads
-                            const isExplicitDownload = 
+                            const isExplicitDownload =
                               url.includes('?download=true') ||
                               url.includes('&download=true') ||
                               url.includes('?download=1') ||
@@ -2070,7 +2079,7 @@ export default function ActivityDetail() {
                               request.url.startsWith('https://drive.google.com/') ||
                               request.url.startsWith('https://lh.googleusercontent.com') ||
                               request.url.includes('google.com');
-                            
+
                             // Allow the initial Supabase file URL and other safe origins
                             const isAllowedOrigin = isGoogleDomain ||
                               request.url.startsWith('https://') ||
@@ -2282,9 +2291,9 @@ export default function ActivityDetail() {
                       // Only block explicit download requests (user click to download)
                       // Allow Google Docs viewer to load all necessary resources
                       const url = request.url.toLowerCase();
-                      
+
                       // Block only explicit download parameters and user-initiated downloads
-                      const isExplicitDownload = 
+                      const isExplicitDownload =
                         url.includes('?download=true') ||
                         url.includes('&download=true') ||
                         url.includes('?download=1') ||
@@ -2303,7 +2312,7 @@ export default function ActivityDetail() {
                         request.url.startsWith('https://drive.google.com/') ||
                         request.url.startsWith('https://lh.googleusercontent.com') ||
                         request.url.includes('google.com');
-                      
+
                       // Allow the initial Supabase file URL and other safe origins
                       const isAllowedOrigin = isGoogleDomain ||
                         request.url.startsWith('https://') ||

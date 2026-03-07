@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, Modal, TextInput, StyleSheet, Pressable, Alert, Image, TouchableOpacity, ImageBackground, Animated } from 'react-native';
+import { View, Text, FlatList, Modal, TextInput, StyleSheet, Pressable, Alert, Image, TouchableOpacity, ImageBackground, Animated, ActivityIndicator } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import FABButton from '../../components/FABButton';
 import CustomTabBar from '../../components/CustomTabBar';
@@ -16,6 +16,7 @@ export default function StudentSubjects() {
   const router = useRouter();
   const [subjects, setSubjects] = useState([]);
   const [joining, setJoining] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [code, setCode] = useState('');
   const [chatbotVisible, setChatbotVisible] = useState(false);
   const tooltipAnim = React.useRef(new Animated.Value(0)).current;
@@ -62,12 +63,15 @@ export default function StudentSubjects() {
   const join = async () => {
     try {
       if (!code.trim()) return;
+      setSubmitting(true);
       await subjectService.joinByCode(code.trim().toUpperCase());
       setCode('');
       setJoining(false);
       await load();
     } catch (e) {
       Alert.alert('Join failed', e?.response?.data?.detail || e.message);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -181,8 +185,16 @@ export default function StudentSubjects() {
                 <Pressable style={[styles.btn, styles.cancel, styles.btnLeft]} onPress={() => setJoining(false)}>
                   <Text style={styles.btnText}>Cancel</Text>
                 </Pressable>
-                <Pressable style={[styles.btn, styles.primary, styles.btnRight]} onPress={join}>
-                  <Text style={styles.btnText}>Join</Text>
+                <Pressable
+                  style={[styles.btn, styles.primary, styles.btnRight, (submitting || !code.trim()) && { opacity: 0.7 }]}
+                  onPress={join}
+                  disabled={submitting || !code.trim()}
+                >
+                  {submitting ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Text style={styles.btnText}>Join</Text>
+                  )}
                 </Pressable>
               </View>
             </View>

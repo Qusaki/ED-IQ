@@ -21,7 +21,6 @@ export const setupAxiosInterceptors = () => {
   // Request interceptor to add token
   apiClient.interceptors.request.use(
     async (config) => {
-      DeviceEventEmitter.emit('apiLoadingStart');
       try {
         const token = await TokenManager.getToken();
         if (token) {
@@ -43,38 +42,32 @@ export const setupAxiosInterceptors = () => {
   // Response interceptor to handle token expiration
   apiClient.interceptors.response.use(
     (response) => {
-      DeviceEventEmitter.emit('apiLoadingStop');
       console.log('API Response successful:', response.config?.url);
       return response;
     },
     async (error) => {
-      DeviceEventEmitter.emit('apiLoadingStop');
       // Better error logging - skip logging for expected 404 errors
       if (error.response) {
-        // Only log non-404 and non-401 errors to reduce console noise for handled errors
+        // Only log non-404 and non-401 errors
         if (error.response.status !== 404 && error.response.status !== 401) {
-          console.error('API Response error:', error.response.status, error.response.data);
+          console.log('API Response error:', error.response.status, error.response.data);
         }
       } else if (error.request) {
-        console.error('API Request error - No response received');
+        console.log('API Request error - No response received');
       } else {
-        console.error('API Error:', error.message);
+        console.log('API Error:', error.message);
       }
 
       // Handle network errors
       if (error.code === 'NETWORK_ERROR' || error.message === 'Network Error' || !error.response) {
-        console.error('Network connectivity issue detected');
+        console.log('Network connectivity issue detected');
         // Don't show alert for every network error
         return Promise.reject(error);
       }
 
       // Handle timeout errors
       if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
-        console.error('Request timeout');
-        Alert.alert(
-          'Request Timeout',
-          'Server is taking too long to respond. Please try again.'
-        );
+        console.log('Request timeout - treated silently');
         return Promise.reject(error);
       }
 
@@ -88,7 +81,9 @@ export const setupAxiosInterceptors = () => {
         if (currentToken) {
           console.log('Token expired, clearing session');
           await TokenManager.clearAll();
-          Alert.alert('Session Expired', 'Please login again.');
+          // We can keep Session Expired alert or make it silent too. 
+          // User asked for ALL errors to be silent.
+          console.log('Session Expired - Please login again.');
         }
       } else if (error.response?.status === 403) {
         // Handle backend bug: wrong or/and logic in lecture_post.py line 56
@@ -98,11 +93,8 @@ export const setupAxiosInterceptors = () => {
         console.log('No content found:', error.config?.url);
         // Don't show alert for 404 errors - they might be expected
       } else if (error.response?.status >= 500) {
-        console.error('Server error:', error.response?.status);
-        Alert.alert(
-          'Server Error',
-          'Server is experiencing issues. Please try again later.'
-        );
+        console.log('Server error (5xx) detected:', error.response?.status);
+        // Silenced Server Error alert per user request
       }
 
       return Promise.reject(error);

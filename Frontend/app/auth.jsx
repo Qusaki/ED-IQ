@@ -41,6 +41,7 @@ export default function AuthScreen({ onAuthSuccess, selectedRole: initialRole, o
   const [selectedRole] = useState(initialRole || 'student');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [authError, setAuthError] = useState('');
 
   const isStudent = selectedRole === 'student';
   const themeColor = isStudent ? '#FF7700' : '#070975';
@@ -64,7 +65,8 @@ export default function AuthScreen({ onAuthSuccess, selectedRole: initialRole, o
           console.log('Login Success:', result.user.name);
           if (onAuthSuccess) onAuthSuccess();
         } else {
-          console.error('Login Error:', result.error);
+          setAuthError('Wrong email or password.');
+          console.log('Login Error:', result.error);
         }
       } else {
         const signupResult = await authService.signup(name, email, password, selectedRole, studentId);
@@ -74,16 +76,19 @@ export default function AuthScreen({ onAuthSuccess, selectedRole: initialRole, o
             console.log('Signup and Login Success:', loginResult.user.name);
             if (onAuthSuccess) onAuthSuccess();
           } else {
-            console.error('Signup Success, Login Failed:', loginResult.error);
+            console.log('Signup Success, Login Failed:', loginResult.error);
+            setAuthError('Account created. Please sign in.');
             setIsLogin(true);
             clearForm();
           }
         } else {
-          console.error('Signup Error:', signupResult.error);
+          setAuthError('Signup failed. Try again.');
+          console.log('Signup Error:', signupResult.error);
         }
       }
     } catch (error) {
-      console.error('Auth error (Global):', error);
+      console.log('Auth error (Global):', error);
+      setAuthError('An unexpected error occurred. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -157,7 +162,7 @@ export default function AuthScreen({ onAuthSuccess, selectedRole: initialRole, o
                 placeholder="Enter your email"
                 style={styles.input}
                 value={email}
-                onChangeText={setEmail}
+                onChangeText={(t) => { setEmail(t); setAuthError(''); }}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 placeholderTextColor="#999"
@@ -169,7 +174,7 @@ export default function AuthScreen({ onAuthSuccess, selectedRole: initialRole, o
                   style={styles.passwordInput}
                   secureTextEntry={!showPassword}
                   value={password}
-                  onChangeText={setPassword}
+                  onChangeText={(t) => { setPassword(t); setAuthError(''); }}
                   placeholderTextColor="#999"
                 />
                 <TouchableOpacity
@@ -191,6 +196,12 @@ export default function AuthScreen({ onAuthSuccess, selectedRole: initialRole, o
                   </Text>
                 </TouchableOpacity>
               </View>
+
+              {!!authError && (
+                <Text style={{ color: '#dc3545', fontSize: 12, marginTop: -6, marginBottom: 0, marginLeft: 2 }}>
+                  {authError}
+                </Text>
+              )}
 
               {isLogin && (
                 <TouchableOpacity style={styles.forgotPassword}>

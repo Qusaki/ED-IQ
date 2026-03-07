@@ -1,5 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, Modal, TextInput, StyleSheet, Pressable, Alert, Image, TouchableOpacity, ImageBackground, Animated } from 'react-native';
+import {
+  View, Text, FlatList, Modal, TextInput, StyleSheet, Pressable, Alert, Image,
+  TouchableOpacity,
+  ImageBackground,
+  Animated,
+  ActivityIndicator
+} from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import FABButton from '../../components/FABButton';
 import CustomTabBar from '../../components/CustomTabBar';
@@ -17,6 +23,7 @@ export default function TeacherSubjects() {
   const [subjects, setSubjects] = useState([]);
   const [creating, setCreating] = useState(false);
   const [editingSubject, setEditingSubject] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [name, setName] = useState('');
   const [editName, setEditName] = useState('');
@@ -66,13 +73,17 @@ export default function TeacherSubjects() {
   const create = async () => {
     try {
       if (!name.trim()) return;
+      setSubmitting(true);
       const subject = await subjectService.createSubject(name.trim());
       setCreatedCode(subject.code);
       setName('');
       setCreating(false);
       await load();
     } catch (e) {
+      console.log('Create subject error:', e);
       Alert.alert('Create failed', e?.response?.data?.detail || e.message);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -84,12 +95,15 @@ export default function TeacherSubjects() {
   const saveEdit = async () => {
     try {
       if (!editName.trim()) return;
+      setSubmitting(true);
       await subjectService.updateSubject(editingSubject.id, editName.trim());
       setEditingSubject(null);
       setEditName('');
       await load();
     } catch (e) {
       Alert.alert('Edit failed', e?.response?.data?.detail || e.message);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -118,10 +132,14 @@ export default function TeacherSubjects() {
 
   const deleteSubject = async (subjectId) => {
     try {
+      setSubmitting(true);
       await subjectService.deleteSubject(subjectId);
       await load();
     } catch (e) {
+      console.log('Delete subject error:', e);
       Alert.alert('Delete failed', e?.response?.data?.detail || e.message);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -222,8 +240,16 @@ export default function TeacherSubjects() {
                 <Pressable style={[styles.btn, styles.cancel, styles.btnLeft]} onPress={() => setCreating(false)}>
                   <Text style={styles.btnText}>Cancel</Text>
                 </Pressable>
-                <Pressable style={[styles.btn, styles.primary, styles.btnRight]} onPress={create}>
-                  <Text style={styles.btnText}>Create</Text>
+                <Pressable
+                  style={[styles.btn, styles.primary, styles.btnRight, (submitting || !name.trim()) && { opacity: 0.7 }]}
+                  onPress={create}
+                  disabled={submitting || !name.trim()}
+                >
+                  {submitting ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Text style={styles.btnText}>Create</Text>
+                  )}
                 </Pressable>
               </View>
             </View>
@@ -245,8 +271,16 @@ export default function TeacherSubjects() {
                 <Pressable style={[styles.btn, styles.cancel, styles.btnLeft]} onPress={() => setEditingSubject(null)}>
                   <Text style={styles.btnText}>Cancel</Text>
                 </Pressable>
-                <Pressable style={[styles.btn, styles.primary, styles.btnRight]} onPress={saveEdit}>
-                  <Text style={styles.btnText}>Save</Text>
+                <Pressable
+                  style={[styles.btn, styles.primary, styles.btnRight, (submitting || !editName.trim()) && { opacity: 0.7 }]}
+                  onPress={saveEdit}
+                  disabled={submitting || !editName.trim()}
+                >
+                  {submitting ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Text style={styles.btnText}>Save</Text>
+                  )}
                 </Pressable>
               </View>
             </View>

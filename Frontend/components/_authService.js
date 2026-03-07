@@ -71,7 +71,7 @@ export const authService = {
       console.log('Login successful');
       return { success: true, user, token };
     } catch (error) {
-      console.error('Login error:', error);
+      console.log('Login error (silent):', error?.response?.status, error?.response?.data?.detail);
 
       const errorMessage = error.response?.data?.detail ||
         error.response?.data?.message ||

@@ -197,7 +197,10 @@ export default function SubjectDetail() {
   const [showActivitySubmenu, setShowActivitySubmenu] = useState(false); // Track activity submenu modal
   const [showFloatingMenu, setShowFloatingMenu] = useState(false); // Track floating menu around FAB
   const [showProjectMenu, setShowProjectMenu] = useState(false); // Track project menu visibility
-  const [selectedTab, setSelectedTab] = useState(null); // Track selected tab for teachers
+  const [selectedTab, setSelectedTab] = useState(null); // 'students', 'notifications', or null (content)
+  const [submitting, setSubmitting] = useState(false);
+  const [acceptingStudentId, setAcceptingStudentId] = useState(null);
+  const [rejectingStudentId, setRejectingStudentId] = useState(null);
   const [studentTab, setStudentTab] = useState('lessons'); // Track selected tab for students: 'lessons', 'activities', 'favorites'
   const [activityFilter, setActivityFilter] = useState('all'); // Track selected activity type filter: 'all', 'quiz', 'assignment', 'lab', 'project', 'exam', 'lab_exam'
   const [contentFilter, setContentFilter] = useState('lecture'); // 'lecture', 'activity', 'quiz', 'exam', 'lab', 'assignment', 'project', 'all'
@@ -364,7 +367,7 @@ export default function SubjectDetail() {
         setContent([]);
       }
     } catch (error) {
-      console.error('Error loading content:', error);
+      console.log('Error loading content:', error);
       if (!preserveExisting) {
         setContent([]);
       }
@@ -390,7 +393,7 @@ export default function SubjectDetail() {
         setEnrolledStudents(enrolled);
         setPendingStudents(pending);
       } catch (error) {
-        if (!silent) console.error('Error loading students:', error);
+        if (!silent) console.log('Error loading students:', error);
       } finally {
         if (!silent) setStudentsLoading(false);
       }
@@ -817,6 +820,7 @@ export default function SubjectDetail() {
 
   const handleAccept = async (studentId) => {
     try {
+      setAcceptingStudentId(studentId);
       await subjectService.acceptStudent(subjectId, studentId);
       setPendingStudents(prev => prev.filter(s => s.id !== studentId));
       setEnrolledStudents(prev => [...prev, pendingStudents.find(s => s.id === studentId)]);
@@ -824,6 +828,8 @@ export default function SubjectDetail() {
       await loadData();
     } catch (error) {
       Alert.alert('Error', 'Failed to accept student');
+    } finally {
+      setAcceptingStudentId(null);
     }
   };
 
@@ -839,11 +845,14 @@ export default function SubjectDetail() {
           style: 'destructive',
           onPress: async () => {
             try {
+              setRejectingStudentId(studentId);
               await subjectService.rejectStudent(subjectId, studentId);
               setPendingStudents(prev => prev.filter(s => s.id !== studentId));
               Alert.alert('Rejected', 'Student has been rejected');
             } catch (error) {
               Alert.alert('Error', 'Failed to reject student');
+            } finally {
+              setRejectingStudentId(null);
             }
           }
         }
@@ -907,6 +916,7 @@ export default function SubjectDetail() {
     }
 
     try {
+      setSubmitting(true);
       // Backend only accepts one file at a time
       // Prioritize image over PDF
       let file = selectedImage || selectedPdf || null;
@@ -989,7 +999,7 @@ export default function SubjectDetail() {
         setContent(prev => {
           // If the item already exists (like after an edit), replace it. Otherwise, add it.
           const exists = prev.some(item => item.id === result.id);
-          const updated = exists 
+          const updated = exists
             ? prev.map(item => item.id === result.id ? newItem : item)
             : [...prev, newItem];
 
@@ -1019,6 +1029,8 @@ export default function SubjectDetail() {
 
       const errorMessage = error?.message || error?.response?.data?.detail || 'Failed to create content. Please try again.';
       Alert.alert('Error', errorMessage);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -1205,14 +1217,24 @@ export default function SubjectDetail() {
         <TouchableOpacity
           style={styles.rejectButton}
           onPress={() => handleReject(item.id)}
+          disabled={rejectingStudentId === item.id || acceptingStudentId === item.id}
         >
-          <Ionicons name="close" size={20} color="#dc3545" />
+          {rejectingStudentId === item.id ? (
+            <ActivityIndicator size="small" color="#dc3545" />
+          ) : (
+            <Ionicons name="close" size={24} color="#dc3545" />
+          )}
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.acceptButton}
           onPress={() => handleAccept(item.id)}
+          disabled={rejectingStudentId === item.id || acceptingStudentId === item.id}
         >
-          <Ionicons name="checkmark" size={20} color="#28a745" />
+          {acceptingStudentId === item.id ? (
+            <ActivityIndicator size="small" color="#28a745" />
+          ) : (
+            <Ionicons name="checkmark" size={24} color="#28a745" />
+          )}
         </TouchableOpacity>
       </View>
     </View>
@@ -1851,19 +1873,8 @@ export default function SubjectDetail() {
               </View>
             )}
 
-            {/* File Upload Section */}
-            <TouchableOpacity style={styles.uploadButton} onPress={pickImage}>
-              <Ionicons name="image" size={20} color="#28a745" />
-              <Text style={styles.uploadButtonText}>
-                {selectedImage ? selectedImage.uri.split('/').pop() : 'Upload Image'}
-              </Text>
-              {selectedImage && (
-                <TouchableOpacity onPress={() => setSelectedImage(null)}>
-                  <Ionicons name="close-circle" size={20} color="#dc3545" />
-                </TouchableOpacity>
-              )}
-            </TouchableOpacity>
 
+            {/* File Upload Section */}
             <TouchableOpacity style={styles.uploadButton} onPress={pickDocument}>
               <Ionicons name="document" size={20} color="#28a745" />
               <Text style={styles.uploadButtonText}>
@@ -1880,8 +1891,14 @@ export default function SubjectDetail() {
               <Pressable style={[styles.btn, styles.cancel, styles.btnLeft]} onPress={closeModal}>
                 <Text style={styles.btnText}>Cancel</Text>
               </Pressable>
-              <Pressable style={[styles.btn, styles.primary, styles.btnRight]} onPress={createContent}>
-                <Text style={styles.btnText}>{editingLecture ? 'Save' : 'Create'}</Text>
+              <Pressable
+                style={[styles.btn, styles.primary, styles.btnRight, submitting && { opacity: 0.7 }]}
+                onPress={createContent}
+                disabled={submitting}
+              >
+                <Text style={styles.btnText}>
+                  {submitting ? 'Please wait...' : (editingLecture ? 'Save' : 'Create')}
+                </Text>
               </Pressable>
             </View>
           </ScrollView>
@@ -2139,9 +2156,9 @@ export default function SubjectDetail() {
                   // Only block explicit download requests (user click to download)
                   // Allow Google Docs viewer to load all necessary resources
                   const url = request.url.toLowerCase();
-                  
+
                   // Block only explicit download parameters and user-initiated downloads
-                  const isExplicitDownload = 
+                  const isExplicitDownload =
                     url.includes('?download=true') ||
                     url.includes('&download=true') ||
                     url.includes('?download=1') ||
@@ -2160,7 +2177,7 @@ export default function SubjectDetail() {
                     request.url.startsWith('https://drive.google.com/') ||
                     request.url.startsWith('https://lh.googleusercontent.com') ||
                     request.url.includes('google.com');
-                  
+
                   // Allow the initial Supabase file URL and other safe origins
                   const isAllowedOrigin = isGoogleDomain ||
                     request.url.startsWith('https://') ||

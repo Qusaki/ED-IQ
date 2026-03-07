@@ -10,26 +10,10 @@ import { setupAxiosInterceptors } from './apiConfig';
 import { useRBAC } from './RBACComponents';
 import SelectionScreen from './SelectionScreen';
 import SplashAnimation from './SplashAnimation';
-import { LoadingProvider, useLoading } from '../components/LoadingContext';
 
 SplashScreen.preventAutoHideAsync().catch(() => { });
 
-function GlobalLoadingOverlay() {
-  const { isGlobalLoading } = useLoading();
-
-  if (!isGlobalLoading) return null;
-
-  return (
-    <View style={styles.loadingOverlay}>
-      <View style={styles.loadingBox}>
-        <ActivityIndicator size="large" color="#FF7700" />
-        <Text style={styles.loadingText}>Processing...</Text>
-      </View>
-    </View>
-  );
-}
-
-function RootLayoutContent() {
+export default function RootLayout() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [splashFinished, setSplashFinished] = useState(false);
@@ -93,7 +77,6 @@ function RootLayoutContent() {
   return (
     <>
       <StatusBar barStyle="dark-content" />
-      <GlobalLoadingOverlay />
       {!isAuthenticated ? (
         currentFlowStep === 'selection' ? (
           <SelectionScreen onSelectRole={handleRoleSelect} />
@@ -121,38 +104,3 @@ function RootLayoutContent() {
     </>
   );
 }
-
-export default function RootLayout() {
-  return (
-    <LoadingProvider>
-      <RootLayoutContent />
-    </LoadingProvider>
-  );
-}
-
-const styles = StyleSheet.create({
-  loadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
-    zIndex: 9999,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingBox: {
-    padding: 30,
-    backgroundColor: '#fff',
-    borderRadius: 15,
-    elevation: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 15,
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-  }
-});

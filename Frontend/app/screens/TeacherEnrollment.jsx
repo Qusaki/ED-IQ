@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { 
-  View, 
-  Text, 
-  FlatList, 
-  StyleSheet, 
-  Pressable, 
-  Alert, 
+import {
+  View,
+  Text,
+  FlatList,
+  StyleSheet,
+  Pressable,
+  Alert,
   Image,
-  TouchableOpacity 
+  TouchableOpacity,
+  ActivityIndicator
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -17,26 +18,36 @@ export default function SubjectDetail() {
   const { isTeacher } = useRBAC();
   const router = useRouter();
   const { subjectId, subjectName } = useLocalSearchParams();
-  
+
   const [enrolledStudents, setEnrolledStudents] = useState([
     { id: 1, name: 'John Doe', status: 'enrolled' },
     { id: 2, name: 'Jane Smith', status: 'enrolled' },
     { id: 3, name: 'Mike Johnson', status: 'enrolled' },
   ]);
-  
+
   const [pendingStudents, setPendingStudents] = useState([
     { id: 4, name: 'Sarah Wilson', status: 'pending' },
     { id: 5, name: 'David Brown', status: 'pending' },
   ]);
 
-  const handleAccept = (studentId) => {
+  const [acceptingStudentId, setAcceptingStudentId] = useState(null);
+  const [rejectingStudentId, setRejectingStudentId] = useState(null);
+
+  const handleAccept = async (studentId) => {
     const student = pendingStudents.find(s => s.id === studentId);
     if (student) {
-      // Move from pending to enrolled
-      setPendingStudents(prev => prev.filter(s => s.id !== studentId));
-      setEnrolledStudents(prev => [...prev, { ...student, status: 'enrolled' }]);
-      
-      Alert.alert('Success', `${student.name} has been accepted to the class`);
+      try {
+        setAcceptingStudentId(studentId);
+        // Move from pending to enrolled
+        setPendingStudents(prev => prev.filter(s => s.id !== studentId));
+        setEnrolledStudents(prev => [...prev, { ...student, status: 'enrolled' }]);
+
+        Alert.alert('Success', `${student.name} has been accepted to the class`);
+      } catch (error) {
+        Alert.alert('Error', 'Failed to accept student');
+      } finally {
+        setAcceptingStudentId(null);
+      }
     }
   };
 
@@ -51,9 +62,16 @@ export default function SubjectDetail() {
           {
             text: 'Reject',
             style: 'destructive',
-            onPress: () => {
-              setPendingStudents(prev => prev.filter(s => s.id !== studentId));
-              Alert.alert('Rejected', `${student.name} has been rejected`);
+            onPress: async () => {
+              try {
+                setRejectingStudentId(studentId);
+                setPendingStudents(prev => prev.filter(s => s.id !== studentId));
+                Alert.alert('Rejected', `${student.name} has been rejected`);
+              } catch (error) {
+                Alert.alert('Error', 'Failed to reject student');
+              } finally {
+                setRejectingStudentId(null);
+              }
             }
           }
         ]
@@ -77,17 +95,27 @@ export default function SubjectDetail() {
       </View>
       <Text style={styles.studentName}>{item.name}</Text>
       <View style={styles.actionButtons}>
-        <TouchableOpacity 
-          style={styles.rejectButton} 
+        <TouchableOpacity
+          style={styles.rejectButton}
           onPress={() => handleReject(item.id)}
+          disabled={rejectingStudentId === item.id || acceptingStudentId === item.id}
         >
-          <Ionicons name="close" size={16} color="#fff" />
+          {rejectingStudentId === item.id ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <Ionicons name="close" size={16} color="#fff" />
+          )}
         </TouchableOpacity>
-        <TouchableOpacity 
-          style={styles.acceptButton} 
+        <TouchableOpacity
+          style={styles.acceptButton}
           onPress={() => handleAccept(item.id)}
+          disabled={rejectingStudentId === item.id || acceptingStudentId === item.id}
         >
-          <Ionicons name="checkmark" size={16} color="#fff" />
+          {acceptingStudentId === item.id ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <Ionicons name="checkmark" size={16} color="#fff" />
+          )}
         </TouchableOpacity>
       </View>
     </View>
@@ -97,7 +125,7 @@ export default function SubjectDetail() {
     <View style={styles.container}>
       {/* Header with back button */}
       <View style={styles.headerRow}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.backButton}
           onPress={() => router.back()}
         >
