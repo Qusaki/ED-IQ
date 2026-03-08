@@ -43,12 +43,12 @@ export default function RootLayout() {
 
   if (!isAuthenticated) {
     return (
-      <AuthScreen 
+      <AuthScreen
         onAuthSuccess={async () => {
           console.log('Auth success callback triggered');
           // Force a fresh authentication check
           await checkAuth();
-        }} 
+        }}
       />
     );
   }
@@ -59,7 +59,7 @@ export default function RootLayout() {
       <Stack
         screenOptions={{
           headerStyle: {
-            backgroundColor: '#28a745',
+            backgroundColor: '#003366',
           },
           headerTintColor: '#ffffff',
           headerTitleStyle: {
@@ -93,59 +93,59 @@ export default function RootLayout() {
             animation: 'none',
           }}
         />
-        <Stack.Screen 
-          name="auth" 
-          options={{ 
+        <Stack.Screen
+          name="auth"
+          options={{
             href: null
-          }} 
+          }}
         />
-        <Stack.Screen 
-          name="apiConfig" 
-          options={{ 
+        <Stack.Screen
+          name="apiConfig"
+          options={{
             href: null
-          }} 
+          }}
         />
-        <Stack.Screen 
-          name="RBACComponents" 
-          options={{ 
+        <Stack.Screen
+          name="RBACComponents"
+          options={{
             href: null
-          }} 
+          }}
         />
-        <Stack.Screen 
-          name="rbacManager" 
-          options={{ 
+        <Stack.Screen
+          name="rbacManager"
+          options={{
             href: null
-          }} 
+          }}
         />
-        <Stack.Screen 
-          name="styles" 
-          options={{ 
+        <Stack.Screen
+          name="styles"
+          options={{
             href: null
-          }} 
+          }}
         />
-        <Stack.Screen 
-          name="subjectService" 
-          options={{ 
+        <Stack.Screen
+          name="subjectService"
+          options={{
             href: null
-          }} 
+          }}
         />
-        <Stack.Screen 
-          name="contentService" 
-          options={{ 
+        <Stack.Screen
+          name="contentService"
+          options={{
             href: null
-          }} 
+          }}
         />
-        <Stack.Screen 
-          name="protectedRequestService" 
-          options={{ 
+        <Stack.Screen
+          name="protectedRequestService"
+          options={{
             href: null
-          }} 
+          }}
         />
-        <Stack.Screen 
-          name="TokenManager" 
-          options={{ 
+        <Stack.Screen
+          name="TokenManager"
+          options={{
             href: null
-          }} 
+          }}
         />
         <Stack.Screen
           name="screens/SubjectDetail"
@@ -171,29 +171,29 @@ export default function RootLayout() {
             animation: 'none',
           }}
         />
-        <Stack.Screen 
-          name="_ui" 
-          options={{ 
+        <Stack.Screen
+          name="_ui"
+          options={{
             href: null
-          }} 
+          }}
         />
-        <Stack.Screen 
-          name="components" 
-          options={{ 
+        <Stack.Screen
+          name="components"
+          options={{
             href: null
-          }} 
+          }}
         />
-        <Stack.Screen 
-          name="assets" 
-          options={{ 
+        <Stack.Screen
+          name="assets"
+          options={{
             href: null
-          }} 
+          }}
         />
-        <Stack.Screen 
-          name="authService" 
-          options={{ 
+        <Stack.Screen
+          name="authService"
+          options={{
             href: null
-          }} 
+          }}
         />
       </Stack>
     </>

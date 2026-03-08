@@ -1214,13 +1214,13 @@ export default function ActivityDetail() {
   };
 
   const getActivityColor = () => {
-    if (!activity) return '#28a745';
+    if (!activity) return '#003366';
 
     if (activity.category === 'major exam' || activity.category === 'lab exam') return '#dc3545';
     if (activity.category === 'laboratory') return '#6f42c1';
     if (activity.category === 'assignment') return '#ffc107';
-    if (activity.category === 'project') return '#20c997';
-    if (activity.category === 'quiz') return '#17a2b8';
+    if (activity.category === 'project') return '#003366';
+    if (activity.category === 'quiz') return '#003366';
 
     // Default color if no category matches
     return '#6c757d';
@@ -1229,7 +1229,7 @@ export default function ActivityDetail() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#28a745" />
+        <ActivityIndicator size="large" color="#E6B041" />
         <Text style={styles.loadingText}>Loading activity details...</Text>
       </View>
     );
@@ -1245,16 +1245,12 @@ export default function ActivityDetail() {
 
   return (
     <View style={styles.container}>
-      <View style={[styles.header, { paddingTop: Math.max(16, insets.top) }]}>
+      <View style={[styles.header, isTeacher && { backgroundColor: '#003366' }, { paddingTop: Math.max(16, insets.top) }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#fff" />
+          <Ionicons name="arrow-back" size={24} color={isTeacher ? "#E6B041" : "#003366"} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{subjectName || 'Activity Details'}</Text>
-        {isTeacher && (
-          <TouchableOpacity style={styles.headerIconButton}>
-            <Ionicons name="notifications" size={24} color="#fff" />
-          </TouchableOpacity>
-        )}
+        <Text style={[styles.headerTitle, isTeacher && { color: '#E6B041' }]}>{subjectName || 'Activity Details'}</Text>
+        <View style={{ width: 44 }} />
       </View>
 
       <ScrollView
@@ -1331,11 +1327,11 @@ export default function ActivityDetail() {
                 style={styles.fileButton}
                 onPress={() => openFullScreenFile(activity.file_url, getFileNameSync(activity.file_url) || 'Activity File')}
               >
-                <Ionicons name="document-text" size={20} color="#28a745" />
+                <Ionicons name="document-text" size={20} color="#E6B041" />
                 <Text style={styles.fileButtonText}>
                   {getFileNameSync(activity.file_url) || 'Activity File'}
                 </Text>
-                <Ionicons name="open-outline" size={20} color="#28a745" />
+                <Ionicons name="open-outline" size={20} color="#E6B041" />
               </TouchableOpacity>
             </View>
           )}
@@ -1349,8 +1345,8 @@ export default function ActivityDetail() {
             {/* Show submission status if already submitted */}
             {submissionStatus && submissionStatus.submitted && (
               <>
-                <View style={[styles.statusBadge, { backgroundColor: submissionStatus.graded ? '#28a745' : '#ffc107' }]}>
-                  <Ionicons name="checkmark-circle" size={20} color="#fff" />
+                <View style={[styles.statusBadge, { backgroundColor: submissionStatus.graded ? '#E6B041' : '#ffc107' }]}>
+                  <Ionicons name="checkmark-circle" size={20} color="#003366" />
                   <Text style={styles.statusText}>
                     {submissionStatus.graded ? `Graded: ${submissionStatus.score} points` : 'Submitted'}
                   </Text>
@@ -1381,7 +1377,7 @@ export default function ActivityDetail() {
                           }
                         }}
                       >
-                        <Ionicons name="document-text" size={18} color="#fff" />
+                        <Ionicons name="document-text" size={18} color="#003366" />
                         <Text style={styles.viewSubmissionButtonText}>View Full Submission</Text>
                       </TouchableOpacity>
                     )}
@@ -1404,7 +1400,7 @@ export default function ActivityDetail() {
             {/* Show submission form if not submitted and before due date */}
             {submissionStatus === null ? (
               <View style={{ marginTop: 20, alignItems: 'center', padding: 20 }}>
-                <ActivityIndicator size="small" color="#28a745" />
+                <ActivityIndicator size="small" color="#E6B041" />
                 <Text style={{ marginTop: 10, color: '#6c757d', fontSize: 14 }}>
                   Checking submission status...
                 </Text>
@@ -1435,7 +1431,7 @@ export default function ActivityDetail() {
                   style={styles.uploadButton}
                   onPress={pickDocument}
                 >
-                  <Ionicons name="cloud-upload" size={24} color="#28a745" />
+                  <Ionicons name="cloud-upload" size={24} color="#E6B041" />
                   <Text style={styles.uploadButtonText}>
                     {file ? file.name : 'Choose File'}
                   </Text>
@@ -1443,7 +1439,7 @@ export default function ActivityDetail() {
 
                 {file && (
                   <View style={styles.filePreview}>
-                    <Ionicons name="document-text" size={20} color="#28a745" />
+                    <Ionicons name="document-text" size={20} color="#E6B041" />
                     <Text style={styles.fileName} numberOfLines={1}>
                       {file.name}
                     </Text>
@@ -1546,7 +1542,7 @@ export default function ActivityDetail() {
                         console.log('=== END BUTTON DEBUG ===');
                       }}
                     >
-                      <Ionicons name="document-text" size={18} color="#fff" />
+                      <Ionicons name="document-text" size={18} color="#003366" />
                       <Text style={styles.viewSubmissionButtonText}>View Full Submission</Text>
                     </TouchableOpacity>
 
@@ -1602,7 +1598,7 @@ export default function ActivityDetail() {
                 style={styles.menuItem}
                 onPress={startEditActivity}
               >
-                <Ionicons name="create" size={20} color="#007bff" />
+                <Ionicons name="create" size={20} color="#003366" />
                 <Text style={styles.menuItemText}>Edit Activity</Text>
               </TouchableOpacity>
 
@@ -1613,7 +1609,7 @@ export default function ActivityDetail() {
                   handleOpenOfflineScore();
                 }}
               >
-                <Ionicons name="school-outline" size={20} color="#6f42c1" />
+                <Ionicons name="school-outline" size={20} color="#003366" />
                 <Text style={styles.menuItemText}>Offline Score</Text>
               </TouchableOpacity>
 
@@ -1676,7 +1672,7 @@ export default function ActivityDetail() {
                   style={styles.uploadButton}
                   onPress={handleEditActivityPickFile}
                 >
-                  <Ionicons name="cloud-upload" size={24} color="#28a745" />
+                  <Ionicons name="cloud-upload" size={24} color="#E6B041" />
                   <Text style={styles.uploadButtonText}>
                     {editActivityFile ? editActivityFile.name : 'Choose File'}
                   </Text>
@@ -1684,7 +1680,7 @@ export default function ActivityDetail() {
 
                 {editActivityFile && (
                   <View style={styles.filePreview}>
-                    <Ionicons name="document-text" size={20} color="#28a745" />
+                    <Ionicons name="document-text" size={20} color="#E6B041" />
                     <Text style={styles.fileName} numberOfLines={1}>
                       {editActivityFile.name}
                     </Text>
@@ -1766,7 +1762,7 @@ export default function ActivityDetail() {
                   style={styles.uploadButton}
                   onPress={handleEditSubmissionPickFile}
                 >
-                  <Ionicons name="cloud-upload" size={24} color="#28a745" />
+                  <Ionicons name="cloud-upload" size={24} color="#E6B041" />
                   <Text style={styles.uploadButtonText}>
                     {editSubmissionFile ? editSubmissionFile.name : 'Choose New File'}
                   </Text>
@@ -1774,7 +1770,7 @@ export default function ActivityDetail() {
 
                 {editSubmissionFile && (
                   <View style={styles.filePreview}>
-                    <Ionicons name="document-text" size={20} color="#28a745" />
+                    <Ionicons name="document-text" size={20} color="#E6B041" />
                     <Text style={styles.fileName} numberOfLines={1}>
                       {editSubmissionFile.name}
                     </Text>
@@ -1843,7 +1839,7 @@ export default function ActivityDetail() {
                   style={styles.uploadButton}
                   onPress={handleEditTeacherPickFile}
                 >
-                  <Ionicons name="cloud-upload" size={24} color="#28a745" />
+                  <Ionicons name="cloud-upload" size={24} color="#E6B041" />
                   <Text style={styles.uploadButtonText}>
                     {editTeacherFile ? editTeacherFile.name : 'Choose New File'}
                   </Text>
@@ -1851,7 +1847,7 @@ export default function ActivityDetail() {
 
                 {editTeacherFile && (
                   <View style={styles.filePreview}>
-                    <Ionicons name="document-text" size={20} color="#28a745" />
+                    <Ionicons name="document-text" size={20} color="#E6B041" />
                     <Text style={styles.fileName} numberOfLines={1}>
                       {editTeacherFile.name}
                     </Text>
@@ -1904,7 +1900,7 @@ export default function ActivityDetail() {
 
               {offlineScoreLoading ? (
                 <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                  <ActivityIndicator size="large" color="#28a745" />
+                  <ActivityIndicator size="large" color="#E6B041" />
                   <Text style={{ marginTop: 10, color: '#666' }}>Loading students...</Text>
                 </View>
               ) : (
@@ -1963,7 +1959,7 @@ export default function ActivityDetail() {
 
               <View style={{ padding: 16, borderTopWidth: 1, borderTopColor: '#e9ecef', flexDirection: 'row', paddingBottom: 24 }}>
                 <TouchableOpacity
-                  style={[styles.submitButton, { flex: 1, backgroundColor: '#28a745', minHeight: 48, justifyContent: 'center', marginTop: 0 }]}
+                  style={[styles.submitButton, { flex: 1, backgroundColor: '#E6B041', minHeight: 48, justifyContent: 'center', marginTop: 0 }]}
                   onPress={handleSaveOfflineScores}
                   disabled={submitting || offlineScoreLoading}
                 >
@@ -1989,7 +1985,7 @@ export default function ActivityDetail() {
             <View style={styles.modalContent}>
               {modalLoading ? (
                 <View style={styles.modalLoadingContainer}>
-                  <ActivityIndicator size="large" color="#28a745" />
+                  <ActivityIndicator size="large" color="#E6B041" />
                   <Text style={styles.modalLoadingText}>Loading submission...</Text>
                 </View>
               ) : selectedSubmission ? (
@@ -2041,7 +2037,7 @@ export default function ActivityDetail() {
                           startInLoadingState={true}
                           renderLoading={() => (
                             <View style={styles.webViewLoader}>
-                              <ActivityIndicator size="large" color="#28a745" />
+                              <ActivityIndicator size="large" color="#E6B041" />
                               <Text style={styles.loadingText}>Loading document...</Text>
                             </View>
                           )}
@@ -2101,7 +2097,7 @@ export default function ActivityDetail() {
                           <Text style={[styles.submittedFileButtonText, { color: '#6c757d' }]}>
                             {getFileNameSync(submissionPreviewUrl) || 'Document'}
                           </Text>
-                          <Ionicons name="checkmark-circle" size={20} color="#28a745" />
+                          <Ionicons name="checkmark-circle" size={20} color="#E6B041" />
                         </View>
                       )}
                     </View>
@@ -2153,7 +2149,7 @@ export default function ActivityDetail() {
                     startInLoadingState={true}
                     renderLoading={() => (
                       <View style={styles.webViewLoader}>
-                        <ActivityIndicator size="large" color="#28a745" />
+                        <ActivityIndicator size="large" color="#E6B041" />
                         <Text style={styles.loadingText}>Loading document...</Text>
                       </View>
                     )}
@@ -2231,7 +2227,7 @@ export default function ActivityDetail() {
                 style={styles.fullScreenFileCloseButton}
                 onPress={closeFullScreenFileModal}
               >
-                <Ionicons name="close" size={28} color="#fff" />
+                <Ionicons name="close" size={30} color="#003366" />
               </TouchableOpacity>
               <Text style={styles.fullScreenFileModalTitle} numberOfLines={1}>
                 {fullScreenFileTitle || 'Document'}
@@ -2283,7 +2279,7 @@ export default function ActivityDetail() {
                     startInLoadingState={true}
                     renderLoading={() => (
                       <View style={styles.fullScreenFileLoadingContainer}>
-                        <ActivityIndicator size="large" color="#28a745" />
+                        <ActivityIndicator size="large" color="#E6B041" />
                         <Text style={styles.fullScreenFileLoadingText}>Loading document...</Text>
                       </View>
                     )}
@@ -2354,7 +2350,7 @@ export default function ActivityDetail() {
           showSubmittedPopup && (
             <View style={styles.popupOverlay}>
               <View style={styles.submittedPopup}>
-                <Ionicons name="checkmark-circle" size={60} color="#28a745" />
+                <Ionicons name="checkmark-circle" size={60} color="#E6B041" />
                 <Text style={styles.popupTitle}>Submitted!</Text>
                 <Text style={styles.popupMessage}>Your {getActivityType()} has been submitted successfully.</Text>
               </View>
@@ -2386,7 +2382,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#28a745',
+    backgroundColor: '#E6B041',
     paddingBottom: 16,
     paddingHorizontal: 16,
     elevation: 4,
@@ -2398,7 +2394,7 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   headerTitle: {
-    color: '#fff',
+    color: '#003366',
     fontSize: 18,
     fontWeight: 'bold',
     flex: 1,
@@ -2415,7 +2411,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     elevation: 2,
     borderLeftWidth: 4,
-    borderLeftColor: '#28a745',
+    borderLeftColor: '#E6B041',
   },
   cardHeader: {
     flexDirection: 'row',
@@ -2442,7 +2438,7 @@ const styles = StyleSheet.create({
   activityTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#2c3e50',
+    color: '#003366',
     marginBottom: 4,
   },
   termBadge: {
@@ -2465,7 +2461,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   detailValue: {
-    color: '#2c3e50',
+    color: '#003366',
     fontWeight: '500',
   },
   section: {
@@ -2477,7 +2473,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#2c3e50',
+    color: '#003366',
     marginBottom: 8,
   },
   descriptionText: {
@@ -2504,7 +2500,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#cde9d6',
+    borderColor: '#E6B041',
     marginBottom: 12,
   },
   submittedWebView: {
@@ -2513,7 +2509,7 @@ const styles = StyleSheet.create({
   fileButtonText: {
     flex: 1,
     marginLeft: 8,
-    color: '#2c3e50',
+    color: '#003366',
   },
   submissionContainer: {
     backgroundColor: '#fff',
@@ -2522,7 +2518,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   inputLabel: {
-    color: '#2c3e50',
+    color: '#003366',
     fontSize: 14,
     fontWeight: '500',
     marginBottom: 8,
@@ -2536,7 +2532,7 @@ const styles = StyleSheet.create({
   textInput: {
     padding: 12,
     textAlignVertical: 'top',
-    color: '#2c3e50',
+    color: '#003366',
   },
   uploadButton: {
     flexDirection: 'row',
@@ -2544,14 +2540,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: '#f8f9fa',
     borderWidth: 1,
-    borderColor: '#28a745',
+    borderColor: '#003366',
     borderStyle: 'dashed',
     borderRadius: 8,
     padding: 16,
     marginTop: 8,
   },
   uploadButtonText: {
-    color: '#28a745',
+    color: '#003366',
     marginLeft: 8,
     fontWeight: '500',
   },
@@ -2568,10 +2564,10 @@ const styles = StyleSheet.create({
   fileName: {
     flex: 1,
     marginLeft: 8,
-    color: '#2c3e50',
+    color: '#003366',
   },
   submitButton: {
-    backgroundColor: '#28a745',
+    backgroundColor: '#E6B041',
     borderRadius: 8,
     padding: 16,
     alignItems: 'center',
@@ -2598,7 +2594,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   statusText: {
-    color: '#fff',
+    color: '#003366',
     fontSize: 16,
     fontWeight: '600',
     marginLeft: 8,
@@ -2607,19 +2603,19 @@ const styles = StyleSheet.create({
     marginTop: 16,
     padding: 16,
     borderRadius: 12,
-    backgroundColor: '#f1f8f5',
+    backgroundColor: '#FFF9E6',
     borderWidth: 1,
-    borderColor: '#cde9d6',
+    borderColor: '#E6B041',
   },
   submittedDetailsLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#218838',
+    color: '#003366',
     marginBottom: 4,
   },
   submittedDetailsValue: {
     fontSize: 14,
-    color: '#155724',
+    color: '#003366',
     marginBottom: 12,
   },
   submittedImagePreview: {
@@ -2634,7 +2630,7 @@ const styles = StyleSheet.create({
   },
   submittedContentText: {
     fontSize: 15,
-    color: '#343a40',
+    color: '#003366',
     lineHeight: 20,
   },
   submittedFileButton: {
@@ -2642,14 +2638,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     borderWidth: 1,
-    borderColor: '#28a745',
+    borderColor: '#003366',
     borderRadius: 10,
     paddingVertical: 12,
     paddingHorizontal: 16,
     backgroundColor: '#fff',
   },
   submittedFileButtonText: {
-    color: '#28a745',
+    color: '#003366',
     fontWeight: '600',
     fontSize: 15,
   },
@@ -2657,13 +2653,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#17a2b8',
+    backgroundColor: '#003366',
     paddingVertical: 10,
     borderRadius: 8,
     marginBottom: 12,
   },
   viewSubmissionButtonText: {
-    color: '#fff',
+    color: '#E6B041',
     fontWeight: '600',
     marginLeft: 8,
   },
@@ -2684,7 +2680,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     elevation: 2,
     borderLeftWidth: 4,
-    borderLeftColor: '#007bff',
+    borderLeftColor: '#003366',
   },
   submissionHeader: {
     flexDirection: 'row',
@@ -2695,7 +2691,7 @@ const styles = StyleSheet.create({
   studentName: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#2c3e50',
+    color: '#003366',
   },
   submissionDate: {
     fontSize: 12,
@@ -2712,7 +2708,7 @@ const styles = StyleSheet.create({
   },
   contentText: {
     fontSize: 14,
-    color: '#2c3e50',
+    color: '#003366',
     lineHeight: 20,
   },
   submissionFile: {
@@ -2748,7 +2744,7 @@ const styles = StyleSheet.create({
   gradeValue: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#28a745',
+    color: '#003366',
   },
   gradeInput: {
     flexDirection: 'row',
@@ -2765,13 +2761,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   gradeButton: {
-    backgroundColor: '#28a745',
+    backgroundColor: '#003366',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
   },
   gradeButtonText: {
-    color: '#fff',
+    color: '#E6B041',
     fontSize: 14,
     fontWeight: 'bold',
   },
@@ -2822,7 +2818,7 @@ const styles = StyleSheet.create({
   modalSectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#2c3e50',
+    color: '#003366',
     marginBottom: 8,
   },
   modalScroll: {
@@ -2870,7 +2866,7 @@ const styles = StyleSheet.create({
   popupTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#28a745',
+    color: '#003366',
     marginTop: 16,
     marginBottom: 8,
   },
@@ -2919,7 +2915,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#28a745',
+    backgroundColor: '#E6B041',
     paddingHorizontal: 16,
     paddingBottom: 16,
   },
@@ -2933,7 +2929,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 18,
     fontWeight: '700',
-    color: '#fff',
+    color: '#003366',
     textAlign: 'center',
     marginHorizontal: 8,
   },
@@ -3002,7 +2998,7 @@ const styles = StyleSheet.create({
   },
   menuItemText: {
     fontSize: 16,
-    color: '#007bff',
+    color: '#E6B041',
     marginLeft: 12,
     fontWeight: '600',
   },
@@ -3015,7 +3011,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#007bff',
+    backgroundColor: '#003366',
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 8,
@@ -3041,7 +3037,7 @@ const styles = StyleSheet.create({
   },
   studentSelectItemActive: {
     backgroundColor: '#e7f3ff',
-    borderColor: '#007bff',
+    borderColor: '#003366',
     borderWidth: 2,
   },
   studentSelectContent: {
@@ -3068,8 +3064,8 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   statusSubmitted: {
-    backgroundColor: '#d4edda',
-    color: '#155724',
+    backgroundColor: '#FFF9E6',
+    color: '#003366',
   },
   statusGraded: {
     backgroundColor: '#cfe2ff',
@@ -3078,7 +3074,7 @@ const styles = StyleSheet.create({
   studentSelectGrade: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#28a745',
+    color: '#003366',
     marginLeft: 8,
   },
   gradeInputSection: {

@@ -129,7 +129,7 @@ export default function SubjectDetail() {
           style={styles.backButton}
           onPress={() => router.back()}
         >
-          <Ionicons name="arrow-back" size={24} color="#28a745" />
+          <Ionicons name="arrow-back" size={24} color="#E6B041" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{subjectName || 'Subject Detail'}</Text>
         <View style={styles.headerSpacer} />
@@ -171,17 +171,17 @@ export default function SubjectDetail() {
       <View style={styles.subjectTabBar}>
         <TouchableOpacity style={[styles.subjectTabItem, styles.activeTab]}>
           <View style={styles.subjectIconContainer}>
-            <Ionicons name="school" size={24} color="#28a745" />
+            <Ionicons name="school" size={24} color="#E6B041" />
           </View>
         </TouchableOpacity>
         <TouchableOpacity style={styles.subjectTabItem}>
           <View style={styles.subjectIconContainer}>
-            <Ionicons name="add" size={24} color="#000" />
+            <Ionicons name="add" size={24} color="#E6B041" />
           </View>
         </TouchableOpacity>
         <TouchableOpacity style={styles.subjectTabItem}>
           <View style={styles.subjectIconContainer}>
-            <Ionicons name="notifications" size={24} color="#000" />
+            <Ionicons name="notifications" size={24} color="#E6B041" />
           </View>
         </TouchableOpacity>
       </View>
@@ -209,7 +209,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#28a745',
+    color: '#E6B041',
     textAlign: 'center',
     marginHorizontal: 16,
   },
@@ -223,12 +223,12 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#28a745',
+    color: '#E6B041',
     marginBottom: 8,
     letterSpacing: 1,
   },
   sectionContent: {
-    backgroundColor: '#28a745',
+    backgroundColor: '#003366',
     borderRadius: 8,
     padding: 12,
     minHeight: 120,
@@ -243,7 +243,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#000',
+    backgroundColor: '#E6B041',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -272,7 +272,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#28a745',
+    backgroundColor: '#003366',
     justifyContent: 'center',
     alignItems: 'center',
   },

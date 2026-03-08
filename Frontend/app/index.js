@@ -37,8 +37,8 @@ export default function HomeScreen() {
 
   const getRoleColor = () => {
     if (isAdmin) return '#dc3545';
-    if (isTeacher) return '#28a745';
-    return '#28a745';
+    if (isTeacher) return '#E6B041';
+    return '#E6B041';
   };
 
   // Render role-specific subject screens to match provided GUI
@@ -69,7 +69,7 @@ export default function HomeScreen() {
           onPress={() => setChatbotVisible(true)}
           activeOpacity={0.7}
         >
-          <Image 
+          <Image
             source={Logo}
             style={styles.logoImage}
             resizeMode="contain"
@@ -114,7 +114,7 @@ const styles = StyleSheet.create({
   brandText: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#2c3e50',
+    color: '#2ecc71',
     textAlign: 'center',
   },
   title: {

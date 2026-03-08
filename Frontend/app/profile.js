@@ -199,7 +199,7 @@ export default function ProfileScreen() {
             <View style={styles.avatarContainer}>
               {imageLoading ? (
                 <View style={styles.avatarPlaceholder}>
-                  <ActivityIndicator size="large" color="#28a745" />
+                  <ActivityIndicator size="large" color="#E6B041" />
                 </View>
               ) : imageError || !user?.profile_picture ? (
                 <Image
@@ -402,7 +402,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 4,
     right: 4,
-    backgroundColor: '#28a745',
+    backgroundColor: '#E6B041',
     width: 32,
     height: 32,
     borderRadius: 16,
@@ -491,7 +491,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   saveButton: {
-    backgroundColor: '#28a745',
+    backgroundColor: '#E6B041',
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 8,

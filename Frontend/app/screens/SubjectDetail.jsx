@@ -34,7 +34,7 @@ import { WebView } from 'react-native-webview';
 const DonutChart = ({ size = 200, data, centerGrade }) => {
   // Generate colors for different activity types
   const colors = [
-    '#32cd32', '#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4',
+    '#E6B041', '#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4',
     '#feca57', '#ff9ff3', '#54a0ff', '#48dbfb', '#00d2d3'
   ];
 
@@ -1128,7 +1128,10 @@ export default function SubjectDetail() {
         <View style={styles.contentRow}>
           <View style={styles.contentInfo}>
             <Text style={styles.contentTitle} numberOfLines={1}>{(item.title || 'Untitled').toUpperCase()}</Text>
-            <Text style={styles.contentType}>
+            <Text style={[
+              styles.contentType,
+              { color: '#E6B041' }
+            ]}>
               {isExam ? 'EXAM' : isLab ? 'LAB' : isAssignment ? 'ASSIGNMENT' :
                 isProject ? 'PROJECT' : isQuiz ? 'QUIZ' : (item.type || 'content').toUpperCase()}
               {isExam && ` - ${item.category === 'major exam' ? 'Written' : 'Laboratory'}`}
@@ -1151,8 +1154,8 @@ export default function SubjectDetail() {
               {/* Show submission status for students */}
               {submissionStatus && (
                 <View style={styles.submissionStatus}>
-                  <Ionicons name="checkmark-circle" size={14} color="#28a745" />
-                  <Text style={[styles.submissionStatusText, { color: '#28a745' }]}>
+                  <Ionicons name="checkmark-circle" size={14} color="#E6B041" />
+                  <Text style={[styles.submissionStatusText, { color: '#E6B041' }]}>
                     Submitted
                   </Text>
                 </View>
@@ -1165,7 +1168,7 @@ export default function SubjectDetail() {
                 style={{ padding: 8 }}
                 onPress={() => handleEditLecture(item)}
               >
-                <Ionicons name="pencil" size={20} color="#007bff" />
+                <Ionicons name="pencil" size={20} color="#003366" />
               </TouchableOpacity>
               <TouchableOpacity
                 style={{ padding: 8 }}
@@ -1193,7 +1196,7 @@ export default function SubjectDetail() {
         />
       ) : (
         <View style={styles.studentIcon}>
-          <Ionicons name="person" size={20} color="#28a745" />
+          <Ionicons name="person" size={20} color="#E6B041" />
         </View>
       )}
       <Text style={styles.studentName} numberOfLines={1}>{item.name}</Text>
@@ -1231,9 +1234,9 @@ export default function SubjectDetail() {
           disabled={rejectingStudentId === item.id || acceptingStudentId === item.id}
         >
           {acceptingStudentId === item.id ? (
-            <ActivityIndicator size="small" color="#28a745" />
+            <ActivityIndicator size="small" color="#E6B041" />
           ) : (
-            <Ionicons name="checkmark" size={24} color="#28a745" />
+            <Ionicons name="checkmark" size={24} color="#E6B041" />
           )}
         </TouchableOpacity>
       </View>
@@ -1268,14 +1271,18 @@ export default function SubjectDetail() {
 
   return (
     <View style={styles.container}>
-      <View style={[styles.headerRow, { paddingTop: Math.max(16, insets.top) }]}>
+      <View style={[
+        styles.headerRow,
+        isTeacher ? { backgroundColor: '#003366', marginBottom: 0 } : { backgroundColor: '#E6B041' },
+        { paddingTop: Math.max(16, insets.top) }
+      ]}>
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => router.back()}
         >
-          <Ionicons name="arrow-back" size={24} color="#28a745" />
+          <Ionicons name="arrow-back" size={24} color={isTeacher ? "#E6B041" : "#003366"} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>
+        <Text style={[styles.headerTitle, isTeacher && { color: '#E6B041' }]}>
           {isTeacher ? (selectedTab === 'notifications' ? 'GRADING SYSTEM' : selectedTab === 'students' ? 'STUDENTS LIST' : 'ASSESSMENT TASK') : studentTab === 'lessons' ? 'LESSONS' : studentTab === 'activities' ? 'ACTIVITIES' : 'PERFORMANCE'}
         </Text>
       </View>
@@ -1285,12 +1292,12 @@ export default function SubjectDetail() {
         <ScrollView
           style={styles.contentArea}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#28a745']} />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#E6B041']} />
           }
         >
           {studentsLoading ? (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 100 }}>
-              <ActivityIndicator size="large" color="#28a745" />
+              <ActivityIndicator size="large" color="#E6B041" />
               <Text style={{ marginTop: 12, color: '#6c757d', fontSize: 16 }}>Loading student list...</Text>
             </View>
           ) : (
@@ -1356,6 +1363,8 @@ export default function SubjectDetail() {
       {isTeacher && !creating && selectedTab !== 'students' && selectedTab !== 'notifications' && (
         <FABButton
           bottom={120}
+          color="#003366"
+          iconColor="#E6B041"
           onPress={() => {
             if (contentFilter === 'exam') {
               // Toggle the project menu for exams
@@ -1681,7 +1690,7 @@ export default function SubjectDetail() {
             <View style={styles.favoritesContainer}>
               {performanceLoading ? (
                 <View style={styles.loadingContainer}>
-                  <ActivityIndicator size="large" color="#32cd32" />
+                  <ActivityIndicator size="large" color="#E6B041" />
                   <Text style={styles.loadingText}>Loading your performance...</Text>
                 </View>
               ) : (
@@ -1713,93 +1722,50 @@ export default function SubjectDetail() {
         onRequestClose={closeModal}
       >
         <View style={styles.modalBackdrop}>
-          <ScrollView style={styles.modal} contentContainerStyle={styles.modalScrollContent}>
-            <Text style={styles.modalTitle}>
-              {editingLecture ? 'Edit' : 'Create'} {contentType.toUpperCase()}
-            </Text>
+          <View style={styles.modal}>
+            <ScrollView
+              style={{ flexGrow: 0 }}
+              contentContainerStyle={styles.modalScrollContent}
+              showsVerticalScrollIndicator={false}
+            >
+              <Text style={styles.modalTitle}>
+                {editingLecture ? 'Edit' : 'Create'} {contentType.toUpperCase()}
+              </Text>
 
-            <TextInput
-              placeholder="Title"
-              value={title}
-              onChangeText={setTitle}
-              style={styles.input}
-              autoFocus
-            />
-
-            {contentType !== 'lecture' && (
               <TextInput
-                placeholder="Description (optional)"
-                value={description}
-                onChangeText={setDescription}
-                style={[styles.input, styles.textArea]}
-                multiline
-                numberOfLines={3}
-              />
-            )}
-
-            {/* Max Score for Activities, Quizzes, Labs, Assignments, Projects, and Exams */}
-            {(contentType === 'activity' || contentType === 'quiz' || contentType === 'exam' || contentType === 'lab' || contentType === 'assignment' || contentType === 'project') && (
-              <TextInput
-                placeholder="Max Score"
-                value={maxScore}
-                onChangeText={setMaxScore}
+                placeholder="Title"
+                value={title}
+                onChangeText={setTitle}
                 style={styles.input}
-                keyboardType="numeric"
+                autoFocus
               />
-            )}
 
-            {/* Term Selection for Activity, Quiz, Lab, Assignment, and Project (not for Exam) */}
-            {(contentType === 'activity' || contentType === 'quiz' || contentType === 'lab' || contentType === 'assignment' || contentType === 'project') && (
-              <View style={styles.typeContainer}>
-                <Text style={styles.label}>Term:</Text>
-                <View style={styles.typeButtons}>
-                  <TouchableOpacity
-                    style={[styles.typeButton, examTerm === 'midterm' && styles.typeButtonActive]}
-                    onPress={() => setExamTerm('midterm')}
-                  >
-                    <Text style={[styles.typeButtonText, examTerm === 'midterm' && styles.typeButtonTextActive]}>
-                      Midterm
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.typeButton, examTerm === 'final' && styles.typeButtonActive]}
-                    onPress={() => setExamTerm('final')}
-                  >
-                    <Text style={[styles.typeButtonText, examTerm === 'final' && styles.typeButtonTextActive]}>
-                      Final
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            )}
+              {contentType !== 'lecture' && (
+                <TextInput
+                  placeholder="Description (optional)"
+                  value={description}
+                  onChangeText={setDescription}
+                  style={[styles.input, styles.textArea]}
+                  multiline
+                  numberOfLines={3}
+                />
+              )}
 
-            {/* Exam Category and Term Selection */}
-            {contentType === 'exam' && (
-              <>
+              {/* Max Score for Activities, Quizzes, Labs, Assignments, Projects, and Exams */}
+              {(contentType === 'activity' || contentType === 'quiz' || contentType === 'exam' || contentType === 'lab' || contentType === 'assignment' || contentType === 'project') && (
+                <TextInput
+                  placeholder="Max Score"
+                  value={maxScore}
+                  onChangeText={setMaxScore}
+                  style={styles.input}
+                  keyboardType="numeric"
+                />
+              )}
+
+              {/* Term Selection for Activity, Quiz, Lab, Assignment, and Project (not for Exam) */}
+              {(contentType === 'activity' || contentType === 'quiz' || contentType === 'lab' || contentType === 'assignment' || contentType === 'project') && (
                 <View style={styles.typeContainer}>
-                  <Text style={styles.label}>Exam Type:</Text>
-                  <View style={styles.typeButtons}>
-                    <TouchableOpacity
-                      style={[styles.typeButton, examCategory === 'written' && styles.typeButtonActive]}
-                      onPress={() => setExamCategory('written')}
-                    >
-                      <Text style={[styles.typeButtonText, examCategory === 'written' && styles.typeButtonTextActive]}>
-                        Written
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[styles.typeButton, examCategory === 'laboratory' && styles.typeButtonActive]}
-                      onPress={() => setExamCategory('laboratory')}
-                    >
-                      <Text style={[styles.typeButtonText, examCategory === 'laboratory' && styles.typeButtonTextActive]}>
-                        Laboratory
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-
-                <View style={styles.typeContainer}>
-                  <Text style={styles.label}>Exam Term:</Text>
+                  <Text style={styles.label}>Term:</Text>
                   <View style={styles.typeButtons}>
                     <TouchableOpacity
                       style={[styles.typeButton, examTerm === 'midterm' && styles.typeButtonActive]}
@@ -1819,89 +1785,138 @@ export default function SubjectDetail() {
                     </TouchableOpacity>
                   </View>
                 </View>
-              </>
-            )}
-
-            {/* Due Date Section */}
-            {(contentType === 'activity' || contentType === 'quiz' || contentType === 'exam' || contentType === 'lab' || contentType === 'assignment' || contentType === 'project') && (
-              <View style={styles.typeContainer}>
-                <Text style={styles.label}>Due Date:</Text>
-                <View style={styles.typeButtons}>
-                  <TouchableOpacity
-                    style={[styles.typeButton, { flex: 1, marginRight: 10 }]}
-                    onPress={() => setShowDatePicker(true)}
-                  >
-                    <Ionicons name="calendar" size={18} color="#0f7a67" style={{ marginRight: 5 }} />
-                    <Text style={styles.typeButtonText}>
-                      {dueDate ? dueDate.toLocaleDateString() : 'Set Date'}
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.typeButton, { flex: 1 }]}
-                    onPress={() => setShowTimePicker(true)}
-                  >
-                    <Ionicons name="time" size={18} color="#0f7a67" style={{ marginRight: 5 }} />
-                    <Text style={styles.typeButtonText}>
-                      {dueDate ? dueDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Set Time'}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-
-                {showDatePicker && (
-                  <DateTimePicker
-                    value={dueDate || new Date()}
-                    mode="date"
-                    display="default"
-                    onChange={(event, selectedDate) => {
-                      setShowDatePicker(false);
-                      if (selectedDate) setDueDate(selectedDate);
-                    }}
-                  />
-                )}
-
-                {showTimePicker && (
-                  <DateTimePicker
-                    value={dueDate || new Date()}
-                    mode="time"
-                    display="default"
-                    onChange={(event, selectedDate) => {
-                      setShowTimePicker(false);
-                      if (selectedDate) setDueDate(selectedDate);
-                    }}
-                  />
-                )}
-              </View>
-            )}
-
-
-            {/* File Upload Section */}
-            <TouchableOpacity style={styles.uploadButton} onPress={pickDocument}>
-              <Ionicons name="document" size={20} color="#28a745" />
-              <Text style={styles.uploadButtonText}>
-                {selectedPdf ? selectedPdf.uri.split('/').pop() : 'Upload PDF'}
-              </Text>
-              {selectedPdf && (
-                <TouchableOpacity onPress={() => setSelectedPdf(null)}>
-                  <Ionicons name="close-circle" size={20} color="#dc3545" />
-                </TouchableOpacity>
               )}
-            </TouchableOpacity>
 
-            <View style={styles.buttonRow}>
-              <Pressable style={[styles.btn, styles.cancel, styles.btnLeft]} onPress={closeModal}>
-                <Text style={styles.btnText}>Cancel</Text>
-              </Pressable>
-              <Pressable
-                style={[styles.btn, styles.primary, styles.btnRight, submitting && { opacity: 0.7 }]}
-                onPress={createContent}
-                disabled={submitting}
-              >
-                <Text style={styles.btnText}>
-                  {submitting ? 'Please wait...' : (editingLecture ? 'Save' : 'Create')}
+              {/* Exam Category and Term Selection */}
+              {contentType === 'exam' && (
+                <>
+                  <View style={styles.typeContainer}>
+                    <Text style={styles.label}>Exam Type:</Text>
+                    <View style={styles.typeButtons}>
+                      <TouchableOpacity
+                        style={[styles.typeButton, examCategory === 'written' && styles.typeButtonActive]}
+                        onPress={() => setExamCategory('written')}
+                      >
+                        <Text style={[styles.typeButtonText, examCategory === 'written' && styles.typeButtonTextActive]}>
+                          Written
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.typeButton, examCategory === 'laboratory' && styles.typeButtonActive]}
+                        onPress={() => setExamCategory('laboratory')}
+                      >
+                        <Text style={[styles.typeButtonText, examCategory === 'laboratory' && styles.typeButtonTextActive]}>
+                          Laboratory
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+
+                  <View style={styles.typeContainer}>
+                    <Text style={styles.label}>Exam Term:</Text>
+                    <View style={styles.typeButtons}>
+                      <TouchableOpacity
+                        style={[styles.typeButton, examTerm === 'midterm' && styles.typeButtonActive]}
+                        onPress={() => setExamTerm('midterm')}
+                      >
+                        <Text style={[styles.typeButtonText, examTerm === 'midterm' && styles.typeButtonTextActive]}>
+                          Midterm
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.typeButton, examTerm === 'final' && styles.typeButtonActive]}
+                        onPress={() => setExamTerm('final')}
+                      >
+                        <Text style={[styles.typeButtonText, examTerm === 'final' && styles.typeButtonTextActive]}>
+                          Final
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </>
+              )}
+
+              {/* Due Date Section */}
+              {(contentType === 'activity' || contentType === 'quiz' || contentType === 'exam' || contentType === 'lab' || contentType === 'assignment' || contentType === 'project') && (
+                <View style={styles.typeContainer}>
+                  <Text style={styles.label}>Due Date:</Text>
+                  <View style={styles.typeButtons}>
+                    <TouchableOpacity
+                      style={[styles.typeButton, { flex: 1, marginRight: 10 }]}
+                      onPress={() => setShowDatePicker(true)}
+                    >
+                      <Ionicons name="calendar" size={18} color="#003366" style={{ marginRight: 5 }} />
+                      <Text style={styles.typeButtonText}>
+                        {dueDate ? dueDate.toLocaleDateString() : 'Set Date'}
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.typeButton, { flex: 1 }]}
+                      onPress={() => setShowTimePicker(true)}
+                    >
+                      <Ionicons name="time" size={18} color="#003366" style={{ marginRight: 5 }} />
+                      <Text style={styles.typeButtonText}>
+                        {dueDate ? dueDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Set Time'}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  {showDatePicker && (
+                    <DateTimePicker
+                      value={dueDate || new Date()}
+                      mode="date"
+                      display="default"
+                      onChange={(event, selectedDate) => {
+                        setShowDatePicker(false);
+                        if (selectedDate) setDueDate(selectedDate);
+                      }}
+                    />
+                  )}
+
+                  {showTimePicker && (
+                    <DateTimePicker
+                      value={dueDate || new Date()}
+                      mode="time"
+                      display="default"
+                      onChange={(event, selectedDate) => {
+                        setShowTimePicker(false);
+                        if (selectedDate) setDueDate(selectedDate);
+                      }}
+                    />
+                  )}
+                </View>
+              )}
+
+
+              {/* File Upload Section */}
+              <TouchableOpacity style={styles.uploadButton} onPress={pickDocument}>
+                <Ionicons name="document" size={20} color="#003366" />
+                <Text style={styles.uploadButtonText}>
+                  {selectedPdf ? selectedPdf.uri.split('/').pop() : 'Upload PDF'}
                 </Text>
-              </Pressable>
-            </View>
-          </ScrollView>
+                {selectedPdf && (
+                  <TouchableOpacity onPress={() => setSelectedPdf(null)}>
+                    <Ionicons name="close-circle" size={20} color="#dc3545" />
+                  </TouchableOpacity>
+                )}
+              </TouchableOpacity>
+
+              <View style={styles.buttonRow}>
+                <Pressable style={[styles.btn, styles.cancel, styles.btnLeft]} onPress={closeModal}>
+                  <Text style={styles.btnText}>Cancel</Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.btn, styles.primary, styles.btnRight, submitting && { opacity: 0.7 }]}
+                  onPress={createContent}
+                  disabled={submitting}
+                >
+                  <Text style={[styles.btnText, { color: '#E6B041' }]}>
+                    {submitting ? 'Please wait...' : (editingLecture ? 'Save' : 'Create')}
+                  </Text>
+                </Pressable>
+              </View>
+            </ScrollView>
+          </View>
         </View>
       </Modal>
 
@@ -1923,7 +1938,7 @@ export default function SubjectDetail() {
                 handleDirectCreate('quiz');
               }}
             >
-              <Ionicons name="help-circle" size={24} color="#0f7a67" />
+              <Ionicons name="help-circle" size={24} color="#003366" />
               <Text style={styles.submenuButtonText}>Quiz</Text>
             </TouchableOpacity>
 
@@ -1934,7 +1949,7 @@ export default function SubjectDetail() {
                 handleDirectCreate('assignment');
               }}
             >
-              <Ionicons name="create" size={24} color="#0f7a67" />
+              <Ionicons name="create" size={24} color="#003366" />
               <Text style={styles.submenuButtonText}>Assignment</Text>
             </TouchableOpacity>
 
@@ -1945,7 +1960,7 @@ export default function SubjectDetail() {
                 handleDirectCreate('lab');
               }}
             >
-              <Ionicons name="flask" size={24} color="#0f7a67" />
+              <Ionicons name="flask" size={24} color="#003366" />
               <Text style={styles.submenuButtonText}>Laboratory</Text>
             </TouchableOpacity>
 
@@ -1969,12 +1984,12 @@ export default function SubjectDetail() {
               activeOpacity={0.8}
             >
               <View style={styles.subjectIconContainer}>
-                <Ionicons name="people" size={22} color={selectedTab === 'students' ? '#28a745' : '#6c757d'} />
+                <Ionicons name="people" size={22} color={selectedTab === 'students' ? '#003366' : '#6c757d'} />
               </View>
               <Text
                 style={[
                   styles.subjectTabLabel,
-                  { color: selectedTab === 'students' ? '#28a745' : '#6c757d' }
+                  { color: selectedTab === 'students' ? '#003366' : '#6c757d' }
                 ]}
                 numberOfLines={1}
               >
@@ -1991,12 +2006,12 @@ export default function SubjectDetail() {
               activeOpacity={0.8}
             >
               <View style={styles.subjectIconContainer}>
-                <Ionicons name="document-text" size={22} color={(selectedTab !== 'students' && selectedTab !== 'notifications') ? '#28a745' : '#6c757d'} />
+                <Ionicons name="document-text" size={22} color={(selectedTab !== 'students' && selectedTab !== 'notifications') ? '#003366' : '#6c757d'} />
               </View>
               <Text
                 style={[
                   styles.subjectTabLabel,
-                  { color: (selectedTab !== 'students' && selectedTab !== 'notifications') ? '#28a745' : '#6c757d' }
+                  { color: (selectedTab !== 'students' && selectedTab !== 'notifications') ? '#003366' : '#6c757d' }
                 ]}
                 numberOfLines={1}
               >
@@ -2011,12 +2026,12 @@ export default function SubjectDetail() {
               activeOpacity={0.8}
             >
               <View style={styles.subjectIconContainer}>
-                <Ionicons name="speedometer" size={22} color={selectedTab === 'notifications' ? '#28a745' : '#6c757d'} />
+                <Ionicons name="speedometer" size={22} color={selectedTab === 'notifications' ? '#003366' : '#6c757d'} />
               </View>
               <Text
                 style={[
                   styles.subjectTabLabel,
-                  { color: selectedTab === 'notifications' ? '#28a745' : '#6c757d' }
+                  { color: selectedTab === 'notifications' ? '#003366' : '#6c757d' }
                 ]}
                 numberOfLines={1}
               >
@@ -2033,12 +2048,12 @@ export default function SubjectDetail() {
               activeOpacity={0.8}
             >
               <View style={styles.subjectIconContainer}>
-                <Ionicons name="book" size={22} color={studentTab === 'lessons' ? '#28a745' : '#6c757d'} />
+                <Ionicons name="book" size={22} color={studentTab === 'lessons' ? '#E6B041' : '#6c757d'} />
               </View>
               <Text
                 style={[
                   styles.subjectTabLabel,
-                  { color: studentTab === 'lessons' ? '#28a745' : '#6c757d' }
+                  { color: studentTab === 'lessons' ? '#E6B041' : '#6c757d' }
                 ]}
                 numberOfLines={1}
               >
@@ -2053,12 +2068,12 @@ export default function SubjectDetail() {
               activeOpacity={0.8}
             >
               <View style={styles.subjectIconContainer}>
-                <Ionicons name="document-text" size={22} color={studentTab === 'activities' ? '#28a745' : '#6c757d'} />
+                <Ionicons name="document-text" size={22} color={studentTab === 'activities' ? '#E6B041' : '#6c757d'} />
               </View>
               <Text
                 style={[
                   styles.subjectTabLabel,
-                  { color: studentTab === 'activities' ? '#28a745' : '#6c757d' }
+                  { color: studentTab === 'activities' ? '#E6B041' : '#6c757d' }
                 ]}
                 numberOfLines={1}
               >
@@ -2073,12 +2088,12 @@ export default function SubjectDetail() {
               activeOpacity={0.8}
             >
               <View style={styles.subjectIconContainer}>
-                <Ionicons name="speedometer" size={22} color={studentTab === 'favorites' ? '#28a745' : '#6c757d'} />
+                <Ionicons name="speedometer" size={22} color={studentTab === 'favorites' ? '#E6B041' : '#6c757d'} />
               </View>
               <Text
                 style={[
                   styles.subjectTabLabel,
-                  { color: studentTab === 'favorites' ? '#28a745' : '#6c757d' }
+                  { color: studentTab === 'favorites' ? '#E6B041' : '#6c757d' }
                 ]}
                 numberOfLines={1}
               >
@@ -2103,7 +2118,7 @@ export default function SubjectDetail() {
               style={styles.pdfCloseButton}
               onPress={() => setSelectedLecture(null)}
             >
-              <Ionicons name="close" size={28} color="#fff" />
+              <Ionicons name="close" size={28} color="#003366" />
             </TouchableOpacity>
             <Text style={styles.pdfModalTitle} numberOfLines={1}>
               {selectedLecture?.title || 'Lecture'}
@@ -2148,7 +2163,7 @@ export default function SubjectDetail() {
                 startInLoadingState={true}
                 renderLoading={() => (
                   <View style={styles.pdfLoadingContainer}>
-                    <ActivityIndicator size="large" color="#28a745" />
+                    <ActivityIndicator size="large" color={isTeacher ? '#003366' : '#E6B041'} />
                     <Text style={styles.pdfLoadingText}>Loading PDF...</Text>
                   </View>
                 )}
@@ -2237,7 +2252,7 @@ export default function SubjectDetail() {
               refreshControl={<RefreshControl refreshing={notifRefreshing} onRefresh={refreshInsideNotifications} />}
             >
               {insideNotificationsLoading ? (
-                <ActivityIndicator size="large" color="#28a745" style={{ marginTop: 40 }} />
+                <ActivityIndicator size="large" color="#E6B041" style={{ marginTop: 40 }} />
               ) : (insideNotifications || []).length === 0 ? (
                 <Text style={styles.emptyText}>No notifications yet</Text>
               ) : (
@@ -2292,7 +2307,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 18,
     fontWeight: '900',
-    color: '#28a745',
+    color: '#003366',
     textAlign: 'center',
     marginHorizontal: 16,
     letterSpacing: 1,
@@ -2334,7 +2349,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   contentType: {
-    color: '#28a745', // Brand green
+    color: '#E6B041', // Golden Yellow
     fontSize: 12,
     fontWeight: '700',
     marginBottom: 8,
@@ -2362,7 +2377,7 @@ const styles = StyleSheet.create({
   submissionStatus: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#e8f5e9',
+    backgroundColor: '#FFF9E6',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
@@ -2455,24 +2470,24 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#e8f5e9',
+    backgroundColor: '#e7f3ff',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#cde9ce',
+    borderColor: '#003366',
   },
   modalBackdrop: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.35)',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingBottom: 100,
   },
   modal: {
-    width: '95%',
-    maxHeight: '75%',
+    width: '90%',
+    maxHeight: '85%',
     backgroundColor: '#fff',
     borderRadius: 12,
+    overflow: 'hidden',
   },
   modalScrollContent: {
     padding: 24,
@@ -2507,7 +2522,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   typeButtonActive: {
-    backgroundColor: '#28a745',
+    backgroundColor: '#003366',
+    borderColor: '#003366',
   },
   typeButtonText: {
     fontSize: 12,
@@ -2515,7 +2531,7 @@ const styles = StyleSheet.create({
     color: '#6c757d',
   },
   typeButtonTextActive: {
-    color: '#fff',
+    color: '#E6B041',
   },
   input: {
     borderWidth: 1,
@@ -2562,7 +2578,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#6c757d',
   },
   primary: {
-    backgroundColor: '#28a745',
+    backgroundColor: '#003366',
   },
   btnText: {
     color: '#fff',
@@ -2645,7 +2661,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#6f42c1',
   },
   floatingMenuItem4: {
-    backgroundColor: '#20c997',  // Teal
+    backgroundColor: '#003366',  // Deep Navy for exam
   },
   floatingMenuItem5: {
     backgroundColor: '#dc3545',  // Red for exam
@@ -2713,8 +2729,8 @@ const styles = StyleSheet.create({
     borderColor: '#dee2e6',
   },
   activityFilterButtonActive: {
-    backgroundColor: '#28a745',
-    borderColor: '#28a745',
+    backgroundColor: '#E6B041',
+    borderColor: '#E6B041',
   },
   activityFilterText: {
     color: '#6c757d',
@@ -2722,7 +2738,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   activityFilterTextActive: {
-    color: '#ffffff',
+    color: '#003366',
   },
   filterContainer: {
     flexDirection: 'row',
@@ -2741,8 +2757,8 @@ const styles = StyleSheet.create({
     borderColor: '#dee2e6',
   },
   filterButtonActive: {
-    backgroundColor: '#28a745',
-    borderColor: '#28a745',
+    backgroundColor: '#003366',
+    borderColor: '#003366',
   },
   filterButtonText: {
     fontSize: 12,
@@ -2751,7 +2767,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   filterButtonTextActive: {
-    color: '#ffffff',
+    color: '#E6B041',
   },
   // PDF Viewer Styles
   pdfModalContainer: {
@@ -2763,7 +2779,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#28a745',
+    backgroundColor: '#003366',
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 12,
@@ -2779,7 +2795,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 18,
     fontWeight: '700',
-    color: '#fff',
+    color: '#E6B041',
     textAlign: 'center',
     marginHorizontal: 8,
   },
@@ -2838,7 +2854,7 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
   contentThumbActive: {
-    backgroundColor: '#e8f5e9',
+    backgroundColor: '#FFF9E6',
   },
   notificationItem: {
     backgroundColor: '#f8f9fa',
@@ -2846,7 +2862,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 12,
     borderLeftWidth: 4,
-    borderLeftColor: '#28a745',
+    borderLeftColor: '#E6B041',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
@@ -2956,7 +2972,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     backgroundColor: '#f8f9fa',
     borderLeftWidth: 4,
-    borderLeftColor: '#28a745',
+    borderLeftColor: '#003366',
     padding: 16,
     marginBottom: 12,
     borderRadius: 8,
@@ -3049,7 +3065,7 @@ const styles = StyleSheet.create({
   gradedActivityTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#2c3e50',
+    color: '#003366',
     marginBottom: 4,
   },
   gradedActivityType: {
@@ -3063,7 +3079,7 @@ const styles = StyleSheet.create({
   gradedScore: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#28a745',
+    color: '#003366',
   },
   gradedPercentage: {
     fontSize: 12,
@@ -3083,7 +3099,7 @@ const styles = StyleSheet.create({
   gradedStudentName: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#2c3e50',
+    color: '#003366',
     marginLeft: 6,
   },
   gradedSubmissionDate: {
@@ -3096,7 +3112,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     borderLeftWidth: 3,
-    borderLeftColor: '#28a745',
+    borderLeftColor: '#003366',
   },
   gradedContentLabel: {
     fontSize: 12,
@@ -3106,7 +3122,7 @@ const styles = StyleSheet.create({
   },
   gradedContentText: {
     fontSize: 14,
-    color: '#2c3e50',
+    color: '#003366',
     lineHeight: 20,
   },
   // Simple Grading System Styles
@@ -3130,14 +3146,14 @@ const styles = StyleSheet.create({
     flex: 2,
     fontSize: 16,
     fontWeight: '700',
-    color: '#2c3e50',
+    color: '#003366',
     letterSpacing: 0.5,
   },
   simpleFinalGrade: {
     flex: 1,
     fontSize: 18,
     fontWeight: '800',
-    color: '#28a745',
+    color: '#003366',
     textAlign: 'right',
   },
   // Student Performance Overview Styles
@@ -3147,7 +3163,7 @@ const styles = StyleSheet.create({
     padding: 20,
     marginBottom: 20,
     borderWidth: 2,
-    borderColor: '#32cd32',
+    borderColor: '#003366',
     elevation: 4,
     shadowColor: '#000',
     shadowOffset: {
@@ -3160,7 +3176,7 @@ const styles = StyleSheet.create({
   currentGradeTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#2c3e50',
+    color: '#003366',
     marginBottom: 12,
     textAlign: 'center',
   },
@@ -3170,7 +3186,7 @@ const styles = StyleSheet.create({
   gradePercentage: {
     fontSize: 48,
     fontWeight: 'bold',
-    color: '#32cd32',
+    color: '#003366',
     marginBottom: 8,
   },
   gradeLabel: {
@@ -3201,7 +3217,7 @@ const styles = StyleSheet.create({
   performanceTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#2c3e50',
+    color: '#003366',
   },
   scrollButton: {
     flexDirection: 'row',
@@ -3211,11 +3227,11 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#32cd32',
+    borderColor: '#003366',
   },
   scrollButtonText: {
     fontSize: 12,
-    color: '#32cd32',
+    color: '#003366',
     fontWeight: '600',
     marginLeft: 4,
   },
@@ -3252,7 +3268,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#2c3e50',
+    color: '#003366',
     marginRight: 12,
   },
   performanceScore: {
@@ -3300,7 +3316,7 @@ const styles = StyleSheet.create({
     padding: 20,
     marginBottom: 20,
     borderWidth: 2,
-    borderColor: '#32cd32',
+    borderColor: '#003366',
     elevation: 4,
     shadowColor: '#000',
     shadowOffset: {
@@ -3345,7 +3361,7 @@ const styles = StyleSheet.create({
   centerGrade: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#32cd32',
+    color: '#003366',
     textAlign: 'center',
   },
   centerLabel: {
@@ -3361,7 +3377,7 @@ const styles = StyleSheet.create({
     padding: 20,
     marginBottom: 20,
     borderWidth: 2,
-    borderColor: '#32cd32',
+    borderColor: '#003366',
     elevation: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -3371,7 +3387,7 @@ const styles = StyleSheet.create({
   legendTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#2c3e50',
+    color: '#003366',
     marginBottom: 16,
     textAlign: 'center',
   },

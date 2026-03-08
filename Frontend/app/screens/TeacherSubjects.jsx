@@ -161,7 +161,7 @@ export default function TeacherSubjects() {
 
         <View style={styles.bookContent}>
           <View style={styles.bookHeader}>
-            <MaterialCommunityIcons name="book-education-outline" size={26} color="#ffffff" style={styles.bookIcon} />
+            <MaterialCommunityIcons name="book-education-outline" size={26} color="#E6B041" style={styles.bookIcon} />
             <Text style={styles.subjectTitle} numberOfLines={2}>{(item.name || 'Subject').toUpperCase()}</Text>
           </View>
           {!!item.code && (
@@ -173,7 +173,7 @@ export default function TeacherSubjects() {
 
         <View style={styles.cardActions}>
           <TouchableOpacity style={styles.actionButton} onPress={() => showOptions(item)}>
-            <MaterialCommunityIcons name="dots-vertical" size={24} color="#ffffff" />
+            <MaterialCommunityIcons name="dots-vertical" size={24} color="#E6B041" />
           </TouchableOpacity>
         </View>
       </View>
@@ -222,7 +222,7 @@ export default function TeacherSubjects() {
         />
 
         {isTeacher && (
-          <FABButton bottom={120} onPress={() => setCreating(true)} />
+          <FABButton bottom={120} onPress={() => setCreating(true)} color="#003366" iconColor="#E6B041" />
         )}
 
         <Modal visible={creating} transparent animationType="slide" onRequestClose={() => setCreating(false)}>
@@ -313,7 +313,7 @@ const styles = StyleSheet.create({
   },
   container: { flex: 1, backgroundColor: 'rgba(255,255,255,0.9)' },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingTop: 56, paddingBottom: 8, marginBottom: 16 },
-  headerBrand: { fontSize: 24, fontWeight: 'bold', fontFamily: 'sans-serif', color: '#28a745', letterSpacing: 1 },
+  headerBrand: { fontSize: 24, fontWeight: 'bold', fontFamily: 'sans-serif', color: '#2ecc71', letterSpacing: 1 },
   logoButton: { padding: 8 },
   headerMascot: { width: 56, height: 56 },
   tooltipContainer: {
@@ -324,13 +324,13 @@ const styles = StyleSheet.create({
     right: 56,
   },
   tooltipBubble: {
-    backgroundColor: '#28a745',
+    backgroundColor: '#003366',
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 12,
   },
   tooltipText: {
-    color: '#fff',
+    color: '#E6B041',
     fontSize: 12,
     fontWeight: 'bold',
   },
@@ -344,12 +344,12 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     borderTopColor: 'transparent',
     borderBottomColor: 'transparent',
-    borderLeftColor: '#28a745',
+    borderLeftColor: '#003366',
     marginLeft: -1,
     zIndex: 2,
   },
   bookCard: {
-    backgroundColor: '#28a745', // Cover color
+    backgroundColor: '#003366', // Inverted: Navy cover for teachers
     borderRadius: 8,
     borderTopLeftRadius: 4,
     borderBottomLeftRadius: 4,
@@ -369,11 +369,11 @@ const styles = StyleSheet.create({
   },
   bookSpine: {
     width: 14,
-    backgroundColor: '#1e7e34', // Darker green for spine
+    backgroundColor: '#E6B041', // Inverted: Golden spine for teachers
     borderTopLeftRadius: 4,
     borderBottomLeftRadius: 4,
     borderRightWidth: 1,
-    borderRightColor: 'rgba(0,0,0,0.15)',
+    borderRightColor: 'rgba(230, 176, 65, 0.3)',
   },
   bookContent: {
     flex: 1,
@@ -390,7 +390,7 @@ const styles = StyleSheet.create({
     opacity: 0.9,
   },
   subjectTitle: {
-    color: '#ffffff',
+    color: '#E6B041',
     fontWeight: '800',
     fontSize: 17,
     letterSpacing: 0.5,
@@ -400,14 +400,14 @@ const styles = StyleSheet.create({
     textShadowRadius: 2,
   },
   codeContainer: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: 'rgba(230, 176, 65, 0.1)',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
     alignSelf: 'flex-start',
   },
   subjectMeta: {
-    color: '#ffffff',
+    color: '#E6B041',
     fontWeight: '700',
     fontSize: 12,
     letterSpacing: 0.5,
@@ -452,7 +452,7 @@ const styles = StyleSheet.create({
   btnLeft: { marginRight: 12 },
   btnRight: {},
   cancel: { backgroundColor: '#6c757d' },
-  primary: { backgroundColor: '#28a745' },
+  primary: { backgroundColor: '#003366' },
   btnText: { color: '#fff', fontWeight: '600' },
-  bigCode: { fontSize: 28, fontWeight: 'bold', textAlign: 'center', color: '#28a745', marginVertical: 10 },
+  bigCode: { fontSize: 28, fontWeight: 'bold', textAlign: 'center', color: '#E6B041', marginVertical: 10 },
 });

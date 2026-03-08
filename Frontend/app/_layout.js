@@ -69,7 +69,7 @@ export default function RootLayout() {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
         <ActivityIndicator size="large" color="#FF7700" />
-        <Text style={{ marginTop: 10 }}>ED-IQ is taking a moment...</Text>
+        <Text style={{ marginTop: 10 }}><Text style={{ color: '#2ecc71', fontWeight: 'bold' }}>ED-IQ</Text> is taking a moment...</Text>
       </View>
     );
   }

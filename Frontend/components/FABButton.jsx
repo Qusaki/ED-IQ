@@ -2,7 +2,7 @@ import React from 'react';
 import { TouchableOpacity, View, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-export default function FABButton({ onPress, icon = 'add', color = '#28a745', centered = false, bottom = 100 }) {
+export default function FABButton({ onPress, icon = 'add', color = '#E6B041', iconColor = '#ffffff', centered = false, bottom = 100 }) {
   return (
     <TouchableOpacity
       style={[
@@ -11,7 +11,7 @@ export default function FABButton({ onPress, icon = 'add', color = '#28a745', ce
         centered ? styles.centered : null,
       ]}
       onPress={() => {
-        try { console.log('FAB pressed'); } catch (_) {}
+        try { console.log('FAB pressed'); } catch (_) { }
         if (onPress) onPress();
       }}
       activeOpacity={0.9}
@@ -19,7 +19,7 @@ export default function FABButton({ onPress, icon = 'add', color = '#28a745', ce
       accessibilityLabel="Add"
     >
       <View>
-        <Ionicons name={icon} size={28} color="#ffffff" />
+        <Ionicons name={icon} size={28} color={iconColor} />
       </View>
     </TouchableOpacity>
   );

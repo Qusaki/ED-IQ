@@ -16,6 +16,7 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { chatbotService } from './chatbotService';
+import { useRBAC } from './RBACComponents';
 
 const robotLogo = require('../assets/img/ED-IQ_LOGO.png');
 
@@ -63,15 +64,16 @@ const TypingIndicator = () => {
     <View style={[styles.messageWrapper, styles.botMessageWrapper, { marginBottom: 12 }]}>
       <Image source={robotLogo} style={styles.botAvatar} resizeMode="contain" />
       <View style={[styles.messageBubble, styles.botMessage, { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 16 }]}>
-        <Animated.View style={[styles.dot, { opacity: dot1, transform: [{ translateY: dot1.interpolate({ inputRange: [0.3, 1], outputRange: [0, -3] }) }] }]} />
-        <Animated.View style={[styles.dot, { opacity: dot2, transform: [{ translateY: dot2.interpolate({ inputRange: [0.3, 1], outputRange: [0, -3] }) }] }]} />
-        <Animated.View style={[styles.dot, { opacity: dot3, transform: [{ translateY: dot3.interpolate({ inputRange: [0.3, 1], outputRange: [0, -3] }) }] }]} />
+        <Animated.View style={[styles.dot, isTeacher && { backgroundColor: '#E6B041' }, { opacity: dot1, transform: [{ translateY: dot1.interpolate({ inputRange: [0.3, 1], outputRange: [0, -3] }) }] }]} />
+        <Animated.View style={[styles.dot, isTeacher && { backgroundColor: '#E6B041' }, { opacity: dot2, transform: [{ translateY: dot2.interpolate({ inputRange: [0.3, 1], outputRange: [0, -3] }) }] }]} />
+        <Animated.View style={[styles.dot, isTeacher && { backgroundColor: '#E6B041' }, { opacity: dot3, transform: [{ translateY: dot3.interpolate({ inputRange: [0.3, 1], outputRange: [0, -3] }) }] }]} />
       </View>
     </View>
   );
 };
 
 export default function ChatbotModal({ visible, onClose }) {
+  const { isTeacher } = useRBAC();
   const insets = useSafeAreaInsets();
   const [messages, setMessages] = useState([
     {
@@ -139,10 +141,10 @@ export default function ChatbotModal({ visible, onClose }) {
     >
       <SafeAreaView style={styles.container}>
         {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>ED-IQ Assistant</Text>
+        <View style={[styles.header, isTeacher && { backgroundColor: '#003366' }]}>
+          <Text style={[styles.headerTitle, isTeacher && { color: '#E6B041' }]}>ED-IQ Assistant</Text>
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <MaterialCommunityIcons name="close" size={24} color="#fff" />
+            <MaterialCommunityIcons name="close" size={24} color={isTeacher ? "#E6B041" : "#003366"} />
           </TouchableOpacity>
         </View>
 
@@ -209,12 +211,13 @@ export default function ChatbotModal({ visible, onClose }) {
             <TouchableOpacity
               style={[
                 styles.sendButton,
+                isTeacher && { backgroundColor: '#003366' },
                 (loading || !inputText.trim()) && styles.sendButtonDisabled,
               ]}
               onPress={handleSendMessage}
               disabled={loading || !inputText.trim()}
             >
-              <MaterialCommunityIcons name="send" size={20} color="#fff" />
+              <MaterialCommunityIcons name="send" size={20} color={isTeacher ? "#E6B041" : "#003366"} />
             </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
@@ -229,7 +232,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
   },
   header: {
-    backgroundColor: '#28a745',
+    backgroundColor: '#E6B041',
     paddingVertical: 24,
     paddingHorizontal: 16,
     flexDirection: 'row',
@@ -239,7 +242,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 22,
     fontWeight: 'bold',
-    color: '#fff',
+    color: '#003366',
     flex: 1,
   },
   closeButton: {
@@ -274,7 +277,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   userMessage: {
-    backgroundColor: '#28a745',
+    backgroundColor: '#E6B041',
   },
   botMessage: {
     backgroundColor: '#e9ecef',
@@ -284,10 +287,10 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   userMessageText: {
-    color: '#fff',
+    color: '#003366',
   },
   botMessageText: {
-    color: '#333',
+    color: '#003366',
   },
   loadingContainer: {
     alignItems: 'center',
@@ -313,9 +316,10 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     fontSize: 14,
     maxHeight: 100,
+    color: '#003366',
   },
   sendButton: {
-    backgroundColor: '#28a745',
+    backgroundColor: '#E6B041',
     width: 40,
     height: 40,
     borderRadius: 20,
@@ -329,7 +333,7 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#6c757d',
+    backgroundColor: '#003366',
     marginHorizontal: 3,
   },
 });

@@ -50,7 +50,7 @@ export const styles = StyleSheet.create({
   brandText: {
     fontSize: isSmallDevice ? 26 : 32,
     fontWeight: 'bold',
-    color: '#2c3e50',
+    color: '#2ecc71',
     textAlign: 'center',
   },
   card: {
@@ -70,7 +70,7 @@ export const styles = StyleSheet.create({
   title: {
     fontSize: isSmallDevice ? 22 : 28,
     fontWeight: 'bold',
-    color: '#2c3e50',
+    color: '#003366',
     textAlign: 'center',
     marginBottom: 8,
   },
@@ -228,7 +228,7 @@ export const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#2c3e50',
+    color: '#003366',
   },
   closeButton: {
     padding: 8,
@@ -272,7 +272,7 @@ export const styles = StyleSheet.create({
   welcomeTitle: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#2c3e50',
+    color: '#003366',
     textAlign: 'center',
     marginBottom: 10,
   },
@@ -284,7 +284,7 @@ export const styles = StyleSheet.create({
   },
   userRole: {
     fontSize: 14,
-    color: '#007bff',
+    color: '#003366',
     textAlign: 'center',
     fontWeight: 'bold',
     marginBottom: 30,
@@ -299,7 +299,7 @@ export const styles = StyleSheet.create({
   roleSectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#2c3e50',
+    color: '#003366',
     marginBottom: 15,
     textAlign: 'center',
   },
@@ -313,13 +313,13 @@ export const styles = StyleSheet.create({
     backgroundColor: '#dc3545',
   },
   teacherButton: {
-    backgroundColor: '#28a745',
+    backgroundColor: '#003366',
   },
   studentButton: {
-    backgroundColor: '#007bff',
+    backgroundColor: '#E6B041',
   },
   sharedButton: {
-    backgroundColor: '#6f42c1',
+    backgroundColor: '#6c757d',
   },
   roleButtonText: {
     color: '#ffffff',
@@ -327,7 +327,7 @@ export const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   logoutButton: {
-    backgroundColor: '#6c757d',
+    backgroundColor: '#003366',
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',

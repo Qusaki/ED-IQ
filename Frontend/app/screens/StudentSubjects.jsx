@@ -96,11 +96,11 @@ export default function StudentSubjects() {
           <Ionicons
             name="bookmark"
             size={40}
-            color="#1e7e34"
+            color="#003366"
             style={{ position: 'absolute', top: -4, right: 32, zIndex: 10 }}
           />
           <View style={styles.bookHeader}>
-            <MaterialCommunityIcons name="book-education-outline" size={26} color="#ffffff" style={styles.bookIcon} />
+            <MaterialCommunityIcons name="book-education-outline" size={26} color="#003366" style={styles.bookIcon} />
             <Text style={styles.subjectTitle} numberOfLines={2}>{(item.name || 'Subject').toUpperCase()}</Text>
           </View>
           {(!!item.code || !!item.teacher_name) && (
@@ -215,7 +215,7 @@ const styles = StyleSheet.create({
   },
   container: { flex: 1, backgroundColor: 'rgba(255,255,255,0.9)' },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingTop: 56, paddingBottom: 8, marginBottom: 16 },
-  headerBrand: { fontSize: 24, fontWeight: 'bold', fontFamily: 'sans-serif', color: '#28a745', letterSpacing: 1 },
+  headerBrand: { fontSize: 24, fontWeight: 'bold', fontFamily: 'sans-serif', color: '#2ecc71', letterSpacing: 1 },
   logoButton: { padding: 8 },
   headerMascot: { width: 56, height: 56 },
   tooltipContainer: {
@@ -226,13 +226,13 @@ const styles = StyleSheet.create({
     right: 56,
   },
   tooltipBubble: {
-    backgroundColor: '#28a745',
+    backgroundColor: '#FFC107',
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 12,
   },
   tooltipText: {
-    color: '#fff',
+    color: '#003366',
     fontSize: 12,
     fontWeight: 'bold',
   },
@@ -246,12 +246,12 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     borderTopColor: 'transparent',
     borderBottomColor: 'transparent',
-    borderLeftColor: '#28a745',
+    borderLeftColor: '#FFC107',
     marginLeft: -1,
     zIndex: 2,
   },
   bookCard: {
-    backgroundColor: '#28a745', // Cover color
+    backgroundColor: '#FFC107', // Cover color
     borderRadius: 8,
     borderTopLeftRadius: 4,
     borderBottomLeftRadius: 4,
@@ -271,7 +271,7 @@ const styles = StyleSheet.create({
   },
   bookSpine: {
     width: 14,
-    backgroundColor: '#1e7e34', // Darker green for spine
+    backgroundColor: '#003366', // Darker navy for spine
     borderTopLeftRadius: 4,
     borderBottomLeftRadius: 4,
     borderRightWidth: 1,
@@ -292,12 +292,12 @@ const styles = StyleSheet.create({
     opacity: 0.9,
   },
   subjectTitle: {
-    color: '#ffffff',
+    color: '#003366',
     fontWeight: '800',
     fontSize: 17,
     letterSpacing: 0.5,
     flex: 1,
-    textShadowColor: 'rgba(0, 0, 0, 0.1)',
+    textShadowColor: 'rgba(0, 0, 0, 0.05)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
   },
@@ -309,10 +309,11 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   subjectMeta: {
-    color: '#ffffff',
+    color: '#003366',
     fontWeight: '700',
     fontSize: 12,
     letterSpacing: 0.5,
+    opacity: 0.85,
   },
   cardArrow: {
     width: 28,
@@ -332,7 +333,7 @@ const styles = StyleSheet.create({
   empty: { textAlign: 'center', marginTop: 40, color: '#6c757d' },
   modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'center', alignItems: 'center' },
   modal: { width: '85%', backgroundColor: '#fff', borderRadius: 12, padding: 20 },
-  modalTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 12, color: '#2c3e50' },
+  modalTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 12, color: '#003366' },
   input: {
     borderWidth: 1, borderColor: '#dee2e6', borderRadius: 8, padding: 12, marginBottom: 16, backgroundColor: '#fff', textAlign: 'center', letterSpacing: 2,
   },
@@ -341,6 +342,6 @@ const styles = StyleSheet.create({
   btnLeft: { marginRight: 12 },
   btnRight: {},
   cancel: { backgroundColor: '#6c757d' },
-  primary: { backgroundColor: '#28a745' },
+  primary: { backgroundColor: '#E6B041' },
   btnText: { color: '#fff', fontWeight: '600' },
 });

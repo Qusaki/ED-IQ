@@ -4,9 +4,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, usePathname, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import RBACManager from '../app/rbacManager';
+import { useRBAC } from '../app/RBACComponents';
 import { notificationService } from '../app/notificationService';
 
 export default function CustomTabBar({ unreadNotificationCount = 0 }) {
+  const { isTeacher } = useRBAC();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const pathname = usePathname();
@@ -171,11 +173,17 @@ export default function CustomTabBar({ unreadNotificationCount = 0 }) {
               <Ionicons
                 name={tab.icon}
                 size={22}
-                color={active ? '#28a745' : '#6c757d'}
+                color={active ? (isTeacher ? '#003366' : '#E6B041') : '#6c757d'}
               />
               {tab.name === 'notifications' && displayCount > 0 && (
-                <View style={styles.notificationBadge}>
-                  <Text style={styles.badgeText}>
+                <View style={[
+                  styles.notificationBadge,
+                  { backgroundColor: isTeacher ? '#003366' : '#E6B041' }
+                ]}>
+                  <Text style={[
+                    styles.badgeText,
+                    { color: isTeacher ? '#E6B041' : '#003366' }
+                  ]}>
                     {displayCount > 99 ? '99+' : displayCount}
                   </Text>
                 </View>
@@ -184,7 +192,7 @@ export default function CustomTabBar({ unreadNotificationCount = 0 }) {
             <Text
               style={[
                 styles.tabLabel,
-                { color: active ? '#28a745' : '#6c757d' }
+                { color: active ? (isTeacher ? '#003366' : '#E6B041') : '#6c757d' }
               ]}
               numberOfLines={1}
             >
@@ -241,7 +249,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -4,
     right: -8,
-    backgroundColor: '#dc3545',
     borderRadius: 10,
     minWidth: 18,
     height: 18,
@@ -250,7 +257,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   badgeText: {
-    color: '#fff',
     fontSize: 9,
     fontWeight: 'bold',
   },

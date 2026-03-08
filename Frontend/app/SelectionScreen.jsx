@@ -87,7 +87,7 @@ const styles = StyleSheet.create({
     brandText: {
         fontSize: 36,
         fontWeight: 'bold',
-        color: '#2c3e50',
+        color: '#2ecc71',
         letterSpacing: 2,
     },
     welcomeText: {

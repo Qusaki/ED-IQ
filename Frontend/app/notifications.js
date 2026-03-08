@@ -436,9 +436,9 @@ export default function NotificationsScreen() {
         <View style={styles.tabBar}>
           <TouchableOpacity
             onPress={() => setTab('general')}
-            style={[styles.tabButton, tab === 'general' && styles.tabActive]}
+            style={[styles.tabButton, tab === 'general' && (role === 'teacher' ? { backgroundColor: '#003366' } : styles.tabActive)]}
           >
-            <Text style={[styles.tabText, tab === 'general' && styles.tabTextActive]}>
+            <Text style={[styles.tabText, tab === 'general' && (role === 'teacher' ? { color: '#E6B041' } : styles.tabTextActive)]}>
               General {`(${generalNotifications.filter(n => !readNotifications.has(n.id) && n.is_read !== true && n.is_read !== 1).length})`}
             </Text>
           </TouchableOpacity>
@@ -502,7 +502,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#32cd32',
+    color: '#003366',
     textAlign: 'center',
     marginBottom: 12,
     marginTop: 20,
@@ -520,14 +520,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#f0f0f0',
   },
   tabActive: {
-    backgroundColor: '#32cd32',
+    backgroundColor: '#E6B041',
   },
   tabText: {
     color: '#333',
     fontWeight: '600',
   },
   tabTextActive: {
-    color: '#fff',
+    color: '#003366',
   },
   notificationsList: {
     flex: 1,
@@ -539,7 +539,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 12,
     borderLeftWidth: 4,
-    borderLeftColor: '#28a745',
+    borderLeftColor: '#003366',
     position: 'relative',
     flexDirection: 'row',
     alignItems: 'center',
@@ -547,13 +547,13 @@ const styles = StyleSheet.create({
   notificationTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#2c3e50',
+    color: '#003366',
     marginBottom: 6,
     paddingRight: 16,
   },
   notificationText: {
     fontSize: 14,
-    color: '#2c3e50',
+    color: '#003366',
     marginBottom: 8,
     lineHeight: 20,
   },
@@ -576,7 +576,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 12,
     borderLeftWidth: 4,
-    borderLeftColor: '#28a745',
+    borderLeftColor: '#003366',
   },
   subjectInfo: {
     flex: 1,
@@ -584,7 +584,7 @@ const styles = StyleSheet.create({
   subjectIndicatorName: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#28a745',
+    color: '#003366',
     letterSpacing: 0.5,
   },
   subjectDetail: {
@@ -593,14 +593,20 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   notificationBadge: {
-    backgroundColor: '#28a745',
+    backgroundColor: '#E6B041',
     borderRadius: 12,
     paddingVertical: 6,
     paddingHorizontal: 12,
   },
+  notificationBadgeTeacher: {
+    backgroundColor: '#003366',
+  },
   notificationBadgeText: {
-    color: '#fff',
+    color: '#003366',
     fontWeight: 'bold',
     fontSize: 14,
+  },
+  notificationBadgeTextTeacher: {
+    color: '#E6B041',
   },
 });
