@@ -340,7 +340,7 @@ export default function ActivityDetail() {
       }
 
       await contentService.submitOfflineScores(activity.id, scoresPayload);
-      Alert.alert('Success', 'Offline scores saved successfully!');
+      // Alert.alert('Success', 'Offline scores saved successfully!');
 
       // Close the modal and refresh grading data
       setShowOfflineScoreModal(false);
@@ -825,7 +825,7 @@ export default function ActivityDetail() {
       const updatedSubmissions = await contentService.getSubmissions(activity.id);
       setSubmissions(updatedSubmissions);
 
-      Alert.alert('Success', 'Grade assigned successfully!');
+      // Alert.alert('Success', 'Grade assigned successfully!');
       setGradingMode(false);
       setGrading({});
 
@@ -930,7 +930,7 @@ export default function ActivityDetail() {
       setEditSubmissionText('');
       setEditSubmissionFile(null);
 
-      Alert.alert('Success', 'Your submission has been updated!');
+      // Alert.alert('Success', 'Your submission has been updated!');
     } catch (error) {
       console.error('Edit submission error:', error);
       Alert.alert('Error', 'Failed to update submission. Please try again.');
@@ -994,7 +994,7 @@ export default function ActivityDetail() {
       setEditTeacherText('');
       setEditTeacherFile(null);
 
-      Alert.alert('Success', 'Submission has been updated!');
+      // Alert.alert('Success', 'Submission has been updated!');
     } catch (error) {
       console.error('Edit submission error:', error);
       Alert.alert('Error', 'Failed to update submission. Please try again.');
@@ -1062,7 +1062,7 @@ export default function ActivityDetail() {
       setEditActivityDescription('');
       setEditActivityFile(null);
 
-      Alert.alert('Success', 'Activity has been updated!');
+      // Alert.alert('Success', 'Activity has been updated!');
     } catch (error) {
       console.error('Edit activity error:', error);
       Alert.alert('Error', 'Failed to update activity. Please try again.');
@@ -1084,9 +1084,7 @@ export default function ActivityDetail() {
             try {
               setLoading(true);
               await contentService.deleteActivity(activity.id);
-              Alert.alert("Success", "Activity deleted successfully.", [
-                { text: "OK", onPress: () => router.back() }
-              ]);
+              router.back();
             } catch (error) {
               console.error("Error deleting activity:", error);
               Alert.alert("Error", "Failed to delete activity.");

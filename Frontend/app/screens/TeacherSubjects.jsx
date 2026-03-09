@@ -29,6 +29,7 @@ export default function TeacherSubjects() {
   const [editName, setEditName] = useState('');
   const [createdCode, setCreatedCode] = useState(null);
   const [chatbotVisible, setChatbotVisible] = useState(false);
+  const [loading, setLoading] = useState(true);
   const tooltipAnim = React.useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -53,13 +54,14 @@ export default function TeacherSubjects() {
   useEffect(() => {
     const intervalId = setInterval(() => {
       // Silent load without triggering any loading states
-      load();
+      load(true);
     }, 10000); // 10 seconds polling
 
     return () => clearInterval(intervalId);
   }, []);
 
-  const load = async () => {
+  const load = async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const hasTeacher = await RBACManager.hasRole(ROLES.TEACHER);
       if (!hasTeacher) return Alert.alert('Access denied', 'Teacher role required');
@@ -67,6 +69,8 @@ export default function TeacherSubjects() {
       setSubjects(Array.isArray(data) ? data : []);
     } catch (e) {
       Alert.alert('Error', e?.response?.data?.detail || e.message);
+    } finally {
+      if (!silent) setLoading(false);
     }
   };
 
@@ -160,9 +164,9 @@ export default function TeacherSubjects() {
         <View style={styles.bookSpine} />
 
         <View style={styles.bookContent}>
-          <View style={styles.bookHeader}>
+          <View style={[styles.bookHeader, { paddingRight: 48 }]}>
             <MaterialCommunityIcons name="book-education-outline" size={26} color="#E6B041" style={styles.bookIcon} />
-            <Text style={styles.subjectTitle} numberOfLines={2}>{(item.name || 'Subject').toUpperCase()}</Text>
+            <Text style={styles.subjectTitle} numberOfLines={3}>{(item.name || 'Subject').toUpperCase()}</Text>
           </View>
           {!!item.code && (
             <View style={styles.codeContainer}>
@@ -218,7 +222,13 @@ export default function TeacherSubjects() {
           keyExtractor={(it) => it.id}
           renderItem={renderItem}
           contentContainerStyle={{ padding: 16, paddingTop: 8, paddingBottom: 200 }}
-          ListEmptyComponent={<Text style={styles.empty}>No subjects yet</Text>}
+          ListEmptyComponent={
+            loading ? (
+              <ActivityIndicator size="large" color="#003366" style={{ marginTop: 40 }} />
+            ) : (
+              <Text style={styles.empty}>No subjects yet</Text>
+            )
+          }
         />
 
         {isTeacher && (

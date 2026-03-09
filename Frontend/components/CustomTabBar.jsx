@@ -22,7 +22,7 @@ export default function CustomTabBar({ unreadNotificationCount = 0 }) {
 
         // For students, count individual notifications
         if (role !== 'teacher') {
-          const backend = await notificationService.getBackendNotifications();
+          const backend = await notificationService.getBackendNotifications(true);
           let items = Array.isArray(backend) ? backend : [];
           items = items.filter((n) =>
             n?.title === 'New Lecture' ||
@@ -35,7 +35,7 @@ export default function CustomTabBar({ unreadNotificationCount = 0 }) {
         } else {
           // For teachers, we need to get the same notifications as the notifications screen
           try {
-            const merged = await notificationService.getGeneralNotificationsForTeacher();
+            const merged = await notificationService.getGeneralNotificationsForTeacher(10, true);
             const globalReadIds = notificationService.getGlobalReadNotifications();
             const unread = (merged || []).filter(n => {
               if (n.is_read === true || n.is_read === 1) return false;
@@ -45,7 +45,7 @@ export default function CustomTabBar({ unreadNotificationCount = 0 }) {
             if (mounted) setInternalUnread(unread.length);
           } catch (e) {
             // Fallback: try backend notifications
-            const backend = await notificationService.getBackendNotifications();
+            const backend = await notificationService.getBackendNotifications(true);
             const items = Array.isArray(backend) ? backend : [];
             const unread = items.filter((n) => n && n.is_read !== true && n.is_read !== 1);
             if (mounted) setInternalUnread(unread.length);
@@ -57,7 +57,7 @@ export default function CustomTabBar({ unreadNotificationCount = 0 }) {
     };
 
     load();
-    const id = setInterval(load, 15000);
+    const id = setInterval(load, 5000);
     return () => { mounted = false; clearInterval(id); };
   }, []);
 
@@ -69,7 +69,7 @@ export default function CustomTabBar({ unreadNotificationCount = 0 }) {
           const role = await RBACManager.getCurrentUserRole();
 
           if (role !== 'teacher') {
-            const backend = await notificationService.getBackendNotifications();
+            const backend = await notificationService.getBackendNotifications(true);
             let items = Array.isArray(backend) ? backend : [];
             items = items.filter((n) =>
               n?.title === 'New Lecture' ||
@@ -80,7 +80,7 @@ export default function CustomTabBar({ unreadNotificationCount = 0 }) {
             const unread = items.filter((n) => n && n.is_read !== true && n.is_read !== 1);
             setInternalUnread(unread.length);
           } else {
-            const merged = await notificationService.getGeneralNotificationsForTeacher();
+            const merged = await notificationService.getGeneralNotificationsForTeacher(10, true);
             const globalReadIds = notificationService.getGlobalReadNotifications();
             const unread = (merged || []).filter(n => {
               if (n.is_read === true || n.is_read === 1) return false;

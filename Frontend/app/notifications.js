@@ -39,8 +39,8 @@ export default function NotificationsScreen() {
       return;
     }
 
-    // 2) Get backend notifications
-    const backend = await notificationService.getBackendNotifications();
+    // 2) Get backend notifications without cache so polling works instantly
+    const backend = await notificationService.getBackendNotifications(true);
 
     // 2) Keep new posts (Lecture/Activity) AND grading notifications
     const relevantNotifs = (backend || []).filter((n) => {
@@ -148,7 +148,7 @@ export default function NotificationsScreen() {
 
   const loadForTeacher = useCallback(async () => {
     console.log('Loading teacher notifications...');
-    const merged = await notificationService.getGeneralNotificationsForTeacher();
+    const merged = await notificationService.getGeneralNotificationsForTeacher(10, true);
     console.log('Loaded teacher notifications:', merged?.length || 0, 'items');
     console.log('Notification details:', merged);
 
@@ -452,7 +452,11 @@ export default function NotificationsScreen() {
           {tab === 'general' && (
             <View>
               {(generalNotifications || []).length === 0 ? (
-                <Text style={styles.emptyText}>No notifications</Text>
+                loading ? (
+                  <ActivityIndicator size="large" color="#003366" style={{ marginTop: 30 }} />
+                ) : (
+                  <Text style={styles.emptyText}>No notifications</Text>
+                )
               ) : (
                 (generalNotifications || []).map((n) => renderNotification(n))
               )}

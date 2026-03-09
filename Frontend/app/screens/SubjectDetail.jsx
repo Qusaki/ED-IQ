@@ -504,16 +504,32 @@ export default function SubjectDetail() {
       const assignmentPercent = assignmentTotal > 0 ? (assignmentScores.reduce((a, b) => a + b, 0) / assignmentTotal) * 100 : 0;
       const attendancePercent = attendanceTotal > 0 ? (attendanceScores.reduce((a, b) => a + b, 0) / attendanceTotal) * 100 : 0;
 
+      const labWeight = labTotal > 0 ? 0.3 : 0;
+      const quizWeight = quizTotal > 0 ? 0.1 : 0;
+      const assignmentWeight = assignmentTotal > 0 ? 0.05 : 0;
+      const attendanceWeight = attendanceTotal > 0 ? 0.05 : 0;
+
       const classStanding = (labPercent * 0.3) + (quizPercent * 0.1) + (assignmentPercent * 0.05) + (attendancePercent * 0.05);
+      const classStandingWeight = labWeight + quizWeight + assignmentWeight + attendanceWeight;
 
       // Exams: major exam 20%, lab exam 25%, project 5%
       const majorExamPercent = majorExamTotal > 0 ? (majorExam / majorExamTotal) * 100 : 0;
       const labExamPercent = labExamTotal > 0 ? (labExam / labExamTotal) * 100 : 0;
       const projectPercent = projectTotal > 0 ? (project / projectTotal) * 100 : 0;
 
-      const examScore = (majorExamPercent * 0.2) + (labExamPercent * 0.25) + (projectPercent * 0.05);
+      const majorExamWeight = majorExamTotal > 0 ? 0.2 : 0;
+      const labExamWeight = labExamTotal > 0 ? 0.25 : 0;
+      const projectWeight = projectTotal > 0 ? 0.05 : 0;
 
-      return classStanding + examScore;
+      const examScore = (majorExamPercent * 0.2) + (labExamPercent * 0.25) + (projectPercent * 0.05);
+      const examWeight = majorExamWeight + labExamWeight + projectWeight;
+
+      const totalScore = classStanding + examScore;
+      const totalPossibleWeight = classStandingWeight + examWeight;
+
+      if (totalPossibleWeight === 0) return 0;
+
+      return totalScore / totalPossibleWeight;
     };
 
     const midtermActivities = activities.filter(a => a.term === 'midterm');
@@ -824,7 +840,7 @@ export default function SubjectDetail() {
       await subjectService.acceptStudent(subjectId, studentId);
       setPendingStudents(prev => prev.filter(s => s.id !== studentId));
       setEnrolledStudents(prev => [...prev, pendingStudents.find(s => s.id === studentId)]);
-      Alert.alert('Success', 'Student accepted');
+      // Alert.alert('Success', 'Student accepted');
       await loadData();
     } catch (error) {
       Alert.alert('Error', 'Failed to accept student');
@@ -969,12 +985,12 @@ export default function SubjectDetail() {
         console.log('Calling contentService.updateLecture...');
         result = await contentService.updateLecture(editingLecture.id, data);
         console.log('Updated successfully:', result);
-        Alert.alert('Success', `Lecture updated successfully`);
+        // Alert.alert('Success', `Lecture updated successfully`);
       } else {
         console.log('Calling contentService.createContent...');
         result = await contentService.createContent(subjectId, data);
         console.log('Created successfully:', result);
-        Alert.alert('Success', `${contentType} created successfully`);
+        // Alert.alert('Success', `${contentType} created successfully`);
       }
 
       // Reset form
@@ -1019,7 +1035,7 @@ export default function SubjectDetail() {
         await loadData(true);
       }, 1000);
 
-      Alert.alert('Success', `${contentType} created successfully`);
+      // Alert.alert('Success', `${contentType} created successfully`);
     } catch (error) {
       console.error('=== ERROR CREATING CONTENT ===');
       console.error('Error details:', error);
@@ -1342,7 +1358,12 @@ export default function SubjectDetail() {
           <View style={styles.sectionContainer}>
             <Text style={styles.sectionTitle}>GRADING SYSTEM</Text>
             <View style={styles.sectionContent}>
-              {studentGrades.length === 0 ? (
+              {gradesLoading ? (
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 100 }}>
+                  <ActivityIndicator size="large" color="#E6B041" />
+                  <Text style={{ marginTop: 12, color: '#6c757d', fontSize: 16 }}>Loading grading system...</Text>
+                </View>
+              ) : studentGrades.length === 0 ? (
                 <Text style={styles.emptyText}>No enrolled students found.</Text>
               ) : (
                 <FlatList

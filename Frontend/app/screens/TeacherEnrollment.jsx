@@ -41,8 +41,6 @@ export default function SubjectDetail() {
         // Move from pending to enrolled
         setPendingStudents(prev => prev.filter(s => s.id !== studentId));
         setEnrolledStudents(prev => [...prev, { ...student, status: 'enrolled' }]);
-
-        Alert.alert('Success', `${student.name} has been accepted to the class`);
       } catch (error) {
         Alert.alert('Error', 'Failed to accept student');
       } finally {

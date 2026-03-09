@@ -19,6 +19,7 @@ export default function StudentSubjects() {
   const [submitting, setSubmitting] = useState(false);
   const [code, setCode] = useState('');
   const [chatbotVisible, setChatbotVisible] = useState(false);
+  const [loading, setLoading] = useState(true);
   const tooltipAnim = React.useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -43,13 +44,14 @@ export default function StudentSubjects() {
   useEffect(() => {
     const intervalId = setInterval(() => {
       // Silent load without triggering any loading states
-      load();
+      load(true);
     }, 10000); // 10 seconds polling
 
     return () => clearInterval(intervalId);
   }, []);
 
-  const load = async () => {
+  const load = async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const hasStudent = await RBACManager.hasRole(ROLES.STUDENT);
       if (!hasStudent) return Alert.alert('Access denied', 'Student role required');
@@ -57,6 +59,8 @@ export default function StudentSubjects() {
       setSubjects(Array.isArray(data) ? data : []);
     } catch (e) {
       Alert.alert('Error', e?.response?.data?.detail || e.message);
+    } finally {
+      if (!silent) setLoading(false);
     }
   };
 
@@ -97,21 +101,21 @@ export default function StudentSubjects() {
             name="bookmark"
             size={40}
             color="#003366"
-            style={{ position: 'absolute', top: -4, right: 32, zIndex: 10 }}
+            style={{ position: 'absolute', top: -4, right: 8, zIndex: 10 }}
           />
-          <View style={styles.bookHeader}>
+          <View style={[styles.bookHeader, { paddingRight: 24 }]}>
             <MaterialCommunityIcons name="book-education-outline" size={26} color="#003366" style={styles.bookIcon} />
-            <Text style={styles.subjectTitle} numberOfLines={2}>{(item.name || 'Subject').toUpperCase()}</Text>
+            <Text style={styles.subjectTitle} numberOfLines={3}>{(item.name || 'Subject').toUpperCase()}</Text>
           </View>
           {(!!item.code || !!item.teacher_name) && (
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 }}>
               {!!item.teacher_name ? (
-                <View style={styles.codeContainer}>
-                  <Text style={[styles.subjectMeta, { fontWeight: 'bold' }]}>Instructor: {item.teacher_name}</Text>
+                <View style={[styles.codeContainer, { flexShrink: 1, marginRight: 8 }]}>
+                  <Text style={[styles.subjectMeta, { fontWeight: 'bold' }]} numberOfLines={1}>Instructor: {item.teacher_name}</Text>
                 </View>
               ) : <View />}
               {!!item.code && (
-                <Text style={[styles.subjectMeta, { fontSize: 11, fontStyle: 'italic', opacity: 0.9 }]}>
+                <Text style={[styles.subjectMeta, { fontSize: 11, fontStyle: 'italic', opacity: 0.9, paddingRight: 4 }]}>
                   Code: {item.code}
                 </Text>
               )}
@@ -161,7 +165,13 @@ export default function StudentSubjects() {
           keyExtractor={(it) => it.id}
           renderItem={renderItem}
           contentContainerStyle={{ padding: 16, paddingTop: 8, paddingBottom: 200 }}
-          ListEmptyComponent={<Text style={styles.empty}>No subjects yet</Text>}
+          ListEmptyComponent={
+            loading ? (
+              <ActivityIndicator size="large" color="#E6B041" style={{ marginTop: 40 }} />
+            ) : (
+              <Text style={styles.empty}>No subjects yet</Text>
+            )
+          }
         />
 
         {isStudent && (

@@ -36,23 +36,31 @@ def compute_class_standing(
 
     if lab_total == 0:
         lab_percent = 0
+        lab_weight = 0
     else:
         lab_percent = (lab_score / lab_total) * 100
+        lab_weight = 0.3
 
     if quiz_total == 0:
         quiz_percent = 0
+        quiz_weight = 0
     else:
         quiz_percent = (quiz_score / quiz_total) * 100
+        quiz_weight = 0.1
 
     if assignment_total == 0:
         assignment_percent = 0
+        assignment_weight = 0
     else:
         assignment_percent = (assignment_score / assignment_total) * 100
+        assignment_weight = 0.05
 
     if attendance_total == 0:
         attendance_percent = 0
+        attendance_weight = 0
     else:
         attendance_percent = (attendance_score / attendance_total) * 100
+        attendance_weight = 0.05
 
     final_score = (
         (lab_percent * 0.3)
@@ -61,7 +69,9 @@ def compute_class_standing(
         + (attendance_percent * 0.05)
     )
 
-    return final_score
+    possible_weight = lab_weight + quiz_weight + assignment_weight + attendance_weight
+
+    return final_score, possible_weight
 
 
 def compute_major_exam(
@@ -75,18 +85,24 @@ def compute_major_exam(
 
     if major_exam_total == 0 or major_exam_total is None:
         major_exam_percent = 0
+        major_exam_weight = 0
     else:
         major_exam_percent = (major_exam / major_exam_total) * 100
+        major_exam_weight = 0.2
 
     if lab_exam_total == 0 or lab_exam_total is None:
         lab_exam_percent = 0
+        lab_exam_weight = 0
     else:
         lab_exam_percent = (lab_exam / lab_exam_total) * 100
+        lab_exam_weight = 0.25
 
     if project_total == 0 or project_total is None:
         project_percent = 0
+        project_weight = 0
     else:
         project_percent = (project / project_total) * 100
+        project_weight = 0.05
 
     final_score = (
         (major_exam_percent * 0.2)
@@ -94,7 +110,9 @@ def compute_major_exam(
         + (project_percent * 0.05)
     )
 
-    return final_score
+    possible_weight = major_exam_weight + lab_exam_weight + project_weight
+
+    return final_score, possible_weight
 
 
 def compute_midterm_grade(
@@ -156,7 +174,7 @@ def compute_midterm_grade(
                 project = submission.score
             project_total = activity.max_score
 
-    class_standing_score = compute_class_standing(
+    class_standing_score, class_standing_weight = compute_class_standing(
         lab_score,
         quiz_score,
         assignment_score,
@@ -167,11 +185,20 @@ def compute_midterm_grade(
         attendance_max,
     )
 
-    exam_score = compute_major_exam(
+    exam_score, exam_weight = compute_major_exam(
         major_exam, lab_exam, project, major_exam_total, lab_exam_total, project_total
     )
 
-    midterm_grade = class_standing_score + exam_score
+    total_score = class_standing_score + exam_score
+    total_possible_weight = class_standing_weight + exam_weight
+
+    if total_possible_weight == 0:
+        return 0
+
+    # The maximum total_possible_weight is 1.0 (50% class standing + 50% exams = 100% of the period, but the weights above sum to 1.0)
+    # The `class_standing_score` and `exam_score` calculation results in a score out of 100 because of the `* 100` multiple
+    # So we just divide the accumulated points over the accumulated weight to scale it back up to 100.
+    midterm_grade = total_score / total_possible_weight
 
     return midterm_grade
 
@@ -234,7 +261,7 @@ def compute_final_grade(
                 project = submission.score
             project_total = activity.max_score
 
-    class_standing_score = compute_class_standing(
+    class_standing_score, class_standing_weight = compute_class_standing(
         lab_score,
         quiz_score,
         assignment_score,
@@ -245,11 +272,17 @@ def compute_final_grade(
         attendance_max,
     )
 
-    exam_score = compute_major_exam(
+    exam_score, exam_weight = compute_major_exam(
         major_exam, lab_exam, project, major_exam_total, lab_exam_total, project_total
     )
 
-    final_grade = class_standing_score + exam_score
+    total_score = class_standing_score + exam_score
+    total_possible_weight = class_standing_weight + exam_weight
+
+    if total_possible_weight == 0:
+        return 0
+        
+    final_grade = total_score / total_possible_weight
 
     return final_grade
 
