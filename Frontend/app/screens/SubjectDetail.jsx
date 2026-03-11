@@ -565,7 +565,10 @@ export default function SubjectDetail() {
       return;
     }
 
-    if (!silent) console.log('=== LOADING GRADING SYSTEM ===');
+    if (!silent) {
+      console.log('=== LOADING GRADING SYSTEM ===');
+      setStudentGradesLoading(true);
+    }
     try {
       // Get all enrolled students
       const enrolledStudents = await subjectService.getSubjectStudents(subjectId);
@@ -616,6 +619,8 @@ export default function SubjectDetail() {
     } catch (error) {
       console.error('Failed to load students:', error);
       setStudentGrades([]);
+    } finally {
+      if (!silent) setStudentGradesLoading(false);
     }
   }, [subjectId]);
 
@@ -1358,7 +1363,7 @@ export default function SubjectDetail() {
           <View style={styles.sectionContainer}>
             <Text style={styles.sectionTitle}>GRADING SYSTEM</Text>
             <View style={styles.sectionContent}>
-              {gradesLoading ? (
+              {studentGradesLoading ? (
                 <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 100 }}>
                   <ActivityIndicator size="large" color="#E6B041" />
                   <Text style={{ marginTop: 12, color: '#6c757d', fontSize: 16 }}>Loading grading system...</Text>
@@ -2134,14 +2139,14 @@ export default function SubjectDetail() {
       >
         <SafeAreaView style={styles.pdfModalContainer}>
           {/* Header */}
-          <View style={styles.pdfModalHeader}>
+          <View style={[styles.pdfModalHeader, { backgroundColor: isTeacher ? '#003366' : '#E6B041' }]}>
             <TouchableOpacity
               style={styles.pdfCloseButton}
               onPress={() => setSelectedLecture(null)}
             >
-              <Ionicons name="close" size={28} color="#003366" />
+              <Ionicons name="arrow-back" size={28} color={isTeacher ? '#E6B041' : '#003366'} />
             </TouchableOpacity>
-            <Text style={styles.pdfModalTitle} numberOfLines={1}>
+            <Text style={[styles.pdfModalTitle, { color: isTeacher ? '#E6B041' : '#003366' }]} numberOfLines={1}>
               {selectedLecture?.title || 'Lecture'}
             </Text>
             <View style={{ width: 44 }} />
