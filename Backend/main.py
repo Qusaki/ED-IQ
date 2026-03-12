@@ -44,6 +44,15 @@ async def get_log_errors():
 from alembic.config import Config
 from alembic import command
 import sys
+import io
+
+# Capture stderr to a string buffer
+stderr_buffer = io.StringIO()
+sys.stderr = stderr_buffer
+
+@app.get("/startup_logs", include_in_schema=False)
+async def get_startup_logs():
+    return PlainTextResponse(stderr_buffer.getvalue() or "No logs in stderr buffer.")
 
 @app.on_event("startup")
 async def startup_event():
@@ -54,6 +63,8 @@ async def startup_event():
         print("Database migrations applied successfully.", file=sys.stderr)
     except Exception as e:
         print(f"Error applying migrations: {e}", file=sys.stderr)
+        import traceback
+        traceback.print_exc(file=sys.stderr)
     
     start_scheduler()
 
