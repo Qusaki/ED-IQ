@@ -31,6 +31,15 @@ async def global_exception_handler(request: Request, exc: Exception):
     print(f"Captured 500 error. Saved to 500_errors.log.", file=sys.stderr)
     return JSONResponse(status_code=500, content={"detail": "Internal Server Error"})
 
+from fastapi.responses import JSONResponse, PlainTextResponse
+import os
+
+@app.get("/log_errors", include_in_schema=False)
+async def get_log_errors():
+    if os.path.exists("500_errors.log"):
+        with open("500_errors.log", "r") as f:
+            return PlainTextResponse(f.read())
+    return PlainTextResponse("No errors logged yet.")
 
 @app.on_event("startup")
 async def startup_event():
