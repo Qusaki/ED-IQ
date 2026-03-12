@@ -20,11 +20,26 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """Upgrade schema."""
-    op.add_column('notifications', sa.Column('activity_id', sa.Text(), nullable=True))
-    op.add_column('notifications', sa.Column('lecture_id', sa.Text(), nullable=True))
-    # Foreign keys
-    op.create_foreign_key(None, 'notifications', 'activities', ['activity_id'], ['id'], ondelete='CASCADE')
-    op.create_foreign_key(None, 'notifications', 'lectures', ['lecture_id'], ['id'], ondelete='CASCADE')
+    from sqlalchemy import inspect as sa_inspect
+    bind = op.get_bind()
+    inspector = sa_inspect(bind)
+    existing_columns = [col['name'] for col in inspector.get_columns('notifications')]
+
+    if 'activity_id' not in existing_columns:
+        op.add_column('notifications', sa.Column('activity_id', sa.Text(), nullable=True))
+    if 'lecture_id' not in existing_columns:
+        op.add_column('notifications', sa.Column('lecture_id', sa.Text(), nullable=True))
+
+    # Foreign keys — wrap in try/except in case they already exist
+    try:
+        op.create_foreign_key(None, 'notifications', 'activities', ['activity_id'], ['id'], ondelete='CASCADE')
+    except Exception:
+        pass
+    try:
+        op.create_foreign_key(None, 'notifications', 'lectures', ['lecture_id'], ['id'], ondelete='CASCADE')
+    except Exception:
+        pass
+
 
 def downgrade() -> None:
     """Downgrade schema."""

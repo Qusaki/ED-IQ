@@ -20,7 +20,12 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """Upgrade schema."""
-    op.add_column('users', sa.Column('student_id', sa.String(length=20), nullable=True))
+    from sqlalchemy import inspect as sa_inspect
+    bind = op.get_bind()
+    inspector = sa_inspect(bind)
+    existing_columns = [col['name'] for col in inspector.get_columns('users')]
+    if 'student_id' not in existing_columns:
+        op.add_column('users', sa.Column('student_id', sa.String(length=20), nullable=True))
 
 
 def downgrade() -> None:
