@@ -4,7 +4,7 @@ import { Alert, DeviceEventEmitter } from 'react-native';
 import { TokenManager } from '../components/_TokenManager';
 
 // Backend base URL
-export const RENDER_URL = 'https://ed-iq.onrender.com';
+export const RENDER_URL = process.env.EXPO_PUBLIC_API_URL || 'https://ed-iq.onrender.com';
 export const LOCAL_API_URL = 'http://localhost:8000'; // Local FastAPI default
 export const USE_LOCAL_BACKEND = false; // Set to true to test locally, false to use Render
 
