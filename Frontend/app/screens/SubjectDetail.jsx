@@ -571,8 +571,13 @@ export default function SubjectDetail() {
     }
     try {
       // Get all enrolled students matching backend calculation
-      const enrolledStudents = await subjectService.getSubjectStudents(subjectId);
-      if (!silent) console.log('Found enrolled students:', enrolledStudents.length);
+      let enrolledStudents = [];
+      try {
+        enrolledStudents = await subjectService.getSubjectStudents(subjectId);
+        if (!silent) console.log('Found enrolled students:', enrolledStudents.length);
+      } catch (studentError) {
+        console.error('Failed to load students list:', studentError?.response?.status, studentError?.config?.url);
+      }
 
       // Map id to names for immediate UI
       const studentNameMap = {};
@@ -580,8 +585,9 @@ export default function SubjectDetail() {
          studentNameMap[s.id] = s.name || s.email || `Student ${String(s.id).slice(-6)}`;
       });
 
-      // Call new bulk grade endpoint
-      const response = await apiClient.get(`/grade/all/${subjectId}`);
+      // Call bulk grade endpoint
+      console.log('Calling grade endpoint: /computegrade/all/' + subjectId);
+      const response = await apiClient.get(`/computegrade/all/${subjectId}`);
       const bulkGrades = response.data || [];
 
       const grades = bulkGrades.map(g => ({
@@ -596,7 +602,7 @@ export default function SubjectDetail() {
       grades.sort((a, b) => b.final_grade - a.final_grade);
       setStudentGrades(grades);
     } catch (error) {
-      console.error('Failed to load students:', error);
+      console.error('Failed to load grades:', error?.response?.status, error?.config?.url, error?.message);
       setStudentGrades([]);
     } finally {
       if (!silent) setStudentGradesLoading(false);
