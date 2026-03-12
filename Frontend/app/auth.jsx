@@ -267,14 +267,25 @@ export default function AuthScreen({ onAuthSuccess, selectedRole: initialRole, o
         <Modal
           visible={showForgotModal}
           transparent={true}
-          animationType="fade"
+          animationType="slide"
           onRequestClose={() => setShowForgotModal(false)}
         >
           <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <Text style={[styles.modalTitle, { color: themeColor }]}>Reset Password</Text>
-              <Text style={styles.modalSubtitle}>Enter your email to receive a password reset link.</Text>
-
+            <View style={[styles.modalContent, { paddingBottom: 30 }]}>
+              <View style={[styles.modalHeader, { borderBottomWidth: 0 }]}>
+                <Text style={[styles.modalTitle, { color: themeColor, fontSize: 24 }]}>Reset Password</Text>
+                <TouchableOpacity 
+                  onPress={() => setShowForgotModal(false)}
+                  style={styles.closeButton}
+                >
+                  <Ionicons name="close" size={24} color="#6c757d" />
+                </TouchableOpacity>
+              </View>
+              
+              <Text style={styles.modalSubtitle}>
+                Enter your email address and we'll send you a link to reset your password.
+              </Text>
+              
               <TextInput
                 placeholder="Ex. juandelacruz@gmail.com"
                 style={styles.modalInput}
@@ -282,22 +293,23 @@ export default function AuthScreen({ onAuthSuccess, selectedRole: initialRole, o
                 onChangeText={setForgotEmail}
                 keyboardType="email-address"
                 autoCapitalize="none"
+                placeholderTextColor="#adb5bd"
               />
-
-              <View style={styles.modalButtons}>
+              
+              <View style={styles.modalActions}>
                 <TouchableOpacity
                   style={styles.modalCancelButton}
                   onPress={() => { setShowForgotModal(false); setForgotEmail(''); }}
                 >
-                  <Text style={styles.modalCancelText}>Cancel</Text>
+                  <Text style={styles.modalCancelButtonText}>Cancel</Text>
                 </TouchableOpacity>
-
+                
                 <TouchableOpacity
-                  style={[styles.modalConfirmButton, { backgroundColor: themeColor }]}
+                  style={[styles.modalSubmitButton, { backgroundColor: themeColor }]}
                   onPress={handleForgotPassword}
                   disabled={forgotLoading}
                 >
-                  <Text style={styles.modalConfirmText}>
+                  <Text style={styles.modalSubmitButtonText}>
                     {forgotLoading ? 'Sending...' : 'Send Link'}
                   </Text>
                 </TouchableOpacity>

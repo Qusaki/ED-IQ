@@ -314,7 +314,7 @@ export const authService = {
 
   async forgotPassword(email) {
     try {
-      const response = await apiClient.post('/auth/forgot-password', null, {
+      const response = await apiClient.post('/auth/forgot-password/', null, {
         params: { email }
       });
       return { success: true, message: response.data.message };
@@ -326,7 +326,7 @@ export const authService = {
 
   async resetPassword(token, newPassword) {
     try {
-      const response = await apiClient.post('/auth/reset-password', null, {
+      const response = await apiClient.post('/auth/reset-password/', null, {
         params: { token, new_password: newPassword }
       });
       return { success: true, message: response.data.message };

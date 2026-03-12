@@ -4,7 +4,11 @@ import { Alert, DeviceEventEmitter } from 'react-native';
 import { TokenManager } from '../components/_TokenManager';
 
 // Backend base URL
-export const API_URL = 'https://ed-iq.onrender.com';
+export const RENDER_URL = 'https://ed-iq.onrender.com';
+export const LOCAL_API_URL = 'http://localhost:8000'; // Local FastAPI default
+export const USE_LOCAL_BACKEND = false; // Set to true to test locally, false to use Render
+
+export const API_URL = USE_LOCAL_BACKEND ? LOCAL_API_URL : RENDER_URL;
 export const USE_MOCK_DATA = false; // Enable real API calls
 
 // Create axios instance

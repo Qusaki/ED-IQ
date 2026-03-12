@@ -83,7 +83,7 @@ def login_user(user: UserLogin, db: Session = Depends(get_db)) -> LoginResponse:
     return LoginResponse(token=token, user=UserResponse.model_validate(user_db))
 
 
-@router.post("/forgot-password")
+@router.post("/forgot-password/")
 def forgot_password(email: str, db: Session = Depends(get_db)):
     from models.password_reset import PasswordReset
     from utils.email import send_password_reset_email
@@ -114,7 +114,7 @@ def forgot_password(email: str, db: Session = Depends(get_db)):
     return {"message": "If an account exists for this email, a reset link has been sent."}
 
 
-@router.post("/reset-password")
+@router.post("/reset-password/")
 def reset_password(token: str, new_password: str, db: Session = Depends(get_db)):
     from models.password_reset import PasswordReset
     from datetime import datetime

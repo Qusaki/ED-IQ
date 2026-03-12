@@ -386,6 +386,62 @@ export const styles = StyleSheet.create({
     zIndex: 10,
     padding: 15,
   },
+  // Reset Password Modal Styles
+  modalSubtitle: {
+    fontSize: 14,
+    color: '#6c757d',
+    textAlign: 'center',
+    marginBottom: 20,
+    paddingHorizontal: 10,
+  },
+  modalInput: {
+    borderWidth: 1,
+    borderColor: '#dee2e6',
+    borderRadius: 12,
+    height: 50,
+    paddingHorizontal: 15,
+    marginBottom: 20,
+    fontSize: 16,
+    backgroundColor: '#f8f9fa',
+    marginHorizontal: 20,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    gap: 12,
+  },
+  modalCancelButton: {
+    flex: 1,
+    padding: 14,
+    borderRadius: 12,
+    backgroundColor: '#f1f3f4',
+    alignItems: 'center',
+  },
+  modalSubmitButton: {
+    flex: 1,
+    padding: 14,
+    borderRadius: 12,
+    backgroundColor: '#003366', // ED-IQ Deep Blue
+    alignItems: 'center',
+  },
+  modalSubmitButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  modalCancelButtonText: {
+    color: '#495057',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  successModalText: {
+    fontSize: 16,
+    color: '#28a745', // Success Green
+    textAlign: 'center',
+    marginVertical: 10,
+    fontWeight: '500',
+  },
 });
 
 export default styles;
