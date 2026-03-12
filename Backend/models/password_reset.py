@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from uuid import uuid4
 
 from sqlalchemy import Column, DateTime, ForeignKey, String, Boolean
-from database import Base
+from models.base import Base
 
 class PasswordReset(Base):
     __tablename__ = "password_resets"
