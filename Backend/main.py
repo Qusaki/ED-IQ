@@ -12,12 +12,25 @@ from routes import (
     user_management, chatbot
 )
 from utils.scheduler import start_scheduler, shutdown_scheduler
+from fastapi import Request
+from fastapi.responses import JSONResponse
+import traceback
+import sys
 
 app = FastAPI(
     title="ED-IQ Backend API",
     description="Educational Intelligence Platform Backend",
     version="1.0.0",
 )
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    with open("500_errors.log", "a") as f:
+        f.write(f"\n--- Exception at {request.url} ---\n")
+        traceback.print_exc(file=f)
+    print(f"Captured 500 error. Saved to 500_errors.log.", file=sys.stderr)
+    return JSONResponse(status_code=500, content={"detail": "Internal Server Error"})
+
 
 @app.on_event("startup")
 async def startup_event():
