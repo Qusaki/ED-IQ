@@ -31,6 +31,14 @@ async def global_exception_handler(request: Request, exc: Exception):
     print(f"Captured 500 error. Saved to 500_errors.log.", file=sys.stderr)
     return JSONResponse(status_code=500, content={"detail": "Internal Server Error"})
 
+@app.middleware("http")
+async def add_cache_control_header(request: Request, call_next):
+    response = await call_next(request)
+    # Add cache control only for GET requests and non-websocket/health paths
+    if request.method == "GET" and not request.url.path.startswith("/ws") and request.url.path != "/health":
+        response.headers["Cache-Control"] = "public, max-age=60"
+    return response
+
 from fastapi.responses import JSONResponse, PlainTextResponse
 import os
 

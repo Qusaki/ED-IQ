@@ -604,6 +604,17 @@ export const contentService = {
     }
   },
 
+  // Get bulk submission status for all activities in a subject
+  async getSubmissionStatusesBulk(subjectId) {
+    try {
+      const res = await apiClient.get(`/submissions/status/${subjectId}`);
+      return res.data || {};
+    } catch (error) {
+      console.error('Error fetching bulk submission statuses:', error);
+      return {};
+    }
+  },
+
   // UTILITY FUNCTIONS
 
   // Format submission data for display

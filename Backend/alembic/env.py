@@ -17,6 +17,7 @@ from models.submission import Submission
 from models.user import User
 from models.grade import Grade
 from models.notification import Notification
+from models.password_reset import PasswordReset
 
 
 # this is the Alembic Config object, which provides

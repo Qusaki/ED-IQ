@@ -304,3 +304,47 @@ async def get_own_submission(
         )
 
     return submission
+
+
+@router.get("/status/{subject_id}")
+async def get_subject_submission_statuses(
+    subject_id: str,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    """
+    Bulk fetch submission status for all activities in a subject.
+    Eliminates N+1 waterfall in frontend.
+    """
+    from models.activity import Activity
+    
+    # Get all activities for this subject
+    activities = db.query(Activity).filter(Activity.subject_id == subject_id).all()
+    activity_ids = [a.id for a in activities]
+    
+    # Get all submissions by this student for these activities
+    submissions = (
+        db.query(Submission)
+        .filter(
+            Submission.activity_id.in_(activity_ids),
+            Submission.student_id == current_user.id
+        )
+        .all()
+    )
+    
+    # Map activity_id -> submission status
+    status_map = {}
+    for sub in submissions:
+        status_map[sub.activity_id] = {
+            "submitted": True,
+            "score": sub.score,
+            "submitted_at": sub.created_at,
+            "submission_id": sub.id
+        }
+    
+    # Fill in activities with no submissions
+    for aid in activity_ids:
+        if aid not in status_map:
+            status_map[aid] = {"submitted": False}
+            
+    return status_map

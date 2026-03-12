@@ -103,6 +103,32 @@ export default function AuthScreen({ onAuthSuccess, selectedRole: initialRole, o
     setShowPassword(false);
   };
 
+  const [showForgotModal, setShowForgotModal] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotLoading, setForgotLoading] = useState(false);
+
+  const handleForgotPassword = async () => {
+    if (!forgotEmail) {
+      Alert.alert('Error', 'Please enter your email address');
+      return;
+    }
+    setForgotLoading(true);
+    try {
+      const result = await authService.forgotPassword(forgotEmail);
+      if (result.success) {
+        Alert.alert('Success', result.message || 'Check your email for a reset link');
+        setShowForgotModal(false);
+        setForgotEmail('');
+      } else {
+        Alert.alert('Error', result.error);
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Something went wrong. Please try again.');
+    } finally {
+      setForgotLoading(false);
+    }
+  };
+
   return (
     <ImageBackground source={campusBackground} style={styles.backgroundImage} resizeMode="contain">
       <View style={styles.backgroundOverlay} />
@@ -204,7 +230,10 @@ export default function AuthScreen({ onAuthSuccess, selectedRole: initialRole, o
               )}
 
               {isLogin && (
-                <TouchableOpacity style={styles.forgotPassword}>
+                <TouchableOpacity
+                  style={styles.forgotPassword}
+                  onPress={() => { setShowForgotModal(true); setForgotEmail(email); }}
+                >
                   <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
                 </TouchableOpacity>
               )}
@@ -233,6 +262,50 @@ export default function AuthScreen({ onAuthSuccess, selectedRole: initialRole, o
             </View>
           </ScrollView>
         </KeyboardAvoidingView>
+
+        {/* Forgot Password Modal */}
+        <Modal
+          visible={showForgotModal}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => setShowForgotModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <Text style={[styles.modalTitle, { color: themeColor }]}>Reset Password</Text>
+              <Text style={styles.modalSubtitle}>Enter your email to receive a password reset link.</Text>
+
+              <TextInput
+                placeholder="Ex. juandelacruz@gmail.com"
+                style={styles.modalInput}
+                value={forgotEmail}
+                onChangeText={setForgotEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+
+              <View style={styles.modalButtons}>
+                <TouchableOpacity
+                  style={styles.modalCancelButton}
+                  onPress={() => { setShowForgotModal(false); setForgotEmail(''); }}
+                >
+                  <Text style={styles.modalCancelText}>Cancel</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.modalConfirmButton, { backgroundColor: themeColor }]}
+                  onPress={handleForgotPassword}
+                  disabled={forgotLoading}
+                >
+                  <Text style={styles.modalConfirmText}>
+                    {forgotLoading ? 'Sending...' : 'Send Link'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+
       </SafeAreaView>
     </ImageBackground>
   );

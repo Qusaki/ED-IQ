@@ -310,6 +310,30 @@ export const authService = {
       console.error('Error validating user access:', error);
       return { success: false, error: 'Failed to validate access' };
     }
+  },
+
+  async forgotPassword(email) {
+    try {
+      const response = await apiClient.post('/auth/forgot-password', null, {
+        params: { email }
+      });
+      return { success: true, message: response.data.message };
+    } catch (error) {
+      const errorMessage = error.response?.data?.detail || error.message || 'Failed to send reset email';
+      return { success: false, error: errorMessage };
+    }
+  },
+
+  async resetPassword(token, newPassword) {
+    try {
+      const response = await apiClient.post('/auth/reset-password', null, {
+        params: { token, new_password: newPassword }
+      });
+      return { success: true, message: response.data.message };
+    } catch (error) {
+      const errorMessage = error.response?.data?.detail || error.message || 'Failed to reset password';
+      return { success: false, error: errorMessage };
+    }
   }
 };
 

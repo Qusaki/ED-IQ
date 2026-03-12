@@ -75,18 +75,14 @@ export default function ActivityDetail() {
   const getSubmissionFileUrl = (submission) => {
     if (!submission) return null;
 
-    console.log('Checking submission for file URL:', submission.id || 'unknown');
-
     // Check for direct URL properties
     const directUrl = submission.file_url || submission.fileURL || submission.fileUrl;
     if (directUrl) {
-      console.log('Found direct URL:', directUrl);
       return directUrl;
     }
 
     // Check for nested file object with URL
     if (submission.file) {
-      console.log('Checking file object:', submission.file);
       if (typeof submission.file === 'string') {
         return submission.file;
       }
@@ -184,7 +180,6 @@ export default function ActivityDetail() {
 
       if (result.success && result.metadata.original_name) {
         fileName = result.metadata.original_name;
-        console.log('Retrieved original filename from metadata:', fileName);
       } else {
         // Fallback to extracting from URL if metadata fetch fails
         console.warn('Failed to get metadata, using fallback extraction');

@@ -409,24 +409,12 @@ export default function SubjectDetail() {
 
   // Load submission statuses for activities and exams
   const loadSubmissionStatuses = async (contentData) => {
-    const statuses = {};
-
-    for (const item of contentData) {
-      if (item.type === 'activity') {
-        try {
-          const status = await contentService.getSubmissionStatus(item.id);
-          // Store status for all submitted activities (graded or not)
-          if (status.submitted) {
-            statuses[item.id] = status;
-            console.log(`Activity ${item.id} submission status:`, status);
-          }
-        } catch (error) {
-          console.error('Error loading submission status:', error);
-        }
-      }
+    try {
+      const statuses = await contentService.getSubmissionStatusesBulk(subjectId);
+      setSubmissionStatuses(statuses);
+    } catch (error) {
+      console.error('Error loading bulk submission statuses:', error);
     }
-
-    setSubmissionStatuses(statuses);
   };
 
   const loadInsideNotifications = useCallback(async (silent = false) => {
@@ -742,15 +730,7 @@ export default function SubjectDetail() {
   };
 
   const getUnreadNotificationCount = () => {
-    const count = insideNotifications.filter(n => !readNotifications.has(n.id)).length;
-    console.log('Unread notification count calculation:', {
-      totalNotifications: insideNotifications.length,
-      readNotifications: readNotifications.size,
-      unreadCount: count,
-      notificationIds: insideNotifications.map(n => n.id),
-      readIds: Array.from(readNotifications.values())
-    });
-    return count;
+    return insideNotifications.filter(n => !readNotifications.has(n.id)).length;
   };
 
   const handleNotificationPress = async (notification) => {

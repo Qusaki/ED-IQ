@@ -81,3 +81,66 @@ def login_user(user: UserLogin, db: Session = Depends(get_db)) -> LoginResponse:
     )
 
     return LoginResponse(token=token, user=UserResponse.model_validate(user_db))
+
+
+@router.post("/forgot-password")
+def forgot_password(email: str, db: Session = Depends(get_db)):
+    from models.password_reset import PasswordReset
+    from utils.email import send_password_reset_email
+    from datetime import datetime, timedelta
+    
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        # Silently fail to avoid user enumeration, but log for debugging
+        print(f"[DEBUG] Forgot password requested for non-existent email: {email}")
+        return {"message": "If an account exists for this email, a reset link has been sent."}
+    
+    # Invalidate any existing tokens for this user
+    db.query(PasswordReset).filter(PasswordReset.user_id == user.id).update({"used": True})
+    
+    # Generate new token
+    token = str(uuid.uuid4())
+    reset_request = PasswordReset(
+        user_id=user.id,
+        token=token,
+        expires_at=datetime.utcnow() + timedelta(hours=1)
+    )
+    db.add(reset_request)
+    db.commit()
+    
+    # Send email
+    send_password_reset_email(user.email, token)
+    
+    return {"message": "If an account exists for this email, a reset link has been sent."}
+
+
+@router.post("/reset-password")
+def reset_password(token: str, new_password: str, db: Session = Depends(get_db)):
+    from models.password_reset import PasswordReset
+    from datetime import datetime
+    import bcrypt
+    
+    reset_request = db.query(PasswordReset).filter(
+        PasswordReset.token == token,
+        PasswordReset.used == False,
+        PasswordReset.expires_at > datetime.utcnow()
+    ).first()
+    
+    if not reset_request:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset token")
+    
+    user = db.query(User).filter(User.id == reset_request.user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Update password
+    hashed_pw = bcrypt.hashpw(new_password.encode(), bcrypt.gensalt())
+    user.password = hashed_pw
+    
+    # Mark token as used
+    reset_request.used = True
+    
+    db.commit()
+    
+    return {"message": "Password updated successfully"}
+

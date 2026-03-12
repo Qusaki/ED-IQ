@@ -1,13 +1,13 @@
 from uuid import uuid4
-
 from models.notification import Notification
 from models.subject import SubjectEnrollment
 from models.activity import Activity
+from models.subject import Subject
 from models.user import User
 from utils.websocket_manager import manager
 
-
 async def notify_students(subject_id: str, title: str, message: str, db, activity_id: str = None, lecture_id: str = None):
+    from utils.email import send_notification_email
     try:
         enrolled = (
             db.query(SubjectEnrollment)
@@ -31,6 +31,11 @@ async def notify_students(subject_id: str, title: str, message: str, db, activit
             db.add(notif)
             db.commit()
             db.refresh(notif)
+            
+            # Send email notification
+            student_user = db.query(User).filter(User.id == e.student_id).first()
+            if student_user and student_user.email:
+                send_notification_email(student_user.email, title, message)
 
             payload = {
                 "type": "notification",
@@ -51,18 +56,12 @@ async def notify_students(subject_id: str, title: str, message: str, db, activit
         import traceback
         traceback.print_exc()
 
-
 async def notify_teacher(subject_id: str, activity_id: str, student_id: str, title: str, message: str, db):
+    from utils.email import send_notification_email
     try:
-        # Get the subject to find the teacher (owner)
-        from models.subject import Subject
         subject = db.query(Subject).filter(Subject.id == subject_id).first()
         if not subject:
             return
-        
-        # Get the student name for personalized message
-        student = db.query(User).filter(User.id == student_id).first()
-        student_name = student.name if student else "A student"
         
         # Create notification for the teacher
         notif = Notification(
@@ -77,7 +76,11 @@ async def notify_teacher(subject_id: str, activity_id: str, student_id: str, tit
         db.commit()
         db.refresh(notif)
 
-        # Send real-time notification via WebSocket
+        # Send email notification to teacher
+        teacher_user = db.query(User).filter(User.id == subject.owner_id).first()
+        if teacher_user and teacher_user.email:
+            send_notification_email(teacher_user.email, title, message)
+
         await manager.send_personal(
             subject.owner_id,
             {
@@ -96,8 +99,8 @@ async def notify_teacher(subject_id: str, activity_id: str, student_id: str, tit
         traceback.print_exc()
 
 async def notify_user(user_id: str, title: str, message: str, db, subject_id: str = None, activity_id: str = None, lecture_id: str = None):
+    from utils.email import send_notification_email
     try:
-        print(f"[NOTIFY_USER] Creating notification for user {user_id}: {title}")
         notif = Notification(
             id=str(uuid4()),
             user_id=user_id,
@@ -110,9 +113,12 @@ async def notify_user(user_id: str, title: str, message: str, db, subject_id: st
         db.add(notif)
         db.commit()
         db.refresh(notif)
-        print(f"[NOTIFY_USER] Notification created in DB with ID: {notif.id}, subject_id: {subject_id}")
 
-        print(f"[NOTIFY_USER] Sending via WebSocket to user {user_id}")
+        # Send email notification
+        target_user = db.query(User).filter(User.id == user_id).first()
+        if target_user and target_user.email:
+            send_notification_email(target_user.email, title, message)
+
         payload = {
             "type": "notification",
             "title": title,
@@ -127,7 +133,6 @@ async def notify_user(user_id: str, title: str, message: str, db, subject_id: st
             payload["lecture_id"] = lecture_id
 
         await manager.send_personal(user_id, payload)
-        print(f"[NOTIFY_USER] WebSocket notification sent successfully")
     except Exception as e:
         print(f"[NOTIFY_USER ERROR] Failed to notify user {user_id}: {str(e)}")
         import traceback
