@@ -16,11 +16,21 @@ from fastapi import Request
 from fastapi.responses import JSONResponse
 import traceback
 import sys
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(
     title="ED-IQ Backend API",
     description="Educational Intelligence Platform Backend",
     version="1.0.0",
+)
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allow all origins (required since frontend/backend are on different accounts/urls)
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 @app.exception_handler(Exception)
