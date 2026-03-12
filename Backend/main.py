@@ -41,8 +41,20 @@ async def get_log_errors():
             return PlainTextResponse(f.read())
     return PlainTextResponse("No errors logged yet.")
 
+from alembic.config import Config
+from alembic import command
+import sys
+
 @app.on_event("startup")
 async def startup_event():
+    try:
+        print("Running database migrations...", file=sys.stderr)
+        alembic_cfg = Config("alembic.ini")
+        command.upgrade(alembic_cfg, "head")
+        print("Database migrations applied successfully.", file=sys.stderr)
+    except Exception as e:
+        print(f"Error applying migrations: {e}", file=sys.stderr)
+    
     start_scheduler()
 
 @app.on_event("shutdown")
