@@ -15,6 +15,8 @@ class NotificationResponse(BaseModel):
     message: str
     is_read: bool
     subject_id: Optional[str] = None
+    activity_id: Optional[str] = None
+    lecture_id: Optional[str] = None
     created_at: datetime
 
     class Config:

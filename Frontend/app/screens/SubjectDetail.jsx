@@ -558,7 +558,7 @@ export default function SubjectDetail() {
     return (midtermGrade + finalGrade) / 2;
   };
 
-  // Load students for grading system - replicates backend weighted formula
+  // Load students for grading system - relies on optimized backend formula
   const loadStudentGrades = useCallback(async (silent = false) => {
     if (!subjectId) {
       setStudentGrades([]);
@@ -570,51 +570,30 @@ export default function SubjectDetail() {
       setStudentGradesLoading(true);
     }
     try {
-      // Get all enrolled students
+      // Get all enrolled students matching backend calculation
       const enrolledStudents = await subjectService.getSubjectStudents(subjectId);
       if (!silent) console.log('Found enrolled students:', enrolledStudents.length);
 
-      // Get all activities for this subject
-      const allContent = await contentService.getSubjectContent(subjectId);
-      const activities = (allContent || []).filter(item => item.type === 'activity');
-      console.log('Found activities:', activities.length);
+      // Map id to names for immediate UI
+      const studentNameMap = {};
+      enrolledStudents.forEach(s => {
+         studentNameMap[s.id] = s.name || s.email || `Student ${String(s.id).slice(-6)}`;
+      });
 
-      // Pre-fetch all submissions for all activities (teacher can see all)
-      const submissionsMap = {};
-      for (const activity of activities) {
-        try {
-          submissionsMap[activity.id] = await contentService.getSubmissions(activity.id);
-        } catch (error) {
-          submissionsMap[activity.id] = [];
-        }
-      }
+      // Call new bulk grade endpoint
+      const response = await apiClient.get(`/grade/all/${subjectId}`);
+      const bulkGrades = response.data || [];
 
-      const grades = [];
+      const grades = bulkGrades.map(g => ({
+          student_id: g.student_id,
+          student_name: studentNameMap[g.student_id] || `Student ${String(g.student_id).slice(-6)}`,
+          final_grade: g.score || 0
+      }));
 
-      for (const student of enrolledStudents) {
-        if (student.status === 'approved' || !student.status) {
-          if (!student.id && !student.email) continue;
-
-          const studentId = student.id;
-
-          // Compute weighted grade using the same formula as backend
-          const finalGrade = computeWeightedGrade(activities, (activity) => {
-            const submissions = submissionsMap[activity.id] || [];
-            const sub = submissions.find(s => s.student_id === studentId);
-            return (sub && sub.score > 0) ? sub.score : 0;
-          });
-
-          console.log(`${student.name || student.email}: ${finalGrade.toFixed(1)}%`);
-
-          grades.push({
-            student_id: studentId || student.email,
-            student_name: student.name || student.email || `Student ${String(studentId).slice(-6)}`,
-            final_grade: finalGrade
-          });
-        }
-      }
-
-      console.log('Loaded student grades:', grades.length, 'students');
+      console.log('Loaded student grades from backend bulk calculation:', grades.length, 'students');
+      
+      // Sort grades by score descending
+      grades.sort((a, b) => b.final_grade - a.final_grade);
       setStudentGrades(grades);
     } catch (error) {
       console.error('Failed to load students:', error);

@@ -24,6 +24,8 @@ async def notify_students(subject_id: str, title: str, message: str, db, activit
             title=title,
             message=message,
             subject_id=subject_id,
+            activity_id=activity_id,
+            lecture_id=lecture_id,
         )
         db.add(notif)
         db.commit()
@@ -63,6 +65,7 @@ async def notify_teacher(subject_id: str, activity_id: str, student_id: str, tit
         title=title,
         message=message,
         subject_id=subject_id,
+        activity_id=activity_id,
     )
     db.add(notif)
     db.commit()
@@ -91,6 +94,8 @@ async def notify_user(user_id: str, title: str, message: str, db, subject_id: st
             title=title,
             message=message,
             subject_id=subject_id,
+            activity_id=activity_id,
+            lecture_id=lecture_id,
         )
         db.add(notif)
         db.commit()

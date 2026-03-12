@@ -15,7 +15,7 @@ from schemas.enrollment import (
 )
 from schemas.subject import SubjectCreate, SubjectJoin, SubjectResponse
 from sqlalchemy.orm import Session
-from utils.notify import notify_user  # Added notify_user
+from utils.notify import notify_user, notify_teacher
 
 router = APIRouter()
 
@@ -153,6 +153,22 @@ async def join_subject(
     try:
         db.commit()
         print(f"[DEBUG] Enrollment committed successfully")
+        
+        # get student name for notification
+        student = db.query(User).filter(User.id == current_user.id).first()
+        student_name = student.name if student else current_user.email
+        
+        # notify teacher
+        from utils.notify import notify_teacher
+        import asyncio
+        asyncio.create_task(notify_teacher(
+            subject_id=subject.id,
+            activity_id=None,
+            student_id=current_user.id,
+            title=f"{subject.name} - Request",
+            message=f"{student_name} wants to enroll in this subject",
+            db=db
+        ))
     except Exception as commit_err:
         print(f"[ERROR] Database commit failed for enrollment: {str(commit_err)}")
         raise
@@ -183,26 +199,26 @@ def get_subject_students(
     if subject.owner_id != current_user.id:
         raise HTTPException(status_code=403, detail="Access denied")
 
-    enrollments = (
-        db.query(SubjectEnrollment)
+    # Optimized single JOIN query instead of N+1 loop querying User for each enrollment
+    results = (
+        db.query(SubjectEnrollment, User)
+        .join(User, SubjectEnrollment.student_id == User.id)
         .filter(SubjectEnrollment.subject_id == subject_id)
         .all()
     )
 
     out: List[StudentInSubject] = []
-    for e in enrollments:
-        student = db.query(User).filter(User.id == e.student_id).first()
-        if student:
-            out.append(
-                StudentInSubject(
-                    id=student.id,
-                    name=student.name,
-                    email=student.email,
-                    status=e.status,
-                    profile_picture=student.profile_picture,
-                    created_at=e.created_at,
-                )
+    for enrollment, student in results:
+        out.append(
+            StudentInSubject(
+                id=student.id,
+                name=student.name,
+                email=student.email,
+                status=enrollment.status,
+                profile_picture=student.profile_picture,
+                created_at=enrollment.created_at,
             )
+        )
     return out
 
 

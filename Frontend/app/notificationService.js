@@ -214,80 +214,14 @@ export const notificationService = {
   async getSubjectNotifications(subjectId) {
     try {
       console.log('Building inside notifications for subject:', subjectId);
-      const notifications = [];
-
-      // Fetch activities for subject
-      const activities = await contentService.getActivities(subjectId);
-      console.log('Found activities:', activities?.length || 0, 'for subject');
-
-      // For each activity, get submissions in parallel
-      const activityPromises = (activities || []).map(async (activity) => {
-        let actNotifications = [];
-        try {
-          const submissions = await contentService.getSubmissions(activity.id);
-          console.log('Processing activity:', activity.title, 'category:', activity.category);
-          (submissions || []).forEach((submission) => {
-            // Only include submissions from last 7 days for better visibility
-            const sevenDaysAgo = getDaysAgoDate(7);
-            if (new Date(submission.created_at) > sevenDaysAgo) {
-              // Determine activity type for the message
-              let activityType = 'Activity';
-              if (activity.category === 'quiz') activityType = 'Quiz';
-              else if (activity.category === 'assignment') activityType = 'Assignment';
-              else if (activity.category === 'laboratory') activityType = 'Laboratory';
-              else if (activity.category === 'major exam') activityType = 'Exam';
-              else if (activity.category === 'lab exam') activityType = 'Laboratory Exam';
-              else if (activity.category === 'project') activityType = 'Project';
-
-              const message = `${submission.student_name || 'A student'} submitted an answer to ${activityType}: "${activity.title}"`;
-
-              actNotifications.push({
-                id: `gen-sub-${activity.id}-${submission.id}`, // Guaranteed unique across all subjects/activities
-                type: 'submission',
-                subject_id: subjectId,
-                activity_id: activity.id,
-                activity_title: activity.title,
-                student_id: submission.student_id,
-                student_name: submission.student_name,
-                student_email: submission.student_email,
-                created_at: submission.created_at,
-                message: message,
-                source: 'generated', // Add source for proper filtering
-              });
-            }
-          });
-        } catch (e) {
-          console.warn(`Failed to load submissions for activity ${activity.id}:`, e);
-        }
-        return actNotifications;
-      });
-
-      const allActivityNotifications = await Promise.all(activityPromises);
-      allActivityNotifications.forEach(actNotifs => {
-        notifications.push(...actNotifs);
-      });
-
-      // Fetch pending enrollments for this subject
-      try {
-        const students = await subjectService.getSubjectStudents(subjectId);
-        const pending = (students || []).filter(s => s.status?.toLowerCase() === 'pending');
-
-        pending.forEach(p => {
-          notifications.push({
-            id: `gen-enroll-${subjectId}-${p.id}`,
-            type: 'enrollment_request',
-            subject_id: subjectId,
-            student_id: p.id,
-            student_name: p.name || p.email,
-            created_at: p.created_at || new Date().toISOString(),
-            title: 'Enrollment Request',
-            message: `${p.name || p.email} wants to enroll in this subject`,
-            source: 'generated'
-          });
-        });
-      } catch (e) {
-        console.warn('Failed to load pending students for internal notifications:', e);
-      }
+      const backendNotifs = await this.getBackendNotifications();
+      
+      const notifications = backendNotifs.filter(n => n.subject_id === subjectId).map(n => ({
+        ...n,
+        source: 'backend',
+        type: n.title.endsWith(' - Request') ? 'enrollment_request' : 
+              n.title.endsWith(' - New Submission') ? 'submission' : 'notification'
+      }));
 
       // Sort newest first
       notifications.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
@@ -310,116 +244,36 @@ export const notificationService = {
       }
 
       const backend = await this.getBackendNotifications();
-
-      // Get teacher subjects (if endpoint available)
-      let generated = [];
       let teacherSubjects = [];
+
       try {
-        const subjects = await subjectService.listMySubjects();
-        teacherSubjects = subjects;
-        const toProcess = (subjects || []).slice(0, limitSubjects);
-
-        const subjectPromises = toProcess.map(async (subj) => {
-          let subjGenerated = [];
-
-          try {
-            const insideNotifs = await this.getSubjectNotifications(subj.id);
-
-            // Keep 'submission' type generated notifications here temporarily!
-            // We need them to build the `generatedSubmissionsMap` so we can infer `activity_id`
-            // for backend notifications. We will filter them out at the very end.
-            subjGenerated = insideNotifs
-              .map(n => {
-                if (n.type === 'enrollment_request') {
-                  return {
-                    ...n,
-                    subject_name: subj.name,
-                    title: `${subj.name} - Request`,
-                    is_read: false
-                  };
-                }
-                return n;
-              });
-
-          } catch (e) {
-            console.log('Error processing subject', subj.name, ':', e.message);
-          }
-
-          return subjGenerated;
-        });
-
-        const allGeneratedArrays = await Promise.all(subjectPromises);
-        allGeneratedArrays.forEach(arr => {
-          generated.push(...arr);
-        });
+        teacherSubjects = await subjectService.listMySubjects();
       } catch (e) {
-        console.warn('Unable to load teacher subjects, skipping generated notifications', e.message || e);
+         console.warn("Failed to load generic teacher subjects");
       }
-
-      console.log('Generated notifications:', generated.length, 'items');
 
       // Helper map to quickly find subject by name for inference
       const subjectNameMap = {};
+      const subjectIdMap = {};
       (teacherSubjects || []).forEach(s => {
         subjectNameMap[s.name] = s.id;
-      });
-
-      // Create a quick lookup map from the generated submission notifications we just built
-      // This will let us attach 'activity_id' to backend notifications out of thin air
-      const generatedSubmissionsMap = {};
-      generated.filter(n => n.type === 'submission').forEach(gen => {
-        // use combination of subject_id and the activity title extracted from the message as a key
-        // We know the pattern from generic generated notifications might be different, 
-        // let's just use the activity_title directly since it's already there in generated notifications!
-        if (gen.subject_id && gen.activity_title) {
-          generatedSubmissionsMap[`${gen.subject_id}-${gen.activity_title}`] = {
-            activity_id: gen.activity_id,
-            activity_title: gen.activity_title
-          };
-        }
+        subjectIdMap[s.id] = s.name;
       });
 
       // Merge lists, backend first, then generated; convert backend items to consistent shape
       const mappedBackend = (backend || []).map((b) => {
         let inferredSubjectId = b.subject_id || null;
-        let inferredSubjectName = b.subject_name || null;
-        let mappedType = 'backend';
-        let inferredActivityId = null;
-        let inferredActivityTitle = null;
+        let inferredSubjectName = b.subject_name || (inferredSubjectId ? subjectIdMap[inferredSubjectId] : null);
+        let mappedType = 'notification';
 
         // Infer subject details for backend enrollment request notifications
         if (b.title && b.title.endsWith(' - Request')) {
           mappedType = 'enrollment_request';
-          const possibleSubjectName = b.title.replace(' - Request', '');
-          if (!inferredSubjectId && subjectNameMap[possibleSubjectName]) {
-            inferredSubjectId = subjectNameMap[possibleSubjectName];
-            inferredSubjectName = possibleSubjectName;
-          }
         }
 
         // Infer activity details for backend submission notifications
         if (b.title && b.title.endsWith(' - New Submission')) {
           mappedType = 'submission';
-          const possibleSubjectName = b.title.replace(' - New Submission', '');
-          if (!inferredSubjectId && subjectNameMap[possibleSubjectName]) {
-            inferredSubjectId = subjectNameMap[possibleSubjectName];
-            inferredSubjectName = possibleSubjectName;
-          }
-
-          // Extract the activity title from the backend message string
-          // Backend format: "Name submitted an answer to Type: "Title""
-          const match = b.message.match(/"([^"]+)"/);
-
-          if (match && match[1] && inferredSubjectId) {
-            const extractedTitle = match[1];
-            const lookupKey = `${inferredSubjectId}-${extractedTitle}`;
-            const enrichedData = generatedSubmissionsMap[lookupKey];
-
-            if (enrichedData) {
-              inferredActivityId = enrichedData.activity_id;
-              inferredActivityTitle = enrichedData.activity_title;
-            }
-          }
         }
 
         return {
@@ -431,34 +285,13 @@ export const notificationService = {
           is_read: b.is_read,
           subject_id: inferredSubjectId,
           subject_name: inferredSubjectName,
-          activity_id: inferredActivityId,
-          activity_title: inferredActivityTitle,
+          activity_id: b.activity_id,
+          lecture_id: b.lecture_id,
           source: 'backend',
         };
       });
 
-      // Deduplicate: remove backend enrollment notifications if we already
-      // have a generated enrollment notification for the same subject
-      const generatedSubjectIds = new Set(
-        generated.filter(n => n.type === 'enrollment_request').map(n => n.subject_id)
-      );
-      const dedupedBackend = mappedBackend.filter(b => {
-        // Keep backend notification if it's NOT an enrollment duplicate
-        if (b.type === 'enrollment_request' && b.subject_id && generatedSubjectIds.has(b.subject_id)) {
-          return false; // Skip duplicate
-        }
-        if (b.title && b.title.toLowerCase().includes('enroll') && b.subject_id && generatedSubjectIds.has(b.subject_id)) {
-          return false; // Skip duplicate
-        }
-        return true;
-      });
-
-      // Filter out 'submission' type generated notifications here at the very end 
-      // so they don't produce visual duplicates alongside the backend's real submission notifications.
-      const filteredGenerated = generated.filter(n => n.type !== 'submission');
-      const merged = [...dedupedBackend, ...filteredGenerated];
-      // Filter out generated notifications that have been marked as read using global state
-      const filtered = merged.filter(n => {
+      const filtered = mappedBackend.filter(n => {
         if (!globalReadNotifications) {
           console.error('globalReadNotifications is undefined in filtering');
           return true; // Show all if global state is not available

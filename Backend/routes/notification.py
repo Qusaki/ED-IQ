@@ -8,11 +8,16 @@ from dependencies import get_current_user
 router = APIRouter()
 
 @router.get("/", response_model=list[NotificationResponse])
-def get_notifications(db: Session = Depends(get_db), current_user = Depends(get_current_user)):
+def get_notifications(
+    limit: int = 50,
+    offset: int = 0,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
     try:
         notif = db.query(Notification).filter(
             Notification.user_id == current_user.id
-        ).order_by(Notification.created_at.desc()).all()
+        ).order_by(Notification.created_at.desc()).offset(offset).limit(limit).all()
         return notif
     except Exception as e:
         print(f"[ERROR] Failed to fetch notifications (possibly pending db migration): {str(e)}")
