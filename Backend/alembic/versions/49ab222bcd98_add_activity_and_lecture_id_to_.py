@@ -20,9 +20,20 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """Upgrade schema."""
-    pass
+    # Use batch mode for compatibility; safe to re-run if columns already exist
+    from sqlalchemy import inspect as sa_inspect
+    bind = op.get_bind()
+    inspector = sa_inspect(bind)
+    existing_columns = [col['name'] for col in inspector.get_columns('notifications')]
+
+    if 'activity_id' not in existing_columns:
+        op.add_column('notifications', sa.Column('activity_id', sa.Text(), nullable=True))
+    if 'lecture_id' not in existing_columns:
+        op.add_column('notifications', sa.Column('lecture_id', sa.Text(), nullable=True))
 
 
 def downgrade() -> None:
     """Downgrade schema."""
-    pass
+    op.drop_column('notifications', 'lecture_id')
+    op.drop_column('notifications', 'activity_id')
+
