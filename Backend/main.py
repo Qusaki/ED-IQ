@@ -49,6 +49,15 @@ async def get_log_errors():
             return PlainTextResponse(f.read())
     return PlainTextResponse("No errors logged yet.")
 
+@app.get("/diag-env", include_in_schema=False)
+async def diag_env():
+    return {
+        "RESEND_API_KEY_SET": bool(os.getenv("RESEND_API_KEY")),
+        "FROM_EMAIL_SET": bool(os.getenv("FROM_EMAIL")),
+        "FROM_EMAIL_VALUE": os.getenv("FROM_EMAIL", "onboarding@resend.dev"),
+        "DATABASE_URL_SET": bool(os.getenv("DATABASE_URL")),
+    }
+
 from alembic.config import Config
 from alembic import command
 import sys
