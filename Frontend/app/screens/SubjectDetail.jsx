@@ -306,7 +306,8 @@ export default function SubjectDetail() {
       } else if (isStudent && studentTab === 'favorites') {
         loadStudentPerformance(true);
       }
-    }, 10000); // 10 seconds polling
+    }, 30000); // 30 seconds polling
+
 
     return () => clearInterval(intervalId);
   }, [subjectId, isTeacher, isStudent, selectedTab, studentTab]);

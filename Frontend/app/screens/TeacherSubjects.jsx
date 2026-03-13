@@ -55,7 +55,8 @@ export default function TeacherSubjects() {
     const intervalId = setInterval(() => {
       // Silent load without triggering any loading states
       load(true);
-    }, 10000); // 10 seconds polling
+    }, 30000); // 30 seconds polling
+
 
     return () => clearInterval(intervalId);
   }, []);

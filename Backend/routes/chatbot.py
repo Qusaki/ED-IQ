@@ -5,9 +5,14 @@ from utils.supabase import get_file_metadata
 
 router = APIRouter()
 
+from pydantic import BaseModel
+
+class ChatMessage(BaseModel):
+    message: str
+
 @router.post("/handbook")
-async def handbook_chatbot(message: str):
-    response = student_handbook(message)
+async def handbook_chatbot(payload: ChatMessage):
+    response = student_handbook(payload.message)
     return {"response": response}
     
 

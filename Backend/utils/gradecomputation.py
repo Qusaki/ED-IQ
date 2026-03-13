@@ -115,74 +115,66 @@ def compute_major_exam(
     return final_score, possible_weight
 
 
-def compute_midterm_grade(
-    student_id: str, subject_id: str, db: Session = Depends(get_db)
+def compute_period_grade(
+    student_id: str, subject_id: str, db: Session, term: str
 ):
-    subject = db.query(Subject).filter(Subject.id == subject_id).first()
-
-    if not subject:
-        raise HTTPException(status_code=404, detail="Subject not found")
-
-    student = db.query(User).filter(User.id == student_id).first()
-
-    if not student:
-        raise HTTPException(status_code=404, detail="Student not found")
-
-    activities = db.query(Activity).filter(Activity.subject_id == subject_id, Activity.term == "midterm").all()
+    """
+    Generic function to compute grade for a specific term (midterm/final) 
+    using optimized queries.
+    """
+    activities = db.query(Activity).filter(
+        Activity.subject_id == subject_id, 
+        Activity.term == term
+    ).all()
 
     if not activities:
-        raise HTTPException(status_code=404, detail="no activities found for the given subject")
+        return None  # No activities found
 
+    activity_ids = [a.id for a in activities]
+    
+    # Batch query submissions for this student and these activities
+    submissions = db.query(Submission).filter(
+        Submission.student_id == student_id,
+        Submission.activity_id.in_(activity_ids)
+    ).all()
+    
+    sub_map = {s.activity_id: s for s in submissions}
 
     lab_score, quiz_score, assignment_score, attendance_score = [], [], [], []
     lab_max, quiz_max, assignment_max, attendance_max = [], [], [], []
 
-    major_exam, lab_exam, project = None, None, None
-    major_exam_total, lab_exam_total, project_total = None, None, None
+    major_exam, lab_exam, project = 0, 0, 0
+    major_exam_total, lab_exam_total, project_total = 0, 0, 0
 
     for activity in activities:
-
-        submission = db.query(Submission).filter(Submission.activity_id == activity.id, Submission.student_id == student.id).first()
+        submission = sub_map.get(activity.id)
+        score = submission.score if submission else 0
 
         if activity.category == "laboratory":
-            if submission:
-                lab_score.append(submission.score)
-            lab_max.append(activity.max_score)
+            lab_score.append(score)
+            lab_max.append(activity.max_score or 100)
         elif activity.category == "quiz":
-            if submission:
-                quiz_score.append(submission.score)
-            quiz_max.append(activity.max_score)
+            quiz_score.append(score)
+            quiz_max.append(activity.max_score or 100)
         elif activity.category == "assignment":
-            if submission:
-                assignment_score.append(submission.score)
-            assignment_max.append(activity.max_score)
+            assignment_score.append(score)
+            assignment_max.append(activity.max_score or 100)
         elif activity.category == "attendance":
-            if submission:
-                attendance_score.append(submission.score)
-            attendance_max.append(activity.max_score)
-
+            attendance_score.append(score)
+            attendance_max.append(activity.max_score or 100)
         elif activity.category == "major exam":
-            if submission:
-                major_exam = submission.score
-            major_exam_total = activity.max_score
+            major_exam = score
+            major_exam_total = activity.max_score or 100
         elif activity.category == "lab exam":
-            if submission:
-                lab_exam = submission.score
-            lab_exam_total = activity.max_score
+            lab_exam = score
+            lab_exam_total = activity.max_score or 100
         elif activity.category == "project":
-            if submission:
-                project = submission.score
-            project_total = activity.max_score
+            project = score
+            project_total = activity.max_score or 100
 
     class_standing_score, class_standing_weight = compute_class_standing(
-        lab_score,
-        quiz_score,
-        assignment_score,
-        attendance_score,
-        lab_max,
-        quiz_max,
-        assignment_max,
-        attendance_max,
+        lab_score, quiz_score, assignment_score, attendance_score,
+        lab_max, quiz_max, assignment_max, attendance_max,
     )
 
     exam_score, exam_weight = compute_major_exam(
@@ -195,108 +187,34 @@ def compute_midterm_grade(
     if total_possible_weight == 0:
         return 0
 
-    # The maximum total_possible_weight is 1.0 (50% class standing + 50% exams = 100% of the period, but the weights above sum to 1.0)
-    # The `class_standing_score` and `exam_score` calculation results in a score out of 100 because of the `* 100` multiple
-    # So we just divide the accumulated points over the accumulated weight to scale it back up to 100.
-    midterm_grade = total_score / total_possible_weight
+    return total_score / total_possible_weight
 
-    return midterm_grade
+
+def compute_midterm_grade(
+    student_id: str, subject_id: str, db: Session = Depends(get_db)
+):
+    grade = compute_period_grade(student_id, subject_id, db, "midterm")
+    if grade is None:
+        raise HTTPException(status_code=404, detail="no activities found for midterm")
+    return grade
 
 
 def compute_final_grade(
     student_id: str, subject_id: str, db: Session = Depends(get_db)
 ):
-    subject = db.query(Subject).filter(Subject.id == subject_id).first()
-
-    if not subject:
-        raise HTTPException(status_code=404, detail="Subject not found")
-
-    student = db.query(User).filter(User.id == student_id).first()
-
-    if not student:
-        raise HTTPException(status_code=404, detail="Student not found")
-
-    activities = db.query(Activity).filter(Activity.subject_id == subject_id, Activity.term == "final").all()
-
-    if not activities:
-        raise HTTPException(status_code=404, detail="no activities found for the given subject")
-
-    lab_score, quiz_score, assignment_score, attendance_score = [], [], [], []
-    lab_max, quiz_max, assignment_max, attendance_max = [], [], [], []
-
-    major_exam, lab_exam, project = None, None, None
-    major_exam_total, lab_exam_total, project_total = None, None, None
-
-    for activity in activities:
-
-        submission = db.query(Submission).filter(Submission.activity_id == activity.id, Submission.student_id == student.id).first()
-
-        if activity.category == "laboratory":
-            if submission:
-                lab_score.append(submission.score)
-            lab_max.append(activity.max_score)
-        elif activity.category == "quiz":
-            if submission:
-                quiz_score.append(submission.score)
-            quiz_max.append(activity.max_score)
-        elif activity.category == "assignment":
-            if submission:
-                assignment_score.append(submission.score)
-            assignment_max.append(activity.max_score)
-        elif activity.category == "attendance":
-            if submission:
-                attendance_score.append(submission.score)
-            attendance_max.append(activity.max_score)
-
-        elif activity.category == "major exam":
-            if submission:
-                major_exam = submission.score
-            major_exam_total = activity.max_score
-        elif activity.category == "lab exam":
-            if submission:
-                lab_exam = submission.score
-            lab_exam_total = activity.max_score
-        elif activity.category == "project":
-            if submission:
-                project = submission.score
-            project_total = activity.max_score
-
-    class_standing_score, class_standing_weight = compute_class_standing(
-        lab_score,
-        quiz_score,
-        assignment_score,
-        attendance_score,
-        lab_max,
-        quiz_max,
-        assignment_max,
-        attendance_max,
-    )
-
-    exam_score, exam_weight = compute_major_exam(
-        major_exam, lab_exam, project, major_exam_total, lab_exam_total, project_total
-    )
-
-    total_score = class_standing_score + exam_score
-    total_possible_weight = class_standing_weight + exam_weight
-
-    if total_possible_weight == 0:
-        return 0
-        
-    final_grade = total_score / total_possible_weight
-
-    return final_grade
+    grade = compute_period_grade(student_id, subject_id, db, "final")
+    if grade is None:
+        raise HTTPException(status_code=404, detail="no activities found for final")
+    return grade
 
 
 def compute_semestral_grade(
     student_id: str, subject_id: str, db: Session = Depends(get_db)
 ):
+    midterm = compute_period_grade(student_id, subject_id, db, "midterm") or 0
+    final = compute_period_grade(student_id, subject_id, db, "final")
     
-    midterm = compute_midterm_grade(student_id, subject_id, db)
-    try:
-        final = compute_final_grade(student_id, subject_id, db)
-        semestral_grade = (midterm + final) / 2
-    except HTTPException:
-        # If there are no final activities, the semestral grade should just be the midterm grade
-        semestral_grade = midterm
-
-    return semestral_grade
+    if final is None:
+        return midterm
+    
+    return (midterm + final) / 2
