@@ -33,7 +33,7 @@ const cleanMarkdown = (text) => {
     .trim();
 };
 
-const TypingIndicator = () => {
+const TypingIndicator = ({ isTeacher }) => {
   const dot1 = useRef(new Animated.Value(0.3)).current;
   const dot2 = useRef(new Animated.Value(0.3)).current;
   const dot3 = useRef(new Animated.Value(0.3)).current;
@@ -71,6 +71,7 @@ const TypingIndicator = () => {
     </View>
   );
 };
+
 
 export default function ChatbotModal({ visible, onClose }) {
   const { isTeacher } = useRBAC();
@@ -189,7 +190,7 @@ export default function ChatbotModal({ visible, onClose }) {
               </View>
             </View>
           ))}
-          {loading && <TypingIndicator />}
+          {loading && <TypingIndicator isTeacher={isTeacher} />}
         </ScrollView>
 
         {/* Input Area - wrapped in KeyboardAvoidingView */}
