@@ -113,40 +113,6 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  flashlightContainer: {
-    alignItems: 'center',
-    position: 'relative',
-  },
-  flashlightIcon: {
-    fontSize: 20,
-    opacity: 0.6,
-  },
-  flashlightIconOn: {
-    opacity: 1,
-  },
-  lightBeam: {
-    position: 'absolute',
-    top: -5,
-    alignItems: 'center',
-  },
-  lightRays: {
-    fontSize: 12,
-    color: '#ffd700',
-  },
-  flashlightText: {
-    fontSize: 10,
-    color: '#6c757d',
-    marginTop: 2,
-  },
-  flashlightTextOn: {
-    color: '#ffd700',
-    fontWeight: 'bold',
-  },
-  flashlightOn: {
-    backgroundColor: 'rgba(255, 215, 0, 0.1)',
-    borderTopRightRadius: 12,
-    borderBottomRightRadius: 12,
-  },
   roleSelector: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -341,38 +307,6 @@ export const styles = StyleSheet.create({
   // Missing styles
   disabledButton: {
     opacity: 0.6,
-  },
-  // Flashlight styles
-  flashlightOn: {
-    backgroundColor: '#ffd700',
-  },
-  flashlightIcon: {
-    fontSize: 20,
-  },
-  flashlightIconOn: {
-    color: '#ff8c00',
-  },
-  lightBeam: {
-    position: 'absolute',
-    top: -10,
-    left: -10,
-    right: -10,
-    bottom: -10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  lightRays: {
-    fontSize: 16,
-    color: '#ffd700',
-  },
-  flashlightText: {
-    fontSize: 10,
-    color: '#6c757d',
-    marginTop: 2,
-  },
-  flashlightTextOn: {
-    color: '#ff8c00',
-    fontWeight: 'bold',
   },
   topNav: {
     paddingHorizontal: 10,

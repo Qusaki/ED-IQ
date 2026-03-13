@@ -16,7 +16,7 @@ import {
   Platform,
   ImageBackground
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 
 
 import { useRouter } from 'expo-router';
@@ -204,22 +204,14 @@ export default function AuthScreen({ onAuthSuccess, selectedRole: initialRole, o
                   placeholderTextColor="#999"
                 />
                 <TouchableOpacity
-                  style={[styles.eyeButton, showPassword && styles.flashlightOn]}
+                  style={styles.eyeButton}
                   onPress={() => setShowPassword(!showPassword)}
                 >
-                  <View style={styles.flashlightContainer}>
-                    <Text style={[styles.flashlightIcon, showPassword && styles.flashlightIconOn]}>
-                      🔦
-                    </Text>
-                    {showPassword && (
-                      <View style={styles.lightBeam}>
-                        <Text style={styles.lightRays}>✨</Text>
-                      </View>
-                    )}
-                  </View>
-                  <Text style={[styles.flashlightText, showPassword && styles.flashlightTextOn]}>
-                    {showPassword ? 'ON' : 'OFF'}
-                  </Text>
+                  <MaterialCommunityIcons 
+                    name={showPassword ? "pencil" : "eraser"} 
+                    size={24} 
+                    color={themeColor} 
+                  />
                 </TouchableOpacity>
               </View>
 
