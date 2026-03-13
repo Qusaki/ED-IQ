@@ -86,30 +86,16 @@ export default function ChatbotModal({ visible, onClose }) {
   ]);
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(false);
-  const [usage, setUsage] = useState({ count: 0, limit: 3 });
   const scrollViewRef = useRef(null);
-
-  useEffect(() => {
-    if (visible) {
-      fetchUsage();
-    }
-  }, [visible]);
-
-  const fetchUsage = async () => {
-    const result = await chatbotService.getUsage();
-    if (result.success) {
-      setUsage({ count: result.count, limit: result.limit });
-    }
-  };
 
   useEffect(() => {
     if (scrollViewRef.current) {
       scrollViewRef.current.scrollToEnd({ animated: true });
     }
-  }, [messages, loading]);
+  }, [messages]);
 
   const handleSendMessage = async () => {
-    if (!inputText.trim() || usage.count >= usage.limit) return;
+    if (!inputText.trim()) return;
 
     // Add user message
     const userMessage = {
@@ -136,28 +122,16 @@ export default function ChatbotModal({ visible, onClose }) {
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, botMessage]);
-      // Update count from response
-      if (result.count !== undefined) {
-        setUsage(prev => ({ ...prev, count: result.count }));
-      }
     } else {
-      // If result.status is 429, we likely hit a race condition or sync issue, refresh usage
-      if (result.status === 429) {
-        fetchUsage();
-      }
       const errorMessage = {
         id: messages.length + 2,
-        text: result.status === 429 
-          ? "Limit reached! You've used your 3 chatbot questions for today. Please come back tomorrow!"
-          : `Sorry, I encountered an error: ${result.error}`,
+        text: `Sorry, I encountered an error: ${result.error}`,
         sender: 'bot',
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, errorMessage]);
     }
   };
-
-  const isLimitReached = usage.count >= usage.limit;
 
   return (
     <Modal
@@ -169,15 +143,7 @@ export default function ChatbotModal({ visible, onClose }) {
       <SafeAreaView style={styles.container}>
         {/* Header */}
         <View style={[styles.header, isTeacher && { backgroundColor: '#003366' }]}>
-          <View>
-            <Text style={[styles.headerTitle, isTeacher && { color: '#E6B041' }]}>ED-IQ Assistant</Text>
-            <View style={styles.usageBadge}>
-              <View style={[styles.usageDot, isLimitReached ? styles.usageDotFull : styles.usageDotAvailable]} />
-              <Text style={styles.usageText}>
-                {isLimitReached ? 'Daily Limit Reached' : `${usage.count}/${usage.limit} Daily Questions Used`}
-              </Text>
-            </View>
-          </View>
+          <Text style={[styles.headerTitle, isTeacher && { color: '#E6B041' }]}>ED-IQ Assistant</Text>
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
             <MaterialCommunityIcons name="close" size={24} color={isTeacher ? "#E6B041" : "#003366"} />
           </TouchableOpacity>
@@ -188,7 +154,7 @@ export default function ChatbotModal({ visible, onClose }) {
           ref={scrollViewRef}
           style={styles.messagesScroll}
           showsVerticalScrollIndicator={true}
-          contentContainerStyle={{ flexGrow: 1, paddingBottom: 20 }}
+          contentContainerStyle={{ flexGrow: 1 }}
         >
           {messages.map((message) => (
             <View
@@ -233,32 +199,24 @@ export default function ChatbotModal({ visible, onClose }) {
           keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
         >
           <View style={[styles.inputContainer, { paddingBottom: Math.max(12, insets.bottom) }]}>
-            <View style={styles.inputWrapper}>
-              <TextInput
-                style={[styles.input, isLimitReached && styles.inputDisabled]}
-                placeholder={isLimitReached ? "Daily limit reached (3/3)" : "Ask me anything about school policies..."}
-                placeholderTextColor={isLimitReached ? "#ff6b6b" : "#999"}
-                value={inputText}
-                onChangeText={setInputText}
-                multiline
-                maxHeight={100}
-                editable={!loading && !isLimitReached}
-              />
-              {isLimitReached && (
-                <View style={styles.limitOverlay}>
-                  <MaterialCommunityIcons name="clock-outline" size={14} color="#ff6b6b" />
-                  <Text style={styles.limitOverlayText}>Reset tomorrow at midnight</Text>
-                </View>
-              )}
-            </View>
+            <TextInput
+              style={styles.input}
+              placeholder="Ask me anything about school policies..."
+              placeholderTextColor="#999"
+              value={inputText}
+              onChangeText={setInputText}
+              multiline
+              maxHeight={100}
+              editable={!loading}
+            />
             <TouchableOpacity
               style={[
                 styles.sendButton,
                 isTeacher && { backgroundColor: '#003366' },
-                (loading || !inputText.trim() || isLimitReached) && styles.sendButtonDisabled,
+                (loading || !inputText.trim()) && styles.sendButtonDisabled,
               ]}
               onPress={handleSendMessage}
-              disabled={loading || !inputText.trim() || isLimitReached}
+              disabled={loading || !inputText.trim()}
             >
               <MaterialCommunityIcons name="send" size={20} color={isTeacher ? "#E6B041" : "#003366"} />
             </TouchableOpacity>
@@ -266,7 +224,6 @@ export default function ChatbotModal({ visible, onClose }) {
         </KeyboardAvoidingView>
       </SafeAreaView>
     </Modal>
-
   );
 }
 
@@ -380,51 +337,4 @@ const styles = StyleSheet.create({
     backgroundColor: '#003366',
     marginHorizontal: 3,
   },
-  usageBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.05)',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
-    marginTop: 4,
-    alignSelf: 'flex-start',
-  },
-  usageDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    marginRight: 6,
-  },
-  usageDotAvailable: {
-    backgroundColor: '#2ecc71',
-  },
-  usageDotFull: {
-    backgroundColor: '#ff6b6b',
-  },
-  usageText: {
-    fontSize: 10,
-    color: '#003366',
-    fontWeight: '600',
-    opacity: 0.7,
-  },
-  inputWrapper: {
-    flex: 1,
-  },
-  inputDisabled: {
-    backgroundColor: '#fff0f0',
-    borderColor: '#ffc9c9',
-  },
-  limitOverlay: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 4,
-    paddingLeft: 4,
-  },
-  limitOverlayText: {
-    fontSize: 10,
-    color: '#ff6b6b',
-    marginLeft: 4,
-    fontStyle: 'italic',
-  },
-});
+});
