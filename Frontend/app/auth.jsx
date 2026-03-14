@@ -262,8 +262,8 @@ export default function AuthScreen({ onAuthSuccess, selectedRole: initialRole, o
           animationType="slide"
           onRequestClose={() => setShowForgotModal(false)}
         >
-          <View style={styles.modalOverlay}>
-            <View style={[styles.modalContent, { paddingBottom: 30 }]}>
+          <View style={[styles.modalOverlay, { justifyContent: 'center', padding: 20 }]}>
+            <View style={[styles.modalContent, { paddingBottom: 30, borderRadius: 20 }]}>
               <View style={[styles.modalHeader, { borderBottomWidth: 0 }]}>
                 <Text style={[styles.modalTitle, { color: themeColor, fontSize: 24 }]}>Reset Password</Text>
                 <TouchableOpacity 
@@ -275,7 +275,7 @@ export default function AuthScreen({ onAuthSuccess, selectedRole: initialRole, o
               </View>
               
               <Text style={styles.modalSubtitle}>
-                Enter your email address and we'll send you a link to reset your password.
+                Enter the email you want to change the password for.
               </Text>
               
               <TextInput

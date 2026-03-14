@@ -6,11 +6,9 @@ from database import get_db
 from models.user import User
 from dependencies import get_current_user
 import datetime
-
+from pydantic import BaseModel
 
 router = APIRouter()
-
-from pydantic import BaseModel
 
 class ChatMessage(BaseModel):
     message: str

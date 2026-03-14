@@ -141,8 +141,13 @@ export default function ChatbotModal({ visible, onClose }) {
       onRequestClose={onClose}
     >
       <SafeAreaView style={styles.container}>
-        {/* Header */}
-        <View style={[styles.header, isTeacher && { backgroundColor: '#003366' }]}>
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+        >
+          {/* Header */}
+          <View style={[styles.header, isTeacher && { backgroundColor: '#003366' }]}>
           <Text style={[styles.headerTitle, isTeacher && { color: '#E6B041' }]}>ED-IQ Assistant</Text>
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
             <MaterialCommunityIcons name="close" size={24} color={isTeacher ? "#E6B041" : "#003366"} />
@@ -193,11 +198,6 @@ export default function ChatbotModal({ visible, onClose }) {
           {loading && <TypingIndicator isTeacher={isTeacher} />}
         </ScrollView>
 
-        {/* Input Area - wrapped in KeyboardAvoidingView */}
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
-        >
           <View style={[styles.inputContainer, { paddingBottom: Math.max(12, insets.bottom) }]}>
             <TextInput
               style={styles.input}
