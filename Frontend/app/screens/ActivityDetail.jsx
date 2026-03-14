@@ -345,6 +345,11 @@ export default function ActivityDetail() {
       const updatedSubmissions = await contentService.getSubmissions(activity.id);
       setSubmissions(updatedSubmissions);
 
+      // Refresh student names to ensure they don't revert to IDs
+      if (updatedSubmissions.length > 0) {
+        await loadStudentNames(updatedSubmissions);
+      }
+
       // Tell SubjectDetail that a refresh is required for the aggregate views
       router.setParams({ refreshGrading: Date.now().toString() });
     } catch (error) {
@@ -720,12 +725,13 @@ export default function ActivityDetail() {
           console.log('Enrolled students fetched successfully.');
 
           allStudents.forEach((student) => {
-            const key = student?.id || student?.student_id;
-            if (key) {
-              names[key] =
-                student.name ||
-                student.email ||
-                `Student ${key.slice(-6)}`;
+            // Index by internal database ID (UUID)
+            if (student.id) {
+              names[student.id] = student.name || student.email || `Student ${student.id.slice(-6)}`;
+            }
+            // Also index by student code if available to ensure correct binding
+            if (student.student_id && student.student_id !== student.id) {
+              names[student.student_id] = student.name || student.email || `Student ${student.student_id.slice(-6)}`;
             }
           });
         } catch (error) {
@@ -819,6 +825,11 @@ export default function ActivityDetail() {
       // Update submissions list
       const updatedSubmissions = await contentService.getSubmissions(activity.id);
       setSubmissions(updatedSubmissions);
+
+      // Refresh student names to ensure they don't revert to IDs
+      if (updatedSubmissions.length > 0) {
+        await loadStudentNames(updatedSubmissions);
+      }
 
       // Alert.alert('Success', 'Grade assigned successfully!');
       setGradingMode(false);
