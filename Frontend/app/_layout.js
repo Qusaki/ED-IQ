@@ -1,4 +1,4 @@
-import { Stack } from 'expo-router';
+import { Stack, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
@@ -20,6 +20,16 @@ export default function RootLayout() {
   const [currentFlowStep, setCurrentFlowStep] = useState('selection'); // 'selection' or 'auth'
   const [selectedRole, setSelectedRole] = useState(null);
   const { isTeacher, isStudent } = useRBAC();
+  const segments = useSegments();
+  const isResetPasswordRoute = segments[0] === 'reset-password';
+
+  useEffect(() => {
+    // If we're on the reset-password route, immediately hide native splash and finish custom splash
+    if (isResetPasswordRoute) {
+      setSplashFinished(true);
+      SplashScreen.hideAsync().catch(() => { });
+    }
+  }, [isResetPasswordRoute]);
 
   useEffect(() => {
     setupAxiosInterceptors();
@@ -61,7 +71,7 @@ export default function RootLayout() {
     setSelectedRole(null);
   };
 
-  if (!splashFinished) {
+  if (!splashFinished && !isResetPasswordRoute) {
     return <SplashAnimation onFinish={() => setSplashFinished(true)} />;
   }
 
@@ -77,7 +87,7 @@ export default function RootLayout() {
   return (
     <>
       <StatusBar barStyle="dark-content" />
-      {!isAuthenticated ? (
+      {!isAuthenticated && !isResetPasswordRoute ? (
         currentFlowStep === 'selection' ? (
           <SelectionScreen onSelectRole={handleRoleSelect} />
         ) : (
@@ -98,6 +108,7 @@ export default function RootLayout() {
           <Stack.Screen name="profile" options={{ animation: 'fade' }} />
           <Stack.Screen name="notifications" options={{ animation: 'fade' }} />
           <Stack.Screen name="screens" options={{ animation: 'none' }} />
+          <Stack.Screen name="reset-password" options={{ animation: 'fade' }} />
           <Stack.Screen name="_ui" />
         </Stack>
       )}

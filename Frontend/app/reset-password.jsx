@@ -68,7 +68,7 @@ export default function ResetPasswordScreen() {
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.keyboardView}
         >
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <TouchableOpacity onPress={() => router.replace('/auth')} style={styles.backButton}>
             <Ionicons name="arrow-back" size={28} color="#6c757d" />
           </TouchableOpacity>
 
@@ -113,7 +113,7 @@ export default function ResetPasswordScreen() {
                 {loading ? (
                   <ActivityIndicator color="#fff" />
                 ) : (
-                  <Text style={styles.authButtonText}>Update Password</Text>
+                  <Text style={styles.authButtonText}>Save</Text>
                 )}
               </TouchableOpacity>
 
