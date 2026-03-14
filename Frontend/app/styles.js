@@ -376,6 +376,19 @@ export const styles = StyleSheet.create({
     marginVertical: 10,
     fontWeight: '500',
   },
+  validationMessage: {
+    fontSize: 14,
+    marginBottom: 10,
+    marginTop: -10, // Pull closer to the input
+    textAlign: 'left',
+    paddingHorizontal: 5,
+  },
+  mismatchText: {
+    color: '#dc3545', // Red
+  },
+  matchText: {
+    color: '#28a745', // Green
+  },
 });
 
 export default styles;

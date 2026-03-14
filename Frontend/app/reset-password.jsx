@@ -24,8 +24,11 @@ export default function ResetPasswordScreen() {
   const { token } = useLocalSearchParams();
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
+
+  const passwordsMatch = newPassword.length > 0 && newPassword === confirmPassword;
+  const showMatchStatus = confirmPassword.length > 0;
 
   const handleResetPassword = async () => {
     if (!token) {
@@ -38,7 +41,7 @@ export default function ResetPasswordScreen() {
       return;
     }
 
-    if (newPassword !== confirmPassword) {
+    if (!passwordsMatch) {
       Alert.alert('Error', 'Passwords do not match.');
       return;
     }
@@ -47,9 +50,7 @@ export default function ResetPasswordScreen() {
     try {
       const result = await authService.resetPassword(token, newPassword);
       if (result.success) {
-        Alert.alert('Success', 'Your password has been updated successfully.', [
-          { text: 'Login now', onPress: () => router.replace('/auth') }
-        ]);
+        setIsSuccess(true);
       } else {
         Alert.alert('Error', result.error || 'Failed to reset password.');
       }
@@ -60,6 +61,27 @@ export default function ResetPasswordScreen() {
     }
   };
 
+  if (isSuccess) {
+    return (
+      <ImageBackground source={campusBackground} style={styles.backgroundImage} resizeMode="contain">
+        <View style={styles.backgroundOverlay} />
+        <SafeAreaView style={[styles.container, styles.authContainer, { justifyContent: 'center' }]}>
+          <View style={styles.card}>
+            <Ionicons name="checkmark-circle" size={80} color="#28a745" style={{ alignSelf: 'center', marginBottom: 20 }} />
+            <Text style={[styles.title, { color: '#003366' }]}>Password Reset</Text>
+            <Text style={[styles.subtitle, { marginBottom: 30 }]}>Your password has been successfully changed. Please go back to the app to log in.</Text>
+            <TouchableOpacity
+              style={[styles.authButton, { backgroundColor: '#003366' }]}
+              onPress={() => router.replace('/auth')}
+            >
+              <Text style={styles.authButtonText}>Go to Login</Text>
+            </TouchableOpacity>
+          </View>
+        </SafeAreaView>
+      </ImageBackground>
+    );
+  }
+
   return (
     <ImageBackground source={campusBackground} style={styles.backgroundImage} resizeMode="contain">
       <View style={styles.backgroundOverlay} />
@@ -68,10 +90,6 @@ export default function ResetPasswordScreen() {
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.keyboardView}
         >
-          <TouchableOpacity onPress={() => router.replace('/auth')} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={28} color="#6c757d" />
-          </TouchableOpacity>
-
           <ScrollView contentContainerStyle={styles.scrollContent}>
             <View style={styles.card}>
               <Text style={[styles.title, { color: '#003366' }]}>Set New Password</Text>
@@ -81,49 +99,43 @@ export default function ResetPasswordScreen() {
                 <TextInput
                   placeholder="New Password"
                   style={styles.passwordInput}
-                  secureTextEntry={!showPassword}
+                  secureTextEntry={true}
                   value={newPassword}
                   onChangeText={setNewPassword}
                   placeholderTextColor="#999"
                 />
-                <TouchableOpacity
-                  style={styles.eyeButton}
-                  onPress={() => setShowPassword(!showPassword)}
-                >
-                  <Ionicons name={showPassword ? "eye-off" : "eye"} size={24} color="#6c757d" />
-                </TouchableOpacity>
               </View>
 
               <View style={styles.passwordContainer}>
                 <TextInput
                   placeholder="Confirm New Password"
                   style={styles.passwordInput}
-                  secureTextEntry={!showPassword}
+                  secureTextEntry={true}
                   value={confirmPassword}
                   onChangeText={setConfirmPassword}
                   placeholderTextColor="#999"
                 />
               </View>
 
+              {showMatchStatus && (
+                <Text style={[
+                  styles.validationMessage,
+                  passwordsMatch ? styles.matchText : styles.mismatchText
+                ]}>
+                  {passwordsMatch ? 'Match' : 'mismatch password'}
+                </Text>
+              )}
+
               <TouchableOpacity
-                style={[styles.authButton, { backgroundColor: '#003366' }, loading && styles.disabledButton]}
+                style={[styles.authButton, { backgroundColor: '#003366' }, (loading || !passwordsMatch) && styles.disabledButton]}
                 onPress={handleResetPassword}
-                disabled={loading}
+                disabled={loading || !passwordsMatch}
               >
                 {loading ? (
                   <ActivityIndicator color="#fff" />
                 ) : (
                   <Text style={styles.authButtonText}>Save</Text>
                 )}
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.switchContainer}
-                onPress={() => router.replace('/auth')}
-              >
-                <Text style={styles.switchText}>
-                  Back to <Text style={[styles.switchLink, { color: '#003366' }]}>Sign In</Text>
-                </Text>
               </TouchableOpacity>
             </View>
           </ScrollView>
