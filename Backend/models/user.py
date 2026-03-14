@@ -1,5 +1,5 @@
 from models.base import Base
-from sqlalchemy import TEXT, VARCHAR, Column, LargeBinary
+from sqlalchemy import TEXT, VARCHAR, Column, LargeBinary, Integer, Date
 
 
 class User(Base):
@@ -18,3 +18,5 @@ class User(Base):
         nullable=False,
         default="https://rjtiibjejbnubuteheph.supabase.co/storage/v1/object/public/EDIQ-bucket/default_profile_pictures/default_profile.jpg",
     )
+    chatbot_requests_today = Column(Integer, default=0, nullable=False)
+    last_chatbot_request_date = Column(Date, nullable=True)
